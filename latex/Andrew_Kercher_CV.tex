@@ -1,0 +1,104 @@
+\documentclass[11pt,a4paper]{moderncv}
+
+% moderncv themes
+\moderncvtheme[grey]{classic}                  % optional argument are 'blue' (default), 'orange', 'green', 'red', 'purple', 'grey' and 'roman' (for roman fonts, instead of sans serif fonts)
+%\moderncvtheme[green]{classic}                % idem
+
+% character encoding
+\usepackage[utf8]{inputenc}                   % replace by the encoding you are using
+
+% adjust the page margins
+\usepackage[scale=0.8]{geometry}
+%\setlength{\hintscolumnwidth}{3cm}						% if you want to change the width of the column with the dates
+%\AtBeginDocument{\setlength{\maketitlenamewidth}{6cm}}  % only for the classic theme, if you want to change the width of your name placeholder (to leave more space for your address details
+%\AtBeginDocument{\recomputelengths}                     % required when changes are made to page layout lengths
+
+% Hyperlinks
+%\usepackage{hyperref}								% to use hyperlinks
+%\definecolor{linkcolour}{rgb}{0,0.2,0.6}			% hyperlinks setup
+%\hypersetup{colorlinks,breaklinks,urlcolor=linkcolour, linkcolor=linkcolour}
+
+% personal data
+\firstname{Andrew}
+\familyname{Kercher}
+%\title{Resuse title (optional)}               % optional, remove the line if not wanted
+\address{4022 Roberts Road}{Fairfax, VA 22032}    % optional, remove the line if not wanted
+\mobile{631-786-4323}                    % optional, remove the line if not wanted
+%% \phone{+30 698 4385057}                      % optional, remove the line if not wanted
+%\fax{fax (optional)}                          % optional, remove the line if not wanted
+\email{akercher@gmu.com}                      % optional, remove the line if not wanted
+%\email{\href{mailto:s.dakourou@gmail.com}{s.dakourou@gmail.com}}                      % optional, remove the line if not wanted
+%\homepage{\href{http://gr.linkedin.com/pub/stefania-dakourou/41/21a/396}{LinkedIn Profile}}                % optional, remove the line if not wanted
+%\extrainfo{additional information (optional)} % optional, remove the line if not wanted
+%\photo[64pt][0.4pt]{picture}                         % '64pt' is the height the picture must be resized to, 0.4pt is the thickness of the frame around it (put it to 0pt for no frame) and 'picture' is the name of the picture file; optional, remove the line if not wanted
+%\quote{Some quote (optional)}                 % optional, remove the line if not wanted
+
+% to show numerical labels in the bibliography; only useful if you make citations in your resume
+\makeatletter
+\renewcommand*{\bibliographyitemlabel}{\@biblabel{\arabic{enumiv}}}
+\makeatother
+
+% bibliography with mutiple entries
+%\usepackage{multibib}
+%\newcites{book,misc}{{Books},{Others}}
+
+%\nopagenumbers{}                             % uncomment to suppress automatic page numbering for CVs longer than one page
+%----------------------------------------------------------------------------------
+%            content
+%----------------------------------------------------------------------------------
+\begin{document}
+\maketitle
+
+\section{Education}
+%\cventry{year--year}{Degree}{Institution}{City}{\textit{Grade}}{Description}
+\cventry{2014}{(Expected) PhD in Computational Science and Informatics}{George Mason University}{}{}{Dissertation: Computational Methods for Ideal Magnetohydrodynamics.}
+\cventry{2008}{B.S. Mathematics}{George Mason University}{Fairfax, VA}{}{Fellow of the National Science Foundation sponsored Undergraduate Research in Computational Mathematics program.}
+
+\section{Experience}
+\cventry{2008-present}{Research Assistant}{George Mason University}{Fairfax, VA}{}{Working independently and as part of a group developing and maintaining a variety of software used for statistical analysis, Ionospheric modeling, computation of hydrodynamic and magnetohydrodynamic fluid flows, and data visualization;\newline{} Assist in maintaining efficient performance of the Space Weather Lab computers.}%
+\cventry{2007-2008}{Actuarial Intern}{Wachovia Retirement Services}{Reston, VA}{}{Assist with contract work for the Pension Benefit Guaranty Corporation (a Government Agency);\newline{} Performed pension valuation data analysis; \newline{} Programmed benefit calculations.}
+
+%% \section{Master Thesis}
+%% \cvline{Title}{\emph{Optimized SIMD scheduling and architecture exploration and implementation for ultra-low energy processor architectures}}
+%% \cvline{Supervisors}{Francky Catthoor, Constantinos Goutis}
+%% \cvline{Description}{\small Project follows the complete flow of the implementation of an ASIP from high-level processor architecture design and Test Vector generation process to power dissipation measurements}
+
+\section{Publications}
+\cvline{(Submitted)}{A. D. Kercher and R. S. Weigel, Removal of pseudo-convergence in coplanar and near-coplanar Riemann problems of ideal magnetohydrodynamics solved using finite volume schemes, J. Comp. Phys. (2014)}
+
+\section{Conference presentations}
+\subsection{Poster presentations}
+\cvline{2013-11-13}{A nonlinear Riemann solver for ideal magnetohydrodynamics, SPACS-NRL Space Science Symposium, Fairfax, VA.}
+\cvline{2008-1-8}{Diffusion in space plasma, Joint Mathematics Meeting, San Diego, CA.}
+\subsection{Workshop}
+\cvline{2011-12-6}{Computational Space Science and Astrophysics Workshop, Centre for High Performance Computing, Pretoria, South Africa. \newline{}}
+
+\section{Software Development}
+\cvline{Dissertation}{Implemented a modified HLLD flux calculation in Athena, a code for astrophysical MHD, in order to limit the generation of compound waves caused by numerical diffusion.  Incorporated a nonlinear ideal MHD solver into Athena.  Athena is written in C.  The original nonlinear solver is written in Matlab.}
+\cvline{Dissertation}{(In-progress) Two-dimensional cell-centered finite volume, flux corrected transport solver for ideal MHD on structured grids.  Parallelized for GPUs.  Written in C++.}  
+\cvline{Graduate}{Two-dimensional edge-based finite volume solver for compressible hydrodynamics on unstructured grids.  Gradient reconstruction of interface states.  Flux calculated with either linearized solver of Roe, or HLLC scheme of Toro.  Written in Fortran 90.}
+\cvline{Graduate}{Two-dimensional finite element solver for compressible and incompressible hydrodynamics on unstructured grids.  Two-step Taylor-Galerkin flux calculation and artificial viscosity in the form of Lapidus.  Written in Fortran 90.}
+\cvline{Graduate}{Two-dimensional unstructured grid generation using advancing front.  Written in Fortran 90.}
+
+%% \section{Software Development}
+%% \cvline{Dissertation}{Modified HLLD flux calculation in Athena, a code for astrophysical MHD and incorporated a nonlinear ideal MHD.  Athena is written in C.  The original nonlinear solver is written in Matlab.}
+%% \cvline{Dissertation}{(In-progress) 2D FV-FCT solver for ideal MHD on structured grids.  Parallelized for GPUs, C++.}  
+%% \cvline{Graduate}{2D edge-based FV solver for compressible hydrodynamics on unstructured grids, gradient reconstruction, linearized solver of Roe, HLLC scheme, Fortran 90.}
+%% \cvline{Graduate}{2D FE  solver for compressible and incompressible hydrodynamics on unstructured grids, Two-step Taylor-Galerkin and artificial viscosity in the form of Lapidus, Fortran 90.}
+%% \cvline{Graduate}{2D unstructured grid generation using advancing front, Fortran 90.}
+
+\section{Technical Profile}
+\cvline{Languages}{C, C++, Fortran, Matlab, Python}
+\cvline{HPC}{MPI, OpenMP, GPU}
+\cvline{Version Control}{Git, SVN}
+\cvline{Visualization}{Paraview, OpenGL, Matlab, Python}
+\cvline{Operating Systems}{Linux, MS Windows, OS X}
+%\cvcomputer{Basic}{UML, HTML, C++, Tcl, System C} {}{}
+%\cvcomputer{Intermediate}{C, Matlab, Assembly(Intel x86)}{}{}
+%\cvcomputer{Expert}{VHDL, nML}{}{}
+
+\section{References}
+\cvline {1.} {Rainald L{\"o}hner \newline{} George Mason University \newline{} Fairfax, VA \newline{} 703-993-4075 \newline{} rlohner@gmu.edu}
+\cvline {2.} {Robert Weigel \newline{} George Mason University \newline{} Fairfax, VA \newline{} 703-993-1361 \newline{} rweigel@gmu.edu}
+\end{document}
+%% \cvline {3.} {Andrew Corrigan \newline{} Naval Research Laboratory \newline{} Washington, DC \newline{} 202-767-3640 \newline{} andrew.corrigan@gmail.edu}

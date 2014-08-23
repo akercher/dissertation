@@ -1,0 +1,119 @@
+%----------------------------------------------------------------------------------------
+% face_color_1.tex
+%----------------------------------------------------------------------------------------
+
+\begin{tikzpicture}[scale = {0.0125\linewidth},
+  >=stealth, %
+  inner sep=1pt, outer sep=0pt,%
+  axis/.style={thick,->},
+  base node/.style={circle,draw,minimum size=5pt},
+  wave/.style={thick,color=#1,smooth},
+  polaroid/.style={fill=black!60!white, opacity=0.3}]
+
+
+\draw[green!50!black,line width=2pt] (0.0,0.0)--(0.25,0.0);
+\draw[green!50!black,line width=2pt] (0.25,0.0)--(0.5,0.0);
+\draw[green!50!black,line width=2pt] (0.5,0.0)--(0.75,0.0);
+\draw[green!50!black,line width=2pt] (0.75,0.0)--(1.0,0.0);
+
+\draw[red!50!black,line width=2pt] (0.0,0.25)--(0.25,0.25);
+\draw[red!50!black,line width=2pt] (0.25,0.25)--(0.5,0.25);
+\draw[red!50!black,line width=2pt] (0.5,0.25)--(0.75,0.25);
+\draw[red!50!black,line width=2pt] (0.75,0.25)--(1.0,0.25);
+
+\draw[green!50!black,line width=2pt] (0.0,0.5)--(0.25,0.5);
+\draw[green!50!black,line width=2pt] (0.25,0.5)--(0.5,0.5);
+\draw[green!50!black,line width=2pt] (0.5,0.5)--(0.75,0.5);
+\draw[green!50!black,line width=2pt] (0.75,0.5)--(1.0,0.5);
+
+\draw[red!50!black,line width=2pt] (0.0,0.75)--(0.25,0.75);
+\draw[red!50!black,line width=2pt] (0.25,0.75)--(0.5,0.75);
+\draw[red!50!black,line width=2pt] (0.5,0.75)--(0.75,0.75);
+\draw[red!50!black,line width=2pt] (0.75,0.75)--(1.0,0.75);
+
+\draw[green!50!black,line width=2pt] (0.0,1.0)--(0.25,1.0);
+\draw[green!50!black,line width=2pt] (0.25,1.0)--(0.5,1.0);
+\draw[green!50!black,line width=2pt] (0.5,1.0)--(0.75,1.0);
+\draw[green!50!black,line width=2pt] (0.75,1.0)--(1.0,1.0);
+
+\draw[black!50!,line width=2pt] (0.0,0.0)--(0.0,0.25);
+\draw[black!50!,line width=2pt] (0.0,0.25)--(0.0,0.5);
+\draw[black!50!,line width=2pt] (0.0,0.5)--(0.0,0.75);
+\draw[black!50!,line width=2pt] (0.0,0.75)--(0.0,1.0);
+
+\draw[black!90!,line width=2pt] (0.25,0.0)--(0.25,0.25);
+\draw[black!90!,line width=2pt] (0.25,0.25)--(0.25,0.5);
+\draw[black!90!,line width=2pt] (0.25,0.5)--(0.25,0.75);
+\draw[black!90!,line width=2pt] (0.25,0.75)--(0.25,1.0);
+
+\draw[black!50!,line width=2pt] (0.5,0.0)--(0.5,0.25);
+\draw[black!50!,line width=2pt] (0.5,0.25)--(0.5,0.5);
+\draw[black!50!,line width=2pt] (0.5,0.5)--(0.5,0.75);
+\draw[black!50!,line width=2pt] (0.5,0.75)--(0.5,1.0);
+
+\draw[black!90!,line width=2pt] (0.75,0.0)--(0.75,0.25);
+\draw[black!90!,line width=2pt] (0.75,0.25)--(0.75,0.5);
+\draw[black!90!,line width=2pt] (0.75,0.5)--(0.75,0.75);
+\draw[black!90!,line width=2pt] (0.75,0.75)--(0.75,1.0);
+
+\draw[black!50!,line width=2pt] (1.0,0.0)--(1.0,0.25);
+\draw[black!50!,line width=2pt] (1.0,0.25)--(1.0,0.5);
+\draw[black!50!,line width=2pt] (1.0,0.5)--(1.0,0.75);
+\draw[black!50!,line width=2pt] (1.0,0.75)--(1.0,1.0);
+
+\begin{scope}[every node/.style={scale=.75}]
+
+\node[base node,fill = white] at (0.0,0.125) {$1$};
+\node[base node,fill = white] at (0.0,0.375) {$1$};
+\node[base node,fill = white] at (0.0,0.625) {$1$};
+\node[base node,fill = white] at (0.0,0.875) {$1$};
+
+\node[base node,fill = white] at (0.25,0.125) {$2$};
+\node[base node,fill = white] at (0.25,0.375) {$2$};
+\node[base node,fill = white] at (0.25,0.625) {$2$};
+\node[base node,fill = white] at (0.25,0.875) {$2$};
+
+\node[base node,fill = white] at (0.5,0.125) {$1$};
+\node[base node,fill = white] at (0.5,0.375) {$1$};
+\node[base node,fill = white] at (0.5,0.625) {$1$};
+\node[base node,fill = white] at (0.5,0.875) {$1$};
+
+\node[base node,fill = white] at (0.75,0.125) {$2$};
+\node[base node,fill = white] at (0.75,0.375) {$2$};
+\node[base node,fill = white] at (0.75,0.625) {$2$};
+\node[base node,fill = white] at (0.75,0.875) {$2$};
+
+\node[base node,fill = white] at (1.0,0.125) {$1$};
+\node[base node,fill = white] at (1.0,0.375) {$1$};
+\node[base node,fill = white] at (1.0,0.625) {$1$};
+\node[base node,fill = white] at (1.0,0.875) {$1$};
+
+\node[base node,fill = white] at (0.125,0.0) {$3$};
+\node[base node,fill = white] at (0.375,0.0) {$3$};
+\node[base node,fill = white] at (0.625,0.0) {$3$};
+\node[base node,fill = white] at (0.875,0.0) {$3$};
+
+\node[base node,fill = white] at (0.125,0.25) {$4$};
+\node[base node,fill = white] at (0.375,0.25) {$4$};
+\node[base node,fill = white] at (0.625,0.25) {$4$};
+\node[base node,fill = white] at (0.875,0.25) {$4$};
+
+\node[base node,fill = white] at (0.125,0.5) {$3$};
+\node[base node,fill = white] at (0.375,0.5) {$3$};
+\node[base node,fill = white] at (0.625,0.5) {$3$};
+\node[base node,fill = white] at (0.875,0.5) {$3$};
+
+\node[base node,fill = white] at (0.125,0.75) {$4$};
+\node[base node,fill = white] at (0.375,0.75) {$4$};
+\node[base node,fill = white] at (0.625,0.75) {$4$};
+\node[base node,fill = white] at (0.875,0.75) {$4$};
+
+\node[base node,fill = white] at (0.125,1.0) {$3$};
+\node[base node,fill = white] at (0.375,1.0) {$3$};
+\node[base node,fill = white] at (0.625,1.0) {$3$};
+\node[base node,fill = white] at (0.875,1.0) {$3$};
+
+\end{scope}
+
+
+\end{tikzpicture}

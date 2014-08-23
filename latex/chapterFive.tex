@@ -1,0 +1,190 @@
+%
+% $Id: chapterFive.tex
+%
+
+% A first, optional argument in [ ] is the title as displayed in the table of contents
+% The second argument is the title as displayed here.  Use \\ as appropriate in
+%   this title to get desired line breaks
+
+%----------------------------------------------------------------------------------------
+% GPU
+%----------------------------------------------------------------------------------------
+\chapter[Parallel processing]{Parallel processing}
+\label{chp:gpu}
+
+Last Chapter completed the description of a new method for producing an approximate solution to Riemann problems of ideal MHD containing only regular waves without knowledge of the exact.  The final chapter of this dissertation describes the implementation of a multidimensional flow solver for HD and MHD capable of shared memory parallelism on both a CPU and GPU.  An overview of the multidimensional algorithms and grid structure is given.  Although the HD solver is relatively unchanged, CT \citep{Evans:1988} is incorporated into the MHD solver to ensure that $\divergebf{B} = 0$ throughout the simulation (assuming it was initially zero).  Important concepts for parallel programming on shared memory devices, e.g., avoiding memory contention, are described.   The results for multidimensional test problem of HD and MHD are solved in parallel on the CPU and GPU and the resulting times are compared.
+
+%----------------------------------------------------------------------------------------
+%	2D Algorithms
+%----------------------------------------------------------------------------------------
+\section[Methods for ideal MHD in higher dimensions]{Methods for ideal MHD in higher dimensions}          
+\label{sec:2d_mhd}
+
+Care must be taken in multidimensional MHD simulations to ensure errors associated with \divergebf{B} do not be grow large enough to introduce numerical instabilities.  A number of different approaches have been devised to contain the growth of \divergebf{B}.  A brief description of a few of the more popular approaches is given below.  For a thorough review and a performance comparison of the schemes discussed below, see \citep{Toth:2000}.  \citet{Powell:1999} derived the following non-conservative set of form of \eqref{eqn:mhd1} - \eqref{eqn:mhd4} where source terms proportional to \divergebf{B} are added to the right-hand side
+\begin{gather}
+\label{eqn:8wave1} \pd{\rho}{t} + \diverge{\left(\rho\mbf{v}\right)} = 0 \text{ ,} \\
+\label{eqn:8wave2} \pd{(\rho \mbf{v})}{t} + \diverge{\left[ \outerproduct{\rho\mbf{v}}{\mbf{v}} + \left( p_g + \frac{B^2}{2}\right)\underline{\mbf{I}} - \outerproductbf{B}{B}\right]}  = -\mathbf{B}(\divergebf{B}) \text{ ,}\\
+\label{eqn:8wave3} \pd{E}{t} + \diverge{\left[ \left(E + p_g + \frac{B^2}{2}\right)\mbf{v} - \innerproduct{\mbf{v}}{\outerproductbf{B}{B}}\right]}  = -\mathbf{v}\cdot\mathbf{B}(\divergebf{B}) \text{ , and} \\
+\label{eqn:8wave4} \pdbf{B}{t} + \diverge{\left[ \outerproductbf{v}{B} - \outerproductbf{B}{v}\right]}  = -\mathbf{v}(\divergebf{B}) \text{.}
+\end{gather}
+It is known as the eight-wave scheme with the eighth wave corresponding to the propagation of \divergebf{B}.  
+
+\citet{Brackbill:1980} introduced a corrective step for $\mbf{B}$ where the updated solution is projected to one that is  divergence free.  The so-called projection scheme corrects the updated magnetic field by subtracting the scalar potential associated with the updated field.  This is done by writing the updated solution $\mbf{B*}$ as the sum of the curl and gradient of the vector and scalar potentials,
+\begin{gather}
+\label{eqn:projection1}
+\mbf{B}^* = \curlbf{A} + \grad{\phi}.
+\end{gather}
+The correction of \eqref{eqn:projection1} is found by taking the curl of both sides and solving the resulting Poisson equation
+\begin{gather}
+\label{eqn:projection_poisson}
+\laplace{\phi} = \divergebf{B^*}.
+\end{gather} 
+The solution of \eqref{eqn:projection_poisson} is then subtracted from $\mbf{B}^*$ to give the advanced the magnetic field as
+\begin{gather}
+\label{eqn:projection2}
+\mbf{B}^{n+1} = \mbf{B}^* - \grad{\phi}.
+\end{gather} 
+In order for $\diverge{\mbf{B}^{n+1}} = 0$, the Laplacian of \eqref{eqn:projection_poisson} must be calculated as the divergence of the gradient.
+
+%-----------------------------------------------------------------
+% CT grid geometry
+%-----------------------------------------------------------------
+\begin{figure}[htbp]
+\begin{center}
+\tikzsetnextfilename{ct_grid}
+\input{fig/ct_grid.tex}
+\end{center}
+\caption{Staggered field geometry of the constrained transport scheme.  The components of the magnetic field are located at the cell interfaces, $\xi_z$ is located at the cell corners.}
+\label{fig:ct_grid}
+\end{figure}
+
+The final approach discussed here, and the one implemented for this dissertation, is the CT method of \citet{Evans:1988}.  For CT, the $\divergebf{B} = 0$ is maintained by staggering the grid with the magnetic field components placed at the cell interfaces.  The electromotive force $\mbf{E} = -\crossproductbf{v}{B}$ is defined along the edges in three-dimensions and at the cell corners in two-dimensions.  Following the notation of \citep{Stone:2008}, the z-component of the electromotive force is denoted $\xi_z$.  The placement of $\mbf{B}$ and $\xi_z$ in two-dimensions is shown in Figure~\ref{fig:ct_grid}, with $B_x$ place at $x_{i+1/2}, y_j$ and $B_y$ place at $x_i,y_{j+1/2}$.  The integration is done along cell edges in terms of finite areas instead of finite volumes.  The updated magnetic field components are
+\begin{gather}
+B^{n+1}_{x,i+1/2,j} = B^{n}_{x,i+1/2,j} - \frac{\delta t}{\delta y}\left( \xi_{z,i+1/2,j+1/2} - \xi_{z,i+1/2,j-1/2}\right), \text{ and} \\
+B^{n+1}_{y,i,j+1/2} = B^{n}_{y,i,j+1/2} + \frac{\delta t}{\delta x}\left( \xi_{z,i+1/2,j+1/2} - \xi_{z,i-1/2,j-1/2}\right).
+\end{gather}
+Due to perfect cancellation, the numerical divergence in the cell 
+\begin{gather}
+(\diverge{\mbf{B}})_{i,j} = \frac{1}{\delta x} \left( B_{x,i+1/2,j}  - B_{x,i-1/2,j}\right) + \frac{1}{\delta y} \left( B_{y,i,j+1/2}  - B_{y,i,j-1/2}\right) 
+\end{gather}
+remains zero after the solution is updated.
+
+The electromotive forces are initially calculated at the faces and must be integrated to the corners.  \citet{Gardiner:2005} argued that simple averaging across the faces will produce incorrect results for plane-parallel grid aligned flows and proposed an upwind method.  They gave the emfs at the cell corner as 
+\begin{gather}
+\xi_{z,i+1/2,j+1/2} = \frac{1}{4}(\xi_{z,i+1/2,j} + \xi_{z,i+1/2,j+1} + \xi_{z,i,j+1/2} + \xi_{z,i+1,j+1/2}) \\
+\;\;\;\;\;\;\;\;\;\;\;\;  +  \frac{\delta y}{8} \left( \left(\pd{\xi_z}{y}\right)_{i+1/2,j+1/4} - \left(\pd{\xi_z}{y}\right)_{i+1/2,j+3/4} \right) \\
+\;\;\;\;\;\;\;\;\;\;\;\;  +  \frac{\delta x}{8} \left( \left(\pd{\xi_z}{x}\right)_{i+1/4,j+1/2} - \left(\pd{\xi_z}{y}\right)_{i+3/4,j+1/2} \right) .
+\end{gather}  
+
+The derivatives of the emf, $\partial \xi_z / \partial y$ ($\partial \xi_z / \partial x$) , at the x (y) interfaces are upwinded based on the contact mode.  In \citep{Gardiner:2005}, they are given as
+\begin{gather}
+\label{eqn:emf_upwind} = 
+\left( \pd{\xi_z}{y}\right)_{i+1/2,j+1/4}
+\begin{cases}
+\left( \pd{\xi_z}{y}\right)_{i,j+1/4} & \text{if}\;\;\; v_{n,i-+1/2,j} > 0 , \\
+\left( \pd{\xi_z}{y}\right)_{i+1,j+1/4} & \text{if}\;\;\; v_{n,i+1/2,j} < 0 , \\
+\frac{1}{2}\left(\left( \pd{\xi_z}{y}\right)_{i,j+1/4} + \left( \pd{\xi_z}{y}\right)_{i+1,j+1/4} \right)& \text{otherwise}.
+\end{cases}
+\end{gather}
+The derivatives are given as
+\begin{gather}
+\left( \pd{\xi_z}{y} \right)_{i,j-1/4} = \frac{\xi^r_{z,i,j} - \xi_{z,i,j-1/2}}{2\delta y}.
+\end{gather}
+where $\xi^r_{z,i,j}$ is a reference emf computed at the cell center, see Figure 5 of \citep{Stone:2008}.  Similar expressions can be obtained for $\partial \xi_z / \partial x$. 
+
+The steps of the two-dimensional algorithm are given as follows:
+\begin{enumerate}
+\item Calculate the fluxes at each interface replacing the normal component of the magnetic field at cell center equal with the value at the interface.
+\item Calculate the emfs at the cell corners using the algorithm described above.
+\item Calculate the reference field $\xi^r_{i,j}$ at the cell centers.
+\item Update the hydrodynamical conserved variables and $B_z$ at the cell centers.
+\item Update the magnetic field at each interface using CT.
+\item Calculate the normal and tangential components of the cell-centered magnetic field as the average of the interface values.
+\item Advance the solution in time.
+\item Apply higher order extension.
+\item Update the solution.
+\item Calculate new time step and repeat steps 1-9 until stopping criteria is met.
+\end{enumerate}
+
+In the next section, a detailed description is given of how the one- and two-dimensional algorithms are implemented for this dissertation to run in parallel on shared memory processors.
+
+%----------------------------------------------------------------------------------------
+%	Shared Memory Parallelism
+%----------------------------------------------------------------------------------------
+\section[Shared memory parallelism]{Shared memory parallelism}
+\label{sec:shared_memory}
+
+Shared memory parallelism refers to simultaneous execution on a common section of memory.  It was implemented for this dissertations using Thrust, a \cpp  parallel template library based on the \gls{stl}.  It supports four device backends: \gls{cuda}, \gls{omp}, \gls{tbb}, and the standard \cpp device for serial runs.  The CUDA backend utilizes the GPU, while the OMP and TBB backends utilize multi-core processing on the CPU.  This dissertation compares the performance of the the CUDA and OMP backends.
+
+It is essential that there is no overlap of memory access of the different threads.  In fluid dynamics, this done by what is termed \emph{coloring} the faces/edges.  Coloring refers to grouping the faces/edges, i.e., coloring them, so that no two members of the group need to access the same memory space for the calculations.  For FV schemes, an iteration over the faces in serial becomes an iteration over the colors and the corresponding faces in parallel. 
+
+%-----------------------------------------------------------------
+% Face coloring 1
+%-----------------------------------------------------------------
+\begin{figure}[htbp]
+\begin{center}
+\tikzsetnextfilename{face_color_1}
+\input{fig/face_color_1.tex}
+\end{center}
+\caption{Colored grouping of interior faces for avoiding memory contention with cell centered finite volume schemes.  Four groups, labeled 1-4, are required.}
+\label{fig:face_color_1}
+\end{figure}
+
+A possible coloring, and the one implemented for this dissertation, of the interior faces for ell-centered FV schemes is shown in Figure~\ref{fig:face_color_1}.  For each loop, the flux at the face is calculated and the residual at the cells is built by adding the contribution of each face.  Coloring ensures two faces will not attempt to update the residual of a cell simultaneously.
+
+%-----------------------------------------------------------------
+% Face coloring 2
+%-----------------------------------------------------------------
+\begin{figure}[htbp]
+\begin{center}
+\tikzsetnextfilename{face_color_2}
+\input{fig/face_color_2.tex}
+\end{center}
+\caption{Colored grouping of interior faces for avoiding memory contention with cell centered finite volume schemes plus constrained transport.  Eight groups, labeled 1-8, are required.}
+\label{fig:face_color_2}
+\end{figure}
+
+Coloring is more complicated when CT is used in conjunction with a cell-centered FV scheme.  In this case, each loop over the faces consists of a contribution to the residual at the cell center and a contribution to the emf at the cell corner.  Not only accessing the same cell, but also the same point must be avoided.  The coloring scheme shown in Figure~\ref{fig:face_color_1} only avoids one these potential pitfalls, because the faces/edges of each group can access the same point simultaneously.  An alternative coloring scheme is shown in Figure~\ref{fig:face_color_2} where eight colors are used instead of four.  In this case, the faces and the edges are colored,  this is equivalent to doubling the amount of colors for the faces since edges and faces are the same in two-dimensions.
+
+
+
+%----------------------------------------------------------------------------------------
+%	GPU and CPU Results
+%----------------------------------------------------------------------------------------
+\section[GPU and CPU results]{GPU and CPU results}
+\label{sec:gpu_results}
+
+The timing was done on a Dell Precision 7500 workstation with a (Dual CPU) Intel Xeon E5645 @ 2.40 Ghz.  The graphics card is a GeFroce GTX TITAN with a memory bandwidth of 288.4 GB/sec and 2688 CUDA cores.  The Orszag-Tang vortex was chosen as the test problem for the timing results.  Each CPU has six physical cores and two logical cores per physical, making 24 cores available with hyper-threading enabled.  Assuming near perfect scaling, running on the GPU is approximately three and a half times faster than running in parallel on the CPUs.
+
+%-----------------------------------------------------------------
+% Timing Results Orszag-Tang
+%-----------------------------------------------------------------
+\begin{table}[htbp]%\footnotesize
+\caption{Performance comparison of GPU and CPU Orszag-Tang results.}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}} cccc}
+\\ 
+\hline 
+\hline 
+grid size & cells/second (GPU) & cells/second (CPU) & speed ratio \\
+\hline
+$64\times64$ & $4.1894\times10^6$ & $7.3955\times10^5$ & 5 \\
+$128\times128$ & $1.6540\times10^7$ & $7.5060\times10^5$ & 22 \\
+$256\times256$ & $4.4497\times10^7$ & $7.3155\times10^5$ & 60 \\
+$512\times512$ & $6.3286\times10^7$ & $7.9437\times10^5$ & 79 \\
+$1024\times1024$ & $7.2134\times10^7$ & $8.3354\times10^5$ & 86 \\
+\hline
+\end{tabular*}
+\end{table}
+
+
+%----------------------------------------------------------------------------------------
+%	GPU efficient algorithms
+%----------------------------------------------------------------------------------------
+\section[Efficient algorithms]{Efficient algorithms}
+\label{sec:efficient_algo}
+
+This section discusses increasing parallel performance with efficient data storage and utilization computational power.  The two types of data storage are AoS and SoA.  
+
+ The results indicate that the cost to performance ratio for a  GPUs such as NVIDIAs GTX Titan, which retails for about \$1000.00, makes them ideal choices for shared memory processors, if the limited memory is managed properly.  The availability of memory on a GPU is the greatest obstacle to using it for flow simulations.  The relatively large memory capacity of 6 GB on the GTX Titan is around $6.5\%$ of the 92 GB available on the Xeon E5.  For the equivalent memory of one, Xeon E5, fifteen GPUs are required, costing nearly three times that of one Xeon E5.  In order for GPUs to be worth the investment, computations on the fly must be maximized and data storage minimized.   
+
+

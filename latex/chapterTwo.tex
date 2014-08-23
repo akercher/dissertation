@@ -1,0 +1,826 @@
+%
+% $Id: chapterTwo.tex
+%
+
+% A first, optional argument in [ ] is the title as displayed in the table of contents
+% The second argument is the title as displayed here.  Use \\ as appropriate in
+%   this title to get desired line breaks
+
+%----------------------------------------------------------------------------------------
+% Riemann Problems
+%----------------------------------------------------------------------------------------
+\chapter[Riemann problems and conservative systems]{Riemann problems and conservative systems}
+\label{chp:riemann}
+
+In this chapter we define a Riemann problem and show that the solution consists of one or more waves emanating from the initial discontinuity.  The structure, i.e., the different waves and their properties, of the solution is introduced via linear advection and is then more thoroughly developed by solving select Riemann problems for linear and nonlinear systems.  The first nonlinear system discussed is the one-dimensional Euler equations of hydrodynamics.  A method for obtaining the exact solution, as well as three methods of approximating the solution are given.  The classic shock tube problem of \citet{Sod:1978} is numerically approximated using routines implemented in \emph{Athena} MHD code \citep{Stone:2008,AthenaSite}.  The results are compared to the exact solution, obtained with a solver implemented for this dissertation.  The final system discussed in this chapter is ideal \gls{mhd}.  An exact nonlinear solver and an approximate solver for the equations of ideal MHD are described. 
+
+%-----------------------------------------------------------------
+% Formulation
+%-----------------------------------------------------------------
+\section[Formulation]{Formulation}
+\label{sec:formulation}
+
+A Riemann problem is a type of \gls{ivp} for a conservation law.  The initial conditions for a Riemann problem consist of two constant states separated by a discontinuity.  The initial state, shown in Figure~\ref{fig:ivp}, is defined as
+\begin{gather}
+\label{eqn:ivp} 
+\mbf{U}_0 = 
+\begin{cases}
+\mbf{U}_l & \text{if}\;\;\; x < x_d, \\
+\mbf{U}_r & \text{if}\;\;\; x > x_d, \\
+\end{cases}
+\end{gather} 
+where $\mbf{U}_l$ is the initial left state, $\mbf{U}_r$ is the initial right state, and $x_d$ is the location of the discontinuity.
+
+%-----------------------------------------------------------------
+% Riemann IVP states
+%-----------------------------------------------------------------
+\begin{figure}[htbp]
+\begin{center}
+\tikzsetnextfilename{riemann_ivp}
+\input{fig/riemann_ivp.tex}
+\end{center}
+\caption{Initial conditions for a one-dimensional Riemann problem.  The initial discontinuity at, $x_d$, separates two constant states, $\mbf{U}_l$ and $\mbf{U}_r$.}
+\label{fig:ivp}
+\end{figure}
+
+Conservation laws are a system of partial differential equations of the form   
+\begin{gather*}
+\pdbf{U}{t} + \pdbf{F}{\mbf{x}} = \mbf{0} \text{ ,}
+\end{gather*} 
+where \mbf{U} is a vector of the conservative state variables and \mbf{F} is a vector of fluxes \citep{Toro:1999}. 
+
+
+%-----------------------------------------------------------------
+% Linear advection
+%-----------------------------------------------------------------
+\section[Linear advection]{Linear advection}
+\label{sec:lin_advec}
+
+The one-dimensional linear advection equation is 
+\begin{gather}
+\label{eqn:linear_ad}
+\pd{u}{t} + a\pd{u}{x} = 0,
+\end{gather}
+where $u$ is the conserved variable, and  $a$ is the constant wave velocity.  The solution to the Riemann problem for linear advection with $a>0$, initial conditions given by Equation~\ref{eqn:lin_ad_ivp}, and $x_d = 0$ is   
+\begin{gather*}
+\label{eqn:lin_ad_ivp} 
+u = 
+\begin{cases}
+u_l & \text{if}\;\;\; x < at, \\
+u_r & \text{if}\;\;\; x > at. \\
+\end{cases}
+\end{gather*} 
+
+%-----------------------------------------------------------------
+% Linear advection Riemann states
+%-----------------------------------------------------------------
+\begin{figure}[htbp]
+\begin{center}
+\tikzsetnextfilename{lin_ad_rstates}
+\input{fig/lin_ad_rstates.tex}
+\end{center}
+\caption{Solution to the Riemann problem for linear advection in the $x$-$t$ plane.  The position of the discontinuity is given by the dashed line.}
+\label{fig:lin_ad_rstates}
+\end{figure}
+
+In the $x$-$t$ plane, the solution changes from the initial left state, $u_l$, to the initial right state, $u_r$, across the characteristic line $x - at = 0$.  Across the discontinuity the solution is given by the Rankine-Hugonoit jump conditions, which express the transition as conservation across the discontinuity:
+\begin{gather}
+\label{eqn:rh_jump}
+\mbf{F}_r - \mbf{F}_l = S_i (\mbf{U}_r - \mbf{U}_l),
+\end{gather}      
+where $S_i$ is the speed of a discontinuity connecting two states $\mbf{U}_l$ and $\mbf{U}_l$.  For the linear advection equation, the jump conditions are
+\begin{gather*}
+a u_r - a u_l = S (u_r - u_l),
+\end{gather*}      
+which gives the wave speed $S = a$.  This is the speed defined by the characteristic, $x - at = 0$.
+
+%-----------------------------------------------------------------
+% Linear systems
+%-----------------------------------------------------------------
+\section[Linear systems]{Linear systems}
+\label{sec:lin_sys}
+
+Consider the hyperbolic system of $n$ linear equations
+\begin{gather}
+\label{eqn:linear_sys}
+\pdbf{U}{t} + \mbf{A}\pdbf{U}{x} = 0,
+\end{gather}
+where $\mbf{A}$ is an $n \times n$ constant coefficient matrix.  If $\mbf{A}$ has $n$ real eigenvalues, $\lambda_1, \hdots, \lambda_n$, and a corresponding set of $n$ linearly independent right eigenvectors, $\mbf{r}^1,\hdots,\mbf{r}^n$, the system is called hyperbolic.  It is called strictly hyperbolic system if the eigenvalues are distinct.  The hyperbolicity of the systems allows for it to be written in terms of the characteristic variables, that are the components of $\mbf{W} = \mbf{l}^i \mbf{U}$, where $\mbf{l}^i$ is the matrix of left eigenvectors, see \citep{Toro:1999}.  In characteristic form, the system is 
+\begin{gather}
+\pdbf{W}{t} + \mbf{\Lambda} \pdbf{W}{x} = 0,
+\end{gather}  
+where $\mbf{\Lambda}$ is a diagonal matrix and  $i$-th entry of the main diagonal is $\lambda_i$.
+The system has been transformed to $n$ scalar equations of the form
+\begin{gather}
+\pd{w_i}{t} + \lambda_i \pd{w_i}{x} = 0,
+\end{gather}  
+where the eigenvalues are the characteristic speeds.  The system is assumed to be strictly hyperbolic so that eigenvalues are arranged such that ${\lambda_1 < \hdots < \lambda_i < \hdots < \lambda_n}$.  The solution to each scalar equation is given in terms of the characteristic variables by the solution to a linear advection problem with $a = \lambda_i$. 
+
+%-----------------------------------------------------------------
+% Linear system Riemann states
+%-----------------------------------------------------------------
+\begin{figure}[htbp]
+\begin{center}
+\tikzsetnextfilename{lin_sys_rstates}
+\input{fig/lin_sys_rstates.tex}
+\end{center}
+\caption{Solution to the Riemann problem for a hyperbolic system of $n$ linear equations in the $x$-$t$ plane.}
+\label{fig:lin_sys_rstates}
+\end{figure}
+
+The solution in the $x$-$t$ plane, for the linear system is shown in Figure~\ref{fig:lin_sys_rstates}.  It is composed of $n$ waves, each one corresponding to a characteristic speed, propagating away from the initial discontinuity.  Only the state on one side of the wave is needed to determine the change across it because the speed of a linear wave is independent of the discontinuous quantity.  The speed of the wave is calculated by the quantities in the known state.  A rotational discontinuity is an example of a linear wave in plasma physics.  It travels with a velocity equal to the Alf{\'e}n velocity, $B_n/\sqrt{4\pi\rho}$, where $B_n$ is the magnitude of the normal component of the magnetic field, and $\rho$ is the density.  Across a rotational discontinuity, $B_n$, and $\rho$ are unchanged, and determine the speed, and the jump conditions are then used to compute the connected state.  In this way, every state, connected through multiple waves can be determined.  The complete solution is then given by the superposition of the $n$ waves.  
+
+The difference in characteristic variables across each wave is given by $\alpha_i = \mbf{l}_i \cdot (\mbf{U}_l - \mbf{U}_r)$, and the solution in terms of conservative variables is 
+\begin{gather*} 
+\mbf{U} = \mbf{U}_l + \sum_{i=1}^m \alpha_i \mbf{r}^i, \;\;\;\;\text{ or }\;\;\;\; \mbf{U} = \mbf{U}_r - \sum_{i=m+1}^n \alpha_i \mbf{r}^i,
+\end{gather*} 
+for $\lambda_m < x/t < \lambda_{m+1}$.  As described next section, the states on both sides of a nonlinear wave are needed to determine the speed.  As such, only local knowledge of the solution is available at a nonlinear discontinuity.
+
+%-----------------------------------------------------------------
+% Nonlinear systems
+%-----------------------------------------------------------------
+\section[Nonlinear systems]{Nonlinear systems}
+\label{sec:nonlin_sys}
+
+The results from the previous sections are now extended to nonlinear hyperbolic systems of the form   
+\begin{gather}
+\label{eqn:nonlinear_sys}
+\pdbf{U}{t} + \pdbf{F}{x} = 0,
+\end{gather}
+where $\mbf{U}$ is a vector of conserved variables and $\mbf{F}(\mbf{U})$ is the flux vector.  The system is called hyperbolic if the Jacobian matrix, $\mbf{J}(\mbf{U}) = \partial{\mbf{F}}/\partial{\mbf{U}}$, has $n$ real eigenvalues and a corresponding set of $n$ linearly independent right eigenvectors.  The system is also assumed to be strictly-hyperbolic so that we my write the eigenvalues .  For each of the $n$ eigenvalues there is an associated wave with speed $S_i$.  As with the linear system, the $n$ waves partition the solution into $n+1$ states.  Each wave in the linear system travels at a constant speed, $\lambda_i$, and has an associated jump discontinuity.  In the nonlinear systems, the wave speeds are functions of the conservative variables and the structure of the wave is not always a jump discontinuity.
+
+%-----------------------------------------------------------------
+% Characteristics of shocks, linear waves, and rarefactions
+%-----------------------------------------------------------------
+\begin{figure}[htbp]
+\begin{tabular}{ccc}
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{shock_char}\input{fig/shock_char.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{linear_char}\input{fig/linear_char.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{rarefaction_char}\input{fig/rarefaction_char.tex}} 
+\end{tabular}
+\caption{(left) Characteristics on both sides of a shock, (center) linear discontinuity, and (right) rarefaction (right).}
+\label{fig:nonlinear_char}
+\end{figure}
+
+The formation of compression and expansion waves is an distinguishing feature of nonlinear systems.  Shock waves are compressive discontinuities that connect two states.  The characteristics of the two states connected by shock wave converge in the $x$-$t$ planeas shown in the left panel of Figure~\ref{fig:nonlinear_char}..  The Rankine-Hugonoit jump conditions for a shock wave are given by Equation~\ref{eqn:rh_jump}.
+
+Expansion shocks are possible solutions, however, they violate the entropy condition and are disregarded as unphysical.  The entropy is defined, $p_g/\rho^{\gamma}$, where $p_g$ is the gas pressure, $\rho$ is the density, and $\gamma$ is the ratio of specific heats.  The entropy condition states that the entropy cannot decrease across a shock.    
+
+Rarefactions are another nonlinear wave.  They connect two states through a smooth transition.  Unlike shocks, they are an expansion wave, and the characteristics of two states connected by rarefaction wave diverge in the $x$-$t$ plane, as shown in the right panel of Figure~\ref{fig:nonlinear_char}.
+
+We adopt the following conventions when discussing to the structure of the solution to Riemann problems.  For a wave propagating with speed $S$, connecting two constant states, the upstream state, $\mbf{U}_u$, is the pre-shock state, i.e., the state of the flow that has not crossed the shock.  The downstream state, $\mbf{U}_d$, is the post-shock state, i.e., the state of the flow that has crossed the shock.  For the right-going wave shown in Figure~\ref{fig:ivp}, $\mbf{U}_l$ the upstream state, and $\mbf{U}_r$ is the downstream state.  The difference across a discontinuity is denoted with square brackets, e.g., $[ \mbf{U} ] = \mbf{U}_d - \mbf{U}_u$.
+
+%-----------------------------------------------------------------
+% Intermediate Riemann state
+%-----------------------------------------------------------------
+\begin{figure}[htbp]
+\begin{center}
+\tikzsetnextfilename{inter_rstates}
+\input{fig/inter_rstates.tex}
+\end{center}
+\caption{Solution to a Riemann with one intermediate state in the $x$-$t$ plane.}
+\label{fig:inter_rstates}
+\end{figure}
+
+When the solution to a Riemann problem is composed of more than one wave, the state between two waves is called an intermediate state, and is denoted $\mbf{U}^*$.  If the solution includes more than two waves, then the intermediate states are referenced in relation to the left-most and right-most state.  If $n+1$ states compose the solution, the states downstream of $\mbf{U}_{j}$ are denoted $\mbf{U}_{ij}^*$, where $i=1,\hdots,m/2$, $j = l,r$, and
+\begin{gather*}
+m = 
+\begin{cases}
+n & \text{if}\;\;\; n \text{ is even}, \\
+n+1 & \text{if}\;\;\; n \text{ is odd}. \\
+\end{cases}
+\end{gather*} 
+If $n$ is even, then the middle state is written without a subscript.
+
+%-----------------------------------------------------------------
+% Compressible hydrodynamics
+%-----------------------------------------------------------------
+\section[Compressible hydrodynamics]{Compressible hydrodynamics}
+\label{sec:com_hydro}
+
+The Euler equations of compressible hydrodynamics comprise a nonlinear hyperbolic system of conservation laws. The structure of the solution for Riemann problems of compressible hydrodynamics is presented below.  If viscosity and thermal conductivity are neglected, then the Euler equations describe the evolution of a compressible ideal gas.  The equations form a strictly-hyperbolic system that admit shocks, rarefactions, and linear discontinuities.  The conservative form of the Euler equations is
+\begin{gather}
+\label{eqn:euler1} \pd{\rho}{t} + \diverge{\left(\rho\mbf{v}\right)} = 0 \text{ ,} \\
+\label{eqn:euler2} \pd{(\rho \mbf{v})}{t} + \diverge{\left[ \outerproduct{\rho\mbf{v}}{\mbf{v}} + p_g \right]}  = 0 \text{ ,}\\
+\label{eqn:euler3} \pd{E}{t} + \diverge{\left[ \left(E + p_g \right)\mbf{v}\right]}  = 0 \text{ ,}
+\end{gather}
+where the energy density is defined as
+\begin{gather}
+  \label{eqn:energy} E = \frac{p_g}{\gamma - 1} + \frac{\rho v^2}{2}\text{ ,}
+\end{gather}
+$v^2 = v_n^2 + \mbf{v}_{t}^2$, and the gas constant $\gamma$ is the ratio of specific heats.  The one-dimensional quasi-linear form of the Euler equations is 
+\begin{gather}
+\label{eqn:euler_qlin}
+\pdbf{U}{t} + \mbf{A}(\mbf{U})\pdbf{U}{x} = 0.
+\end{gather}
+The Jacobian of $\mbf{A}(\mbf{U})$ must have three real and distinct eigenvalues and a set of three linearly independent right eigenvectors because the system is strictly-hyperbolic.  If the eigenvalues are arranged such that $\lambda_1 < \lambda_2 < \lambda_3$, then $\lambda_1  \text{ and } \lambda_3$ correspond to nonlinear waves, and $\lambda_2$ is a linear wave.  The nonlinear waves can be either a shock (i.e., discontinuous wave) or rarefaction (i.e. smooth wave).  The linear wave is \gls{cd} that carries a carries a single jump in density and satisfies the jump conditions given by Equation~\ref{eqn:rh_jump}.  The three eigenvalues and their associated waves are:
+\begin{align*}
+\lambda_3 &= v_n + a : \text{fast rarefaction or shock,} \\
+\lambda_2 &= v_n \phantom{+ a} : \text{contact discontinuity, \text{ and }} \\
+\lambda_1 &= v_n - a : \text{slow rarefaction or shock,} 
+\end{align*}
+where $a = \sqrt{\gamma p_g/\rho}$ is the speed of sound.  
+
+%-----------------------------------------------------------------
+% Euler Riemann states
+%-----------------------------------------------------------------
+\begin{figure}[htbp]
+\begin{center}
+\tikzsetnextfilename{euler_rstates}
+\input{fig/euler_rstates.tex}
+\end{center}
+\caption{Possible structure of the solution to a Riemann problem for the Euler equations the $x$-$t$ plane.  The solution consists of a rarefaction wave to the left of contact discontinuity, and a shock wave to the right.}
+\label{fig:euler_rstates}
+\end{figure}
+
+A possible structure of the self-similar solution $\mbf{U}(x,t)$ to the Euler equations is shown in Figure~\ref{fig:euler_rstates}.  Three waves: a fast shock, a contact discontinuity, and a slow rarefaction, separate the four constant states: the initial left, left intermediate, right intermediate, and initial right.  The state, $\mbf{U}^*_{lfan}$, inside the rarefaction wave is not constant.  It connects the states $\mbf{U}_l$ and $\mbf{U}^*_l$ through a smooth transition.  The characteristic speed at the head of a rarefaction wave is $v_{nu} \pm a_u$.  At the tail of a rarefaction wave, the characteristic speed is $v_{nd} \pm a_d$.  The plus (minus) sign refers to right-going (left-going) waves.  The speed of the contact discontinuity is given by the characteristic speed $\lambda_2$.  The shock speeds are derived from the Rankine-Hugonoit jump conditions, Equation~\ref{eqn:rh_jump}.  The speeds of a right-going shock, $S_r$, and left-going shock, $S_l$, are
+\begin{gather*}
+S_r = v_{nr} + a_r \sqrt{\left(\frac{\gamma + 1}{2\gamma}\right) \left(\frac{p_g^*}{p_{gr}}\right) + \left(\frac{\gamma - 1}{2\gamma}\right)}, \\
+S_{l} = v_{nl} - a_l \sqrt{\left(\frac{\gamma + 1}{2\gamma}\right) \left(\frac{p_g^*}{p_{gl}}\right) + \left(\frac{\gamma - 1}{2\gamma}\right)},
+\end{gather*}
+where $p^*_{g} = p^*_{gl} = p^*_{gr}$, since the gas pressure is unchanged across a contact discontinuity.  The velocity at the head (tail) of a rarefaction wave is given by the corresponding characteristic speed in the upstream (downstream) state.  
+
+%-----------------------------------------------------------------
+% Riemann solvers
+%-----------------------------------------------------------------
+\subsection[Exact Riemann solvers]{Exact Riemann solver}
+\label{sec:hydro_exact_rsolvers}
+
+The solution to a Riemann problem consists of $n$ waves separating $n+1$ states, and it is found by determining the speed of each wave, and the jump associated with each wave.  Solving a Riemann problem for the one-dimensional Euler equations requires determining two unknown states, $\mbf{U}^*_l$ and $\mbf{U}^*_l$, and three wave speeds.  The exact solution is calculated by improving an initial guess for gas pressure in the intermediate states through an iterative procedure, e.g., Newton's method \citep{Toro:1999}.  The iteration is carried out until the jump condition for the normal velocity at the contact discontinuity, $[v^*_n] = 0$, is satisfied to the desired accuracy.  In practice, this is done by finding the root of the equation
+\begin{gather*}
+f(p^*_g,\mbf{U}_l,\mbf{U}_r) \equiv f_r(p_{gr},\mbf{U}_r) + f_l(p_{gl},\mbf{U}_l) + v_{nr} - v_{nl} = 0 \, ,
+\end{gather*}
+where $f_r$ ($f_l$) is a function connecting the initial right (left) state to the intermediate right (left) state.  The normal velocity in the intermediate states (Equation (4.9) of \citep{Toro:1999}) is 
+\begin{gather*}
+v^*_n = \half (v_{nr} + v_{nl}) + \half (f_r - f_l).
+\end{gather*}
+The functions $f_l$ and $f_r$ depend on the type of wave, i.e. shock or rarefaction.  If pressure increases across the wave, $p^*_d > p_{gu}$, then the wave is a shock, otherwise, the wave is a rarefaction.  The function $f_j$, for $j=l$ and $j=r$, (Equations (4.6) and (4.7) of \citep{Toro:1999}) is given by
+\begin{gather*}
+f_j(p_{gj},\mbf{U}_j) = 
+\begin{cases}
+(p^*_g - p_{gj})\left[ \frac{2}{\rho_j((\gamma +1)p^*_{g} + (\gamma -1)p_{gl})} \right]^{\half} 
+  %% \phantom{\frac{2a_j}{(p^*_g - 1)}\left[\left(\frac{p^*_g}{p_{gj}} \right)^{\frac{\gamma-1}{2\gamma}} - 1\right]} 
+  \;\;\;\; \text{if}\;\;\; p^*_g > p_{gj}, \\
+\frac{2a_j}{(p^*_g - 1)}\left[\left(\frac{p^*_g}{p_{gj}} \right)^{\frac{\gamma-1}{2\gamma}} - 1\right] 
+  %% \phantom{(p^*_g - p_{gj})\left[ \frac{2}{\rho_j((\gamma +1)p^*_{g} + (\gamma -1)p_{gl})} \right]^{\half}} 
+  \;\;\;\;\;\;\;\;\;\;\;\;\;\;\;\;\;\;\;\; \text{if}\;\;\; p^*_g \le p_{gj}. \\
+\end{cases}
+\end{gather*}
+where $j=l$ and $j=r$.  The densities $\rho_j$ for $j=l$ and $r$, in the left and right intermediate states are
+\begin{gather*}
+\rho^*_j = 
+\begin{cases}
+\rho_j\left[ \frac{\frac{p^*_g}{p_{gj}} + \frac{\gamma-1}{\gamma+1}}
+  {\frac{\gamma-1}{\gamma+1} \frac{p^*_g}{p_{gj}} + 1} \right] 
+  \;\;\;\; \text{if}\;\;\; p^*_g > p_{gj}, \\
+\rho_j\left( \frac{p^*_g}{p_{gj}} \right)^{\frac{1}{\gamma}}
+  \;\;\;\;\;\;\;\;\;\;\; \text{if}\;\;\; p^*_g \le p_{gj}. \\
+\end{cases}
+\end{gather*}
+If the solution contains a rarefaction wave then the states in the fan are needed to complete the solution.  The state in the rarefaction wave is  
+\begin{gather*}
+\rho = \rho_j \left[ \frac{2}{(\gamma+1)} \pm \frac{(\gamma-1)}{(\gamma+1)a_j}
+  \left(v_{nj} - \frac{x}{t}\right)\right]^{\frac{2}{\gamma - 1}}, \\
+v_{n} = \frac{2}{(\gamma+1)} \left[\frac{(\gamma-1)}{2}v_{nj} \pm a_j + \frac{x}{t}\right], \\ 
+p_{g} = p_{gj} \left[ \frac{2}{(\gamma+1)} \pm \frac{(\gamma-1)}{(\gamma+1)a_j}
+  \left(v_{nj} - \frac{x}{t}\right)\right]^{\frac{2\gamma}{\gamma - 1}}, 
+\end{gather*}
+for $j=l$ and $r$, and the plus (minus) sign corresponds to a left-going (right-going) wave.
+
+%-----------------------------------------------------------------
+% Exact solution to Sod shock tube
+%-----------------------------------------------------------------
+\begin{figure}[htbp]
+\begin{tabular}{ccc}
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_1}\input{fig/sod_1.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_2}\input{fig/sod_2.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_3}\input{fig/sod_3.tex}} 
+\end{tabular}
+\caption{Exact solution to Sod shock tube problem.  The head of the rarefaction is located at $x \approx 0.2$, and the tail is at $x \approx 0.45$.  The contact discontinuity is located at $x \approx 0.72$, and the shock is located $x \approx 0.95$.}
+\label{fig:euler_exact_sod}
+\end{figure}
+
+Shock tube problems in Gas Dynamics are an example of a Riemann problem for the Euler equations.  They are typically used for validation and benchmarking.  The problem consists two fluids are separated by a thin film at $x = 0.5$.  At time $t=0$, the film is removed and the fluids interact.  The exact solution to the Sod shock tube problem at time $t=0.25$ (\citep{Sod:1978}, test 1 in \citep{Toro:1999}), is shown in Figure~\ref{fig:euler_exact_sod}.  The initial left state is $\mbf{U}_l = (1.0,0.0,1.0)$ and the initial right state is $\mbf{U}_r = (0.125,0.0,0.1)$.  The problem was solved using our own implementation of the routine \emph{exact.f} provided in \citep{Toro:1999}.  Convergence is established when 
+\begin{gather}
+\frac{2|p_g^{n+1} - p_g^{n}|}{p_g^{n+1} + p_g^{n}} < 10^{-6},
+\end{gather}
+where $p_g$ is the gas pressure in the intermediate states and $n$ is the number of iterations.  The solution consists of a left rarefaction, contact discontinuity, and right shock.  
+
+Convergence to the exact solution is not guaranteed since obtaining it requires Newton iteration.  In flow simulations, approximate Riemann solvers maintain a similar level of accuracy as the exact solver, while reducing the computational cost since no iterations are required.  Three different approximate Riemann solvers for the Euler equations are described in the following sections.
+
+%-----------------------------------------------------------------
+% Riemann solvers
+%-----------------------------------------------------------------
+\subsection[Approximate Riemann solvers]{Approximate Riemann solvers}
+\label{sec:hydro_approx_rsolvers}
+
+%-----------------------------------------------------------------
+% HLLE
+%-----------------------------------------------------------------
+\subsubsection[HLLE solver]{HLLE solver}
+\label{sec:hlle}
+
+The Harden-Lax-van Leer-Einfeldt (HLLE) \citep{Einfeldt:1988} solver assumes a two wave solution with a single intermediate state, see Figure~\ref{fig:inter_rstates}.  The intermediate state is approximated as the integral average over the Riemann fan: $[x_l,x_r] \times [0,t]$, i.e. the region between the left and right wave in Figure~\ref{fig:inter_rstates}.   The integral form of the conservation laws are
+\begin{gather}
+\label{eqn:int_cons}
+\int_{x_l}^{x_r} \mbf{U}(x,t_f) dx - \int_{x_l}^{x_r} \mbf{U}(x,0) dx + \int_{0}^{t} \mbf{F}(\mbf{U}(x_r,t')) dt'
+- \int_{0}^{t} \mbf{F}(\mbf{U}(x_l,t')) dt' = 0.
+\end{gather}
+Applying \eqref{eqn:int_cons} over $[x_l,x_r] \times [0,t]$, gives the HLLE intermediate state as
+\begin{gather}
+\label{eqn:hlle_state}
+\mbf{U}^* = \frac{S_r \mbf{U}_r - S_l \mbf{U}_l + \mbf{F}_r + \mbf{F}_l }{S_r - S_l}.
+\end{gather}
+The HLLE fluxes 
+\begin{gather}
+\label{eqn:hlle_flux}
+\mbf{F}^* = \frac{S_r \mbf{F}_l - S_l \mbf{F}_r + S_r S_l (\mbf{U}_l - \mbf{U}_r) }{S_r - S_l},
+\end{gather}
+are found by applying \eqref{eqn:int_cons} over the left ($[x_l,0] \times [0,t]$) or right ($[0,x_r] \times [0,t]$) side of the Riemann fan, and substituting \eqref{eqn:hlle_state} into the result (see Appendix \ref{app:hll_flux}).  The HLLE states are defined by
+\begin{gather}
+\label{eqn:hlle_states}
+\mbf{U}(x,t) = 
+\begin{cases}
+\mbf{U}_l   & \text{if}\;\;\; 0 < S_l, \\
+\mbf{U}^*   & \text{if}\;\;\; S_l \le 0 \le S_r, \\
+\mbf{U}_r   & \text{if}\;\;\; S_r < 0. \\
+\end{cases}
+\end{gather}
+The HLLE interface fluxes are defined 
+\begin{gather}
+\label{eqn:hlle_fluxes}
+\mbf{F}(x,t) = 
+\begin{cases}
+\mbf{F}_l   & \text{if}\;\;\; 0 < S_l, \\
+\mbf{F}^*   & \text{if}\;\;\; S_l \le 0 \le S_r, \\
+\mbf{F}_r   & \text{if}\;\;\; S_r < 0. \\
+\end{cases}
+\end{gather}
+
+The method is very robust because it is positivity preserving, $\rho > 0$, and $p_g > 0$ \citep{Einfeldt:1991}.  However, as described in the next section, the HLLE approximate Riemann solver is diffuse because it neglects the difference in density across the contact discontinuity.  The alternative approach of \citet{Toro:1994} restores the contact discontinuity.  It is referred to as the HLLC method, where C stands for \emph{Contact}.  
+
+%-----------------------------------------------------------------
+% HLLC
+%-----------------------------------------------------------------
+\subsubsection[HLLC solver]{HLLC solver}
+\label{sec:hllc}
+
+%-----------------------------------------------------------------
+% HLLC Riemann states
+%-----------------------------------------------------------------
+\begin{figure}[htbp]
+\begin{center}
+\tikzsetnextfilename{hllc_rstates}
+\input{fig/hllc_rstates.tex}
+\end{center}
+\caption{Restoration of the contact discontinuity in the HLLC approximate Riemann solver.}
+\label{fig:hllc_rstates}
+\end{figure}
+
+The approximate solution of the HLLC solver in the $x$-$t$ plane is shown in Figure \ref{fig:hllc_rstates}.  The intermediate states are calculated by approximating the integral over the appropriate Riemann fan and requiring that the Rankine-Hugoniot jump conditions, $v_{nr}^* = v_{nl}^*$, $\mbf{v}_{tr}^* = \mbf{v}_{tl}^*$, and $p_{gr}^* = p_{gl}^*$, are satisfied across the contact discontinuity.  The intermediate states are (Equation (10.33) of \citep{Toro:1999})
+\[
+\mbf{U}_j^* = 
+\rho_j \left( \frac{S_j - v_{nj}}{S_j - v_n^*} \right)
+\left[\begin{array}{@{}ccc}
+1 \\
+v_n \\
+\mbf{v}_{t j} \\
+\frac{E_j}{\rho_j}  + (S_m - v_{nj}) \left[ S_m + \frac{p_{gj}}{\rho_j(S_j - v_{nj})} \right]  \\
+\end{array}\right] \text{ ,} 
+\]
+where $j=l$ and $j=r$.  The HLLC states are
+\begin{gather}
+\label{eqn:hllc_states}
+\mbf{U}(x,t) = 
+\begin{cases}
+\mbf{U}_l   & \text{if}\;\;\; 0 < S_l, \\
+\mbf{U}_l^*   & \text{if}\;\;\; S_l \le 0 \le S_m, \\
+\mbf{U}_r^*   & \text{if}\;\;\; S_m \le 0 \le S_r, \\
+\mbf{U}_r   & \text{if}\;\;\; S_r < 0. \\
+\end{cases}
+\end{gather}
+The HLLC fluxes can then be derived with the procedure given in Appendix~\ref{app:hll_flux}.  They are 
+\begin{gather}
+\label{eqn:hllc_flux}
+\mbf{F}(x,t) = 
+\begin{cases}
+\mbf{F}_l   \phantom{= \mbf{F}_l  + S_l (\mbf{U_l^*} - \mbf{U_l}} & \text{if}\;\;\; 0 < S_l, \\
+\mbf{F}_l^* = \mbf{F}_l  + S_l (\mbf{U}_l^* - \mbf{U}_l) & \text{if}\;\;\; S_l \le 0 \le S_m, \\
+\mbf{F}_r^* = \mbf{F}_r  + S_r (\mbf{U}_r^* - \mbf{U}_r)  & \text{if}\;\;\; S_m \le 0 \le S_r, \\
+\mbf{F}_r  \phantom{= \mbf{F}_r  + S_r (\mbf{U_r^*} - \mbf{U_r}} & \text{if}\;\;\; S_r < 0. \\
+\end{cases}
+\end{gather}
+
+Both the HLLE and HLLC methods depend on the approximations of the fastest (slowest) wave speed $S_r$ ($S_L$).  \citet{Davis:1988} used wave speeds of 
+\begin{gather}
+\label{eqn:wave_spd_davis}
+S_l = \min \{\lambda_1(\mbf{U}_l),\lambda_1(\mbf{U}_r)\}, \text{ and }
+S_r = \max \{\lambda_n(\mbf{U}_l),\lambda_n(\mbf{U}_r)\},
+\end{gather} 
+where $\lambda_1$ ($\lambda_n$) is the smallest (largest) eigenvalue of \eqref{eqn:nonlinear_sys}.  \citet{Einfeldt:1991} used 
+\begin{gather}
+\label{eqn:wave_spd_einfeldt}
+S_l = \min \{\lambda_1(\mbf{U}_l),\lambda_1(\mbf{U}_{\text{Roe}})\}, \text{ and }
+S_r = \max \{\lambda_n(\mbf{U}_r),\lambda_n(\mbf{U}_{\text{Roe}})\},
+\end{gather} 
+where $\lambda_i(\mbf{U}_{\text{Roe}})$ is an eigenvalue of the Roe matrix, see Section~\ref{sec:roe_solver}.
+
+The middle wave speed, $S_m$, needs to be approximated in the HLLC solver.  \citet{Batten:1997} argued that the middle wave speed should be determined using only  \eqref{eqn:wave_spd_davis} or \eqref{eqn:wave_spd_einfeldt}, and the initial states.  They gave the speed as
+\begin{gather}
+\label{eqn:wave_spd_batten}
+S_m = \frac{(S_r - \vnr)\rho_r \vnr - (S_l - \vnl)\rho_l \vnl - p_{gr} + p_{gl} }
+{(S_r - \vnr)\rho_r  - (S_l - \vnl)\rho_l}.
+\end{gather}     
+\citet{Toro:1994} suggested an alternative method of determining the wave speeds by first estimating the pressure and velocity in the intermediate state according to  
+\begin{gather}
+\label{eqn:wave_spd_toro}
+S_l = \vnl - a_l q_l \text{ , }\;\;\;\; S_m = v_n^* \text{ , }\;\;\;\; S_r = \vnr - a_r q_r \text{ , }
+\end{gather}
+where
+\begin{gather}
+\label{eqn:wave_spd_toro2}
+q_j = 
+\begin{cases}
+1 & \text{ if }\;\;\; p_g^* \le p_{gj}, \\ 
+\left[ 1 + \frac{\gamma + 1}{2\gamma} \left( \frac{p^*_g}{p_{gj}} - 1 \right) \right]^{\frac{1}{2}} & 
+\text{ if }\;\;\; p_g^* > p_{gj},
+\end{cases}
+\end{gather}
+for $j=l$ and $j=r$.
+
+%-----------------------------------------------------------------
+% Isolated CD HLLE, HLLC, Roe
+%-----------------------------------------------------------------
+\begin{figure}[htbp]
+\begin{tabular}{cc}
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{toro7_hlle_1}\input{fig/toro7_hlle_1.tex}} &
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{toro7_hllc_1}\input{fig/toro7_hllc_1.tex}} 
+%% \resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{toro7_roe_1}\input{fig/toro7_roe_1.tex}} 
+\end{tabular}
+\caption{HLLE (left), and HLLC (right) approximate solutions for a slow moving contact discontinuity.  Athena \citep{AthenaSite} was used to compute the approximate solutions.  The exact solution was computed with code written for this dissertation: \protect\gitrepo.}
+\label{fig:euler_toro7}
+\end{figure}
+
+The two-state approximation of the HLLC method is able to resolve an isolated stationary CD exactly.  In the case of a slow moving CD, the HLLC method is less diffusive than the HLLE method.  This can be demonstrated by considering a Riemann problem for the Euler equations with initial conditions (test 7 of \citep{Toro:1999})
+\begin{gather}
+\begin{split}
+\label{eqn:init_toro7}
+(\rho_l,\vnl,\pgl) = (1.4,0.1,1.0), \\
+(\rho_r,\vnr,\pgr) = (1.0,0.1,1.0).
+\end{split}
+\end{gather}
+The exact solution to \eqref{eqn:init_toro7}, shown with a solid black line in Figure~\ref{fig:euler_toro7}, consists of one CD moving slowly to the right.  The solution approximated with HLLE (HLLC) fluxes is shown with dotted red lines in the left (right) panel of Figure~\ref{fig:euler_toro7}.  The results were obtained using a uniform grid of 128 cells and the van Leer (VL) integrator of \citet{Stone:2009}.  The interface states were constructed using piece-constant (i.e. first order) interpolation.  The HLLD approximate Riemann solver of \citet{Miyoshi:2005}, see Section~\ref{sec:hlld}, is an magnetohydrodynamic extension of the HLLC solver that resolves isolated discontinuities with the same level of accuracy as the HLLC solver..    
+
+%-----------------------------------------------------------------
+% Roe's solver
+%-----------------------------------------------------------------
+\subsubsection[Roe solver]{Roe solver}
+\label{sec:roe_solver}
+
+The Riemann solver of \citet{Roe:1981} replaces the nonlinear Jacobian in \eqref{eqn:euler_qlin}, $\mbf{A} (\mbf{U})$, with a linear approximation, $\tilde{\mbf{A}} (\mbf{U}_{\text{Roe}})$, where $\mbf{U}_{\text{Roe}}$ is a matrix of averaged state variables.  The linearized equation
+\begin{gather}
+\label{eqn:euler_linear}
+\pdbf{U}{t} + \tilde{\mbf{A}} \pdbf{U}{x} = 0.
+\end{gather}
+of the approximated Riemann problem is then solved exactly.  The linearized Jacobian is constrained to be hyperbolic, consistent with the nonlinear Jacobian of the original problem, i.e., it must equal the nonlinear Jacobian when the left and right states are equal, and it must retain conservation across discontinuities.  The interface flux is built from the results of Section~\ref{sec:lin_sys}.  It is given as
+\begin{gather}
+\label{eqn:roe_flux} 
+\mbf{F}_{\text{Roe}} = \frac{1}{2}\left( \mbf{F}_l + \mbf{F}_r - \sum_{i=1}^n \tilde{\alpha}_i | \tilde{\lambda}_i | \tilde{\mbf{r}}^i \right),
+\end{gather}
+where $\tilde{\alpha}_i = \tilde{\mbf{l}}_i \cdot (\mbf{U}_l - \mbf{U}_r)$ is the wave amplitude, $\tilde{\lambda}_i$ is the wave speed, $\tilde{\mbf{l}}$ and $\tilde{\mbf{r}}$ are the left and right eigenvectors respectively.  The so-called Roe-averaged state variables are
+\begin{gather}
+\begin{split}
+\tilde{\rho} = \sqrt{\rho_l \rho_r}, \\
+\tilde{v}_n  = \frac{\sqrt{\rho_l} \vnl + \sqrt{\rho_r} \vnr}{\sqrt{\rho_l} + \sqrt{\rho_r}}, \\
+\tilde{\mbf{v}}_{t}  = \frac{\sqrt{\rho_l} \vtl + \sqrt{\rho_r} \vtr}{\sqrt{\rho_l} + \sqrt{\rho_r}}, \\
+\tilde{H}  = \frac{\sqrt{\rho_l} H_l + \sqrt{\rho_r} H_r}{\sqrt{\rho_l} + \sqrt{\rho_r}}, \\
+\tilde{a} = \left[ (\gamma- 1) \left( \tilde{H} - \frac{\tilde{v}^2}{2}  \right)\right]^{\frac{1}{2}}, 
+\end{split}
+\end{gather}
+where $\tilde{v}^2 = \tilde{v}_n^2 + \tilde{\mbf{v}}_{t}^2$, and $H_j = (E_j + p_{gj})/\rho$ is the total enthalpy for $j=l$ and $j=r$.  The eigenvalues of the Roe matrix are
+\begin{gather}
+\tilde{\lambda}_1 = \tilde{v}_n - \tilde{a} \text{, }\quad 
+\tilde{\lambda}_2 = \tilde{\lambda}_3 = \tilde{\lambda}_4 = \tilde{v}_n \text{, }\quad 
+\tilde{\lambda}_5 = \tilde{v}_n + \tilde{a} \text{. } 
+\end{gather}
+The right eigenvectors are the columns of the matrix
+\begin{gather}
+\tilde{\mbf{R}} = 
+\begin{bmatrix}
+1  & 0 & 0 & 1 & 1 \\
+\tilde{v}_n - \tilde{a} & 0 & 0 & \tilde{v}_n & \tilde{v}_n + \tilde{a} \\
+\tilde{v}_{t1} & 1 & 0 & \tilde{v}_{t1}  & \tilde{v}_{t1} \\
+\tilde{v}_{t2} & 0 & 1 & \tilde{v}_{t2} & \tilde{v}_{t2} \\
+\tilde{H} - \tilde{v}_n\tilde{a} & \tilde{v}_{t1} & \tilde{v}_{t2} & \frac{1}{2}\tilde{V}^2 & \tilde{H} + \tilde{v}_n\tilde{a} 
+\end{bmatrix} .
+\end{gather}
+The left eigenvectors are the rows of the matrix
+\begin{gather}
+\tilde{\mbf{L}} = 
+\begin{bmatrix}
+\left(\frac{\gamma_1}{2}\tilde{V}^2 + \tilde{v}_n\tilde{a}\right)/\left(2\tilde{a}^2\right)  & 
+-\left(\gamma_1\tilde{v}_n + \tilde{a}\right)/\left(2\tilde{a}^2\right) & 
+-\left(\gamma_1\tilde{v}_{t1}\right)/\left(2\tilde{a}^2\right) &  
+-\left(\gamma_1\tilde{v}_{t2}\right)/\left(2\tilde{a}^2\right) &  \gamma_1/\left(2\tilde{a}^2\right) \\
+-\tilde{v}_{t1} & 0 & 1 & 0 & 0 \\
+-\tilde{v}_{t2} & 0 & 0 & 1 & 0 \\
+1 - \gamma_1\tilde{V}^2/\left(2\tilde{a}^2\right)  & \gamma_1\tilde{v}_n/\tilde{a}^2 &
+\gamma_1\tilde{v}_{t1}/\tilde{a}^2 & \gamma_1\tilde{v}_{t2}/\tilde{a}^2 & -\gamma_1/\tilde{a}^2 \\
+\left(\frac{\gamma_1}{2}\tilde{V}^2 - \tilde{v}_n\tilde{a}\right)/\left(2\tilde{a}^2\right)  & 
+-\left(\gamma_1\tilde{v}_n - \tilde{a}\right)/\left(2\tilde{a}^2\right) & 
+-\left(\gamma_1\tilde{v}_{t1}\right)/\left(2\tilde{a}^2\right) &  
+-\left(\gamma_1\tilde{v}_{t2}\right)/\left(2\tilde{a}^2\right) &  \gamma_1/\left(2\tilde{a}^2\right) 
+\end{bmatrix} ,
+\end{gather}
+where $V^2 = v_n^2 + \mbf{v}_t^2$, and $\gamma_1 = \gamma - 1$.
+
+%-----------------------------------------------------------------
+% Sod shock tube
+%-----------------------------------------------------------------
+\subsubsection[Sod shock tube]{Sod shock tube}
+\label{sec:euler_tests}
+
+%-----------------------------------------------------------------
+% Sod shock tube HLLE, HLLC, Roe
+%-----------------------------------------------------------------
+\begin{figure}[htbp]
+\begin{tabular}{ccc}
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hlle_1_1}\input{fig/sod_hlle_1_1.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hlle_1_2}\input{fig/sod_hlle_1_2.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hlle_1_3}\input{fig/sod_hlle_1_3.tex}} \\
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hllc_1_1}\input{fig/sod_hllc_1_1.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hllc_1_2}\input{fig/sod_hllc_1_2.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hllc_1_3}\input{fig/sod_hllc_1_3.tex}} \\
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_roe_1_1}\input{fig/sod_roe_1_1.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_roe_1_2}\input{fig/sod_roe_1_2.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_roe_1_3}\input{fig/sod_roe_1_3.tex}} 
+\end{tabular}
+\caption{HLLE (Top row), HLLC (middle row), and Roe (bottom row) approximate solution to Sod shock tube problem computed using first-order piece-wise constant interpolation.  Athena \citep{AthenaSite} was used to compute the approximate solutions.  The exact solution was computed with code written for this dissertation available at: \protect\gitrepo.}
+\label{fig:euler_sod_1}
+\end{figure}
+
+A common test case for the Euler equations is the shock tube problem of \citet{Sod:1978}.  The exact solution at time $t=0.25$ is shown in Figure~\ref{fig:euler_exact_sod} for initial conditions
+\begin{gather}
+\begin{split}
+\label{eqn:init_sod}
+(\rho_l,\vnl,\pgl) = (1.0,0,1.0), \\
+(\rho_r,\vnr,\pgr) = (0.125,0,0.1).
+\end{split}
+\end{gather}
+The solution was approximated with the \gls{vl} integrator of \citet{Stone:2009} on a 128 cell grid.  The interface states were constructed using piece-wise constant interpolation.  The three flux schemes were used: HLLE, HLLC, and Roe.  The results, shown in Figure~\ref{fig:euler_sod_1}, indicate that all three schemes produce similar results, with the HLLE solver being more diffuse than the HLLC or Roe solver.  The Roe solver requires eigenvalue decomposition, which increases computation costs.  This makes the HLLC solver a better choice for most simulations.  These properties carry over to the MHD extensions of each of the schemes, and as such, influenced our choose of incorporating the new compound wave correction, see Chapter~\ref{chp:cwm}, into the HLLD solver instead of a Roe solver. 
+
+%----------------------------------------------------------------------------------------
+% Ideal MHD
+%----------------------------------------------------------------------------------------
+\section[Ideal magnetohydrodynamics]{Ideal magnetohydrodynamics}
+\label{sec:ideal_mhd}
+
+The ideal MHD equations are an approximate description of the interaction between plasma flowing in a region with a magnetic field.  They consist of the Euler equations of hydrodynamics and the magnetic induction equation, $\pdbf{B}{t} = \curl{\left( \crossproductbf{v}{B}\right)} + \eta\laplacebf{B}$, for which the divergence-free condition $\divergebf{B} = 0$ is satisfied.  The effects of resistivity, thermal conductivity, and viscosity are neglected.  The equations are
+\begin{gather}
+\label{eqn:mhd1} \pd{\rho}{t} + \diverge{\left(\rho\mbf{v}\right)} = 0 \text{ ,} \\
+\label{eqn:mhd2} \pd{(\rho \mbf{v})}{t} + \diverge{\left[ \outerproduct{\rho\mbf{v}}{\mbf{v}} + \left( p_g + \frac{B^2}{2}\right)\underline{\mbf{I}} - \outerproductbf{B}{B}\right]}  = 0 \text{ ,}\\
+\label{eqn:mhd3} \pd{E}{t} + \diverge{\left[ \left(E + p_g + \frac{B^2}{2}\right)\mbf{v} - \innerproduct{\mbf{v}}{\outerproductbf{B}{B}}\right]}  = 0 \text{ , and} \\
+\label{eqn:mhd4} \pdbf{B}{t} + \diverge{\left[ \outerproductbf{v}{B} - \outerproductbf{B}{v}\right]}  = 0 \text{ ,}
+\end{gather}
+where the energy density is defined as
+\begin{gather}
+  \label{eqn:energy} E = \frac{p_g}{\gamma - 1} + \frac{\rho v^2}{2} + \frac{B^2}{2}\text{ ,}
+\end{gather}
+the gas constant $\gamma$ is the ratio of specific heats, and $B$ is the magnitude of the magnetic field.  The units are chosen so that the speed of light $c$ and constant $4\pi$ do not appear in the equations.    
+
+In one dimension, with flow variation in the $x$-direction, the ideal MHD equations can be written in the form of a conservation law
+\begin{gather*}
+\pdbf{U}{t} + \pdbf{F}{x} = \mbf{0} \text{ ,}
+\end{gather*} 
+where the conservative state variables \mbf{U} and their respective fluxes \mbf{F} are
+\[
+\mbf{U} = 
+\left[\begin{array}{@{}ccc}
+\rho \\
+\rho v_n \\
+\rho \mbf{v}_{t} \\
+E \\
+\mbf{B}_{t} \\
+\end{array}\right] \text{ ,} 
+\quad
+\mbf{F} = 
+\left[\begin{array}{@{}ccc}
+\rho v_n \\
+\rho v_n^2 + p_g + B^2/2 - B_n^2 \\
+\rho v_n\mbf{v}_{t} - B_n\mbf{B}_{t} \\
+(E + p_g + B^2/2)v_n - (\mathbf{v}\cdot\mathbf{B})B_n \\
+v_n\mbf{B}_{t} - B_n\mbf{v}_{t} \\
+\end{array}\right] \text{ ,}
+\]
+and a normal ($x$) component is denoted with the subscript $n$ and tangential components are denoted with the subscript $t$.  The normal component of the magnetic field is treated as a parameter because it must be constant in order to satisfy the divergence-free condition of $\mbf{B}$, which is $\partial{B_n}/\partial{x} = 0$ in one dimension.
+
+%-----------------------------------------------------------------
+% Waves in ideal MHD
+%-----------------------------------------------------------------
+\subsection[Waves in ideal magnetohydrodynamics]{Waves in ideal magnetohydrodynamics}
+\label{sec:mhd_waves}
+
+The Jacobian matrix, $\mbf{J}(\mbf{U}) = \partial{\mbf{F}}/\partial{\mbf{U}}$, has real but not necessarily distinct eigenvalues in ideal MHD.  The ideal MHD system is called non strictly hyperbolic because it can have degenerate eigenvalues.  Each eigenvalue is associated with a wave that travels at the characteristic speed
+\begin{align*}
+v_n &: \text{contact or tangential discontinuity (entropy),} \\
+v_n \pm c_s &: \text{slow rarefaction or shock,} \\
+v_n \pm c_a &: \text{rotational discontinuity (Alfv{\'e}n), and} \\
+v_n \pm c_f &: \text{fast rarefaction or shock,} 
+\end{align*} 
+where $c_s$, $c_a$, $c_f$ are the slow, Alfv{\'e}n, and fast wave propagation speeds, respectively.  The sign in each equation indicates the direction of propagation.  The propagation speeds are
+\begin{gather*}
+ c^2_{f,s} = \frac{1}{2}\left[ a^2 + c_a^2 + c_{t}^2 \pm \sqrt{\left(a^2 + c_a^2 + c_{t}^2 \right)^2 - 4a^2c_a^2}\right] \text{ and }
+c^2_a = \frac{B_n^2}{\rho}\text{ ,}
+\end{gather*} 
+where $c^2_{t} = B_{t}^2/\rho$, $a^2 = \gamma p_g/\rho$, $c_{a}$ ($c_{t}$) is the Alfv{\'e}n speed normal (tangential) to the wave front, and $a$ is the speed of sound.  The plus (minus) sign corresponds to the fast (slow) propagation speed.  
+
+%-----------------------------------------------------------------
+% Shock classification
+%-----------------------------------------------------------------
+\subsection[Shock classification]{Shock classification}
+\label{sec:shock_class}
+
+In ideal MHD, a contact discontinuity (CD) has a discontinuous jump in density that occurs where the normal component of the magnetic field is nonzero and the velocity, gas pressure, and tangential components of the magnetic field are continuous. The heliopause and magnetopause are two astrophysical boundaries where plasma flows are separated by a density discontinuity.  If the normal component of the magnetic field is zero, the contact discontinuity is referred to as a tangential discontinuity.  For a tangential discontinuity, only the normal velocity and total pressure (gas plus magnetic pressure) are continuous \citep{Jeffrey:1966}. 
+
+Shocks are typed by comparing the pre-shock and post-shock velocities with the characteristic velocities in the respective states.  Numbers are assigned to the state according to the inequalities $4 < c_s < 3 < c_a < 2 < c_f < 1$.  If $|{v_n}| > c_f$, a state is referred to as superfast and denoted 1; if $|{v_n}| = c_f$, it is referred to as fast and denoted $1,2$; if $|{v_n}| < c_f$ it is referred to as subfast and denoted 2.  When $|{v_n}| = c_a$, it is referred to as an Alfv{\'e}n shock and denoted $2,3$.  The shock is referred to as superslow (3) if $|{v_n}| > c_s$, slow ($3,4$) if $|{v_n}| = c_s$, and subslow (4) if $|{v_n}| < c_s$.  Finally, the shock is classified as static if $|{v_n}| = 0$.  Shocks are then classified as an $i \rightarrow j$ type where $i$ is the upstream type and $j$ is the downstream type.  
+\begin{itemize}
+\item $1 \rightarrow 2$  \gls{fs} have compression and a increase in strength of the tangential magnetic field as the shock front is transversed: $B_{t1} < B_{t2}$.
+\item $3 \rightarrow 4$ \gls{ss} have compression and a decrease in strength of the tangential magnetic field as the shock front is transversed: $B_{t1} > B_{t2}$.
+\item $1 \rightarrow 2,3$ (switch-on) shocks have a tangential magnetic field that is zero upstream and nonzero downstream: $B_{t1} = 0$ and $B_{t2} \ne 0$.
+\item $2,3 \rightarrow 4$ (switch-off) shocks have a tangential magnetic field that is nonzero upstream and zero downstream: $B_{t1} \ne 0$ and $B_{t2} = 0$.
+\item $1 \rightarrow 3$, $1 \rightarrow 4$, $2 \rightarrow 3$ and $2 \rightarrow 4$ \gls{is} have a change in sign of the tangential magnetic field as the shock front is transversed: $B_{t1} < 0 < B_{t2}$ or $B_{t1} > 0 > B_{t2}$.
+\end{itemize}
+
+So-called regular waves only influence the orientation of the perpendicular magnetic field or its magnitude.  Fast and slow shocks alter the magnitude of the perpendicular magnetic field while rotational discontinuities alter their orientation.  A \gls{rd} propagates with a speed of $c_a$ and rotates the perpendicular magnetic field while the magnitude of the perpendicular magnetic field is equal on both sides of the discontinuity.  Expansion waves can also occur in ideal MHD.  The magnitude of the tangential magnetic field will decrease across \gls{fr}; across \gls{sr} it will increase.
+
+Intermediate shocks are over-compressive shocks that alter both the magnitude and orientation of the tangential magnetic field.  These shocks are classified as $1\rightarrow 3$, $1\rightarrow 4$, $2\rightarrow 4$, and $2\rightarrow 3$.  The $2\rightarrow 3$ class is called an Alfv{\'e}n shock and across it the tangential magnetic field rotates by 180\degree.  A switch-on shock ($1 \rightarrow 2,3$) corresponds to a pre-shock tangential magnetic field of zero and a non-zero post shock tangential magnetic field.  A switch-off shock ($2,3 \rightarrow 4$) occurs when the tangential magnetic field is zero post-shock.  
+
+%-----------------------------------------------------------------
+% Nonlinear Riemann solver
+%-----------------------------------------------------------------
+\subsection[Nonlinear Riemann solver]{Nonlinear Riemann solver}
+\label{sec:mhd_exact}
+
+Analytic solutions to problems of ideal MHD are generally not known.  However, highly accurate, to machine precision, solutions can be generated using a nonlinear solver \citep{Dai:1994a,Ryu:1995a,Torrilhon:2002}.  The exact solutions presented in this work were found using a nonlinear solver that is based on the method originally developed by \citet{Dai:1994a} and improved by \citet{Ryu:1995a} to correctly compute rarefaction waves.  
+
+%-----------------------------------------------------------------
+% Riemann states
+%-----------------------------------------------------------------
+\begin{figure}[htbp]
+\begin{center}
+\tikzsetnextfilename{mhd_rstates}
+\input{fig/mhd_rstates.tex}
+\end{center}
+\caption{Seven possible waves and/or discontinuities separating the eight possible regions, or states of the ideal MHD Riemann problem.  The initial contact discontinuity, i.e., the entropy wave, separates regions $\mbf{U}^*_{3l}$ and $\mbf{U}^*_{3r}$.}
+\label{fig:mhd_states}
+\end{figure}
+
+The exact solutions are composed of eight possible MHD states separated by seven wave fronts, as depicted in Figure \ref{fig:mhd_states}.  The transitions from one region to another through a discontinuity is controlled by the jump conditions associated with the discontinuity.  The Rankine-Hugoniot jump conditions for ideal MHD in Lagrangian mass coordinates, $dm = \rho dx$, are 
+\begin{align} 
+\label{eqn:jump1} W[V] &= -[v_n], \\ 
+\label{eqn:jump2} W[v_n] &= -[P - B_n^2], \\
+\label{eqn:jump3} W[\mbf{v}_{t}] &= -B_n[\mbf{B}_{t}], \\
+%% \label{eqn:jump4} W[v_z] &= -B_x[B_z], \\
+\label{eqn:jump5} W[V\mbf{B}_{t}] &= -B_n[\mbf{v}_{t}], \text{ and}\\
+%% \label{eqn:jump6} W[VB_z] &= -B_x[v_z],   \\
+\label{eqn:jump7} W[VE] &= [v_nP] - B_n[B_nv_n + \mbf{B}_{t}\cdot\mbf{v}_{t}],
+\end{align}
+where $P = p_g + \frac{1}{2}(B_n^2 + B_{t}^2)$ is the total pressure and $W = -(\rho v_n)_u = -(\rho v_n)_d$ is the Lagrangian velocity of the discontinuity and $V = 1/\rho$ \citep{Dai:1994a,Ryu:1995a}.  When moving in the $-x$ direction, the velocity $W$ is negative. Brackets are used to denote the difference between the upstream and downstream states for a quantity $Q$, i.e $[Q] = Q_u - Q_d$.  
+
+\citet{Dai:1994a} give the fast and slow shock speeds in mass coordinates as
+\begin{equation}
+\label{eqn:speed_fs} W_{f,s}^2 = \frac{1}{2(1 + S_0)}\left[(C_s^2 + C_f^2 + S_1^2) \pm \sqrt{(C_s^2 + C_f^2 + S_1^2)^2 - 4(1 + S_0)(C_s^2C_f^2 - S_2)}\right],
+\end{equation}
+where $C_f = \rho c_f$ and $C_s = \rho c_s$.  The quantities $S_0, S_1, S_2$ are given by \citet{Ryu:1995a} in terms of $B_{t}$ as
+\begin{align}
+\label{eqn:speed_coef1} S_0 &= -\half (\gamma - 1)\frac{[B_{t}]}{B_{t}}, \\
+\begin{split}
+\label{eqn:speed_coef2} S_1 &= \half \left\{ -(\gamma - 2) V C_{t}^2 \frac{[B_{t}]}{B_{t}} + 2C_0^2 - (\gamma - 4) V C_{t}^2 \right. \\
+& \;\;\;\; - \left. 2\gamma C_a^2 \vphantom{\frac{[B_{t}]}{B_{t}}} \right\} \frac{[B_{t}]}{B_{t}}\text{, and} 
+\end{split} \\
+\begin{split}
+\label{eqn:speed_coef3} S_2 &= \half \left\{ \frac{C_a^2 [B_{t}]^2}{V} + (\gamma + 2)C_{t}C_a^2[B_{t}] + VC_{t}^2C_a^2(\gamma + 1) \right.\\
+& \;\;\;\; + \left.(\gamma + 1)C_a^4  - 2C_0^2C_a^2 \vphantom{\frac{C_a^2 [B_{t}]^2}{V}}\right\} \frac{[B_{t}]}{B_{t}}, 
+\end{split}
+\end{align}
+where $C_0 = \rho a$ is the Lagrangian speed of sound, $C_a = \rho c_a$ is the Lagrangian Alfv{\'e}n speed, and $C_{t} = \sqrt{\rho B_{t}^2}$.  The quantities in equations \eqref{eqn:speed_coef1}-\eqref{eqn:speed_coef3} are for the state downstream of the shock.
+
+The relationships for fast rarefactions given by \citet{Ryu:1995a} are 
+\begin{gather}
+\label{eqn:rarefaction1} \dd{C_0}{B_{t}} = -\frac{\gamma + 1}{2} \sqrt{\rho} \frac{C_{t}C_s^2}{C_0(C_s^2 - C_a^2)} = \frac{\gamma + 1}{2} \sqrt{\rho} \frac{C_s^2(C_f^2 - C_a^2)}{C_a^2C_{t}C_0} = \frac{\gamma + 1}{2} \frac{\rho}{C_0} \dd{p_g}{B_{t}}, \\
+\label{eqn:rarefaction2} \dd{v_n}{B_{t}} = \mp \frac{1}{\sqrt{\rho}} \frac{C_{\perp}C_a^2}{C_f(C_s^2 - C_a^2)} = \pm \frac{C_f^2 - C_a^2}{\sqrt{\rho} C_{t}C_f} = \pm\frac{2}{\gamma + 1} \frac{C_0C_a^2}{C_s^2C_f}\frac{1}{\rho} \dd{C_0}{B_{t}}\text{, and} \\
+\label{eqn:rarefaction3} \frac{1}{\cos{\psi}} \dd{v_{t1}}{B_{t}} = \frac{1}{\sin{\psi}} \dd{v_{t2}}{B_{t}} = \mp \frac{1}{\sqrt{\rho}} \frac{C_a}{C_f},
+\end{gather}
+where the upper and lower signs refer to right- and left-going waves, respectively.  The rotation angle is defined by $\tan{\psi} = B_z/B_y$.
+
+For slow rarefactions, replace the fast speed ($C_f$) with the slow speed ($C_s$) and the slow speed ($C_s$) with the fast speed ($C_f$) in Equations~\eqref{eqn:rarefaction1}-\eqref{eqn:rarefaction3}.  
+
+An initial guess for the solution in the six interior regions shown in Figure~\ref{fig:mhd_states} is improved iteratively until the jump conditions of the initial contact or tangential discontinuity are satisfied to within a desired accuracy.  We have found a very high rate of convergence using the intermediate states approximated using the HLLD method for the initial guess. In practice, we use a relaxation factor and apply damping to speed up convergence. 
+
+%-----------------------------------------------------------------
+% HLLD approximate Riemann solver
+%-----------------------------------------------------------------
+\subsection[HLLD approximate Riemann solver]{HLLD approximate Riemann solver}
+\label{sec:hlld}
+
+%-----------------------------------------------------------------
+% HLLD Riemann states
+%-----------------------------------------------------------------
+\begin{figure}[htbp]
+\begin{center}
+\tikzsetnextfilename{hlld_rstates}
+\input{fig/hlld_rstates.tex}
+\end{center}
+\caption{Intermediate states and waves used in the HLLD approximate Riemann solver.}
+\label{fig:hlld_rstates}
+\end{figure}
+
+An MHD extension of the HLLC scheme for the Euler equations (see Section~\ref{sec:hllc}) capable of resolving all isolated linear discontinuities of ideal MHD, i.e. RDs and CDs was developed by \citet{Miyoshi:2005}.  They referred to the scheme as HLLD, where the D stands for \emph{discontinuities}.  The HLLD scheme assumes a six-state solution separated by five waves as depicted in Figure~\ref{fig:hlld_rstates}.  Two nonlinear waves, i.e., shocks and rarefactions, separate the left and right initial states from the intermediate states in the Riemann fan, i.e., $\mbf{U}_{l}^*$, $\mbf{U}_{2l}^*$, $\mbf{U}_{2r}^*$, and $\mbf{U}_{r}^*$.  The four intermediate states are separated by two RDs with velocities, $S^*_l$, $S^*_r$, and one CD with velocity, $S_m$.  The one-dimensional wave speeds and intermediate states of \citep{Miyoshi:2005} have been modified for general coordinates, with $v_n = \mbf{v}\cdot\mbf{n}$, and $B_n = \mbf{B}\cdot\mbf{n}$, where  \mbf{n} is a normal vector with unit length.  
+
+The velocity of the CD, $S_m$, is estimated with the HLL average given by \eqref{eqn:wave_spd_batten}, except gas pressure, $p_g$, is replaced with total pressure, $p_t$, and it becomes  
+\begin{gather}
+\label{eqn:hlld_sm}
+S_m = \frac{(S_r - \vnr)\rho_r \vnr - (S_l - \vnl)\rho_l \vnl - p_{tr} + p_{tl} }
+{(S_r - \vnr)\rho_r  - (S_l - \vnl)\rho_l}.
+\end{gather}     
+The intermediate states are approximated by solving the jump conditions across each wave.  Since the total pressure is conserved across the linear discontinuities in ideal MHD, the total pressure is constant throughout the Riemann fan.  It is given as 
+\begin{gather}
+\label{eqn:ptlr}
+p_{t}^* = p_{tj}^* = p_{tj} + \rho_j (S_j - v_{nj})(S_m - v_{nj})
+\end{gather}
+for $j=l$ or $j=r$.  Substituting \eqref{eqn:hlld_sm} into \eqref{eqn:ptlr} and taking the averaging over the left and right states yields the explicit expression for total pressure throughout the Riemann fan:
+\begin{gather}
+\label{eqn:hlld_pt1}
+p^*_{t} = \frac{(S_r - \vnr)\rho_r p_{tl} - (S_l - \vnl)\rho_l p_{tr} 
+          + \rho_r\rho_l(S_r - \vnr)(S_l - \vnl)(\vnr - \vnl)}{(S_r - \vnr)\rho_r - (S_l - \vnl)\rho_l}.
+\end{gather} 
+ The states downstream of the fast waves, $\mbf{U}^*_j$ for $j=l$ and $j=r$ of Figure~\ref{fig:hlld_rstates}, are given in one-dimension by Eqs (41)-(47) of \citep{Miyoshi:2005}, written for general coordinates: they are
+\begin{gather}
+\label{eqn:hlld_d1}
+\rho^*_j = \rho_j \frac{S_j - v_{nj}}{S_j - S_m} , \\
+\label{eqn:hlld_v1}
+\mbf{v}^*_{j} = \mbf{v}_{j} + \frac{\left(S_j - S_m\right)\left(p_{t}^* - p_{tj}\right)\mbf{n} 
+  - B_n\mbf{B}_{j} \left(S_m - v_{nj}\right) }
+               {\rho_j(S_j - v_{nj})(S_j - S_m) - B_n^2} , \\
+\label{eqn:hlld_b1}
+\mbf{B}^*_{j} = \frac{\mbf{B}_{j} \left(\rho_j(S_j - v_{nj})^2 - B_n^2\right) 
+  - B_n\left(p_{t}^* - p_{tj}\right)\mbf{n}}
+                {\rho_j(S_j - v_{nj})(S_j - S_m) - B_n^2} , \\
+\label{eqn:hlld_en1}
+E^*_j = \frac{(S_j - v_{nj})E_j - p_{tj}v_{nj} + p^*_{t}S_m + B_n(\mbf{v}_{j}\cdot\mbf{B}_{j} 
+        - \mbf{v}^*_{j}\cdot\mbf{B}^*_{j})}{S_j - S_m} .
+\end{gather}
+If $\mbf{n} = (1,0,0)$, $v_x = S_m$, $B_x = B_n$, \eqref{eqn:hlld_v1} and \eqref{eqn:hlld_b1} reduce to (44)-(47) of \citep{Miyoshi:2005}, given as  
+\begin{gather*}
+v^*_{yj} = v_{yj} -B_x B_{yj} \frac{S_m - v_{nj} }
+               {\rho_j(S_j - v_{nj})(S_j - S_m) - B_x^2} , \\
+v^*_{zj} = v_{zj} - B_x B_{zj} \frac{S_m - v_{nj} }
+               {\rho_j(S_j - v_{nj})(S_j - S_m) - B_x^2} , \\
+B^*_{yj} = B_{yj} \frac{\rho_j(S_j - v_{nj})^2 - B_x^2} 
+                {\rho_j(S_j - v_{nj})(S_j - S_m) - B_x^2} , \text{ and }\\
+B^*_{zj} = B_{zj} \frac{ \rho_j(S_j - v_{nj})^2 - B_x^2} 
+                {\rho_j(S_j - v_{nj})(S_j - S_m) - B_x^2}. 
+\end{gather*}
+
+The states downstream of the rotational discontinuity, $\mbf{U}^*_{2j}$, of Figure~\ref{fig:hlld_rstates}, can be found in terms of the initial left state and $\mbf{U}^*_j$.  The density, normal velocity, and total pressure are 
+\begin{gather}
+\label{eqn:hlld_d2}
+\rho^*_{2j} = \rho^*_j , \\
+\label{eqn:hlld_vn2}
+v^*_{n2j} = v^*_{nj} , \\
+\label{eqn:hlld_pt2}
+p^*_{t2j} = p^*_{tj} ,
+\end{gather}
+because they are constant across the rotational discontinuity.  The Alfv{\'e}n speeds of the left and right rotational discontinuities are    
+\begin{gather}
+\label{eqn:hlld_rd_spd}
+S^*_l = S_l - \frac{|B_n|}{\sqrt{\rho^*_l}} \text{ and}\;\;\;\; S^*_r = S_r + \frac{|B_n|}{\sqrt{\rho^*_r}}. 
+\end{gather}
+The description of the HLLD intermediate states is completed by solving for $\mbf{v}^*_{m} = \mbf{v}^*_{2l} = \mbf{v}^*_{2r}$ and $\mbf{B}^*_{m} = \mbf{B}^*_{2l} = \mbf{B}^*_{2r}$.  This is done using the integral conversation law over the Riemann fan $(S_l \delta t, S_r \delta t) \times (0, \delta t)$ (Eq. (58) of \citep{Miyoshi:2005}).  They are given as  
+\begin{gather}
+\label{eqn:hlld_vt2}
+\mbf{v}^*_{m} = \frac{\sqrt{\rho^*_l}\vnl^* + \sqrt{\rho^*_r}\vnr^* + (\mbf{B}_r^* - \mbf{B}_l^*)\text{sign}(B_n)}
+                {\sqrt{\rho^*_l} + \sqrt{\rho^*_r}} , \\               
+\label{eqn:hlld_bt2}
+\mbf{B}^*_{m} = = \frac{\sqrt{\rho^*_l}\mbf{B}_r^* + \sqrt{\rho^*_r}\mbf{B}_l^* 
+                + \sqrt{\rho^*_l\rho^*_r}(\mbf{v}_r^* - \mbf{v}_l^*)\text{sign}(B_n)}
+                {\sqrt{\rho^*_l} + \sqrt{\rho^*_r}} \text{, and}\\               
+\label{eqn:hlld_en2}
+E^*_{2j} = E^*_j \mp  \sqrt{\rho^*_j}(\mbf{v}^*_{j}\cdot\mbf{B}^*_{j} 
+        - \mbf{v}^*_{2j}\cdot\mbf{B}^*_{2j})\text{sign}(B_n) ,
+\end{gather}
+where the minus (plus) sign corresponds to $j=l$ ($j=r$).  The HLLD fluxes are found by applying the integral conservation laws over the left half or right half of the Riemann fan, $(S_l\delta t, 0)\times (0,\delta t)$ or $(0,S_r\delta t)\times (0,\delta t)$, see Appendix~\ref{app:hll_flux}.  The fluxes are given as
+\begin{gather}
+\label{eqn:hlld_flux}
+\mbf{F}(x,t) = 
+\begin{cases}
+\mbf{F}_l   \phantom{= \mbf{F}_l  + S_l (\mbf{U_l^*} - \mbf{U_l}} & \text{if}\;\;\; 0 < S_l, \\
+\mbf{F}_l^* = \mbf{F}_l  + S_l (\mbf{U}_l^* - \mbf{U}_l) & \text{if}\;\;\; S_l \le 0 \le S^*_l, \\
+\mbf{F}_{2l}^* = \mbf{F}^*_l  + S^*_l (\mbf{U}_{2l}^* - \mbf{U}^*_l) & \text{if}\;\;\; S^*_l \le 0 \le S_m, \\
+\mbf{F}_{2r}^* = \mbf{F}^*_r  + S^*_r (\mbf{U}_{2r}^* - \mbf{U}^*_r)  & \text{if}\;\;\; S_m \le 0 \le S^*_r, \\
+\mbf{F}_r^* = \mbf{F}_r  + S_r (\mbf{U}_r^* - \mbf{U}_r)  & \text{if}\;\;\; S^*_r \le 0 \le S_r, \\
+\mbf{F}_r  \phantom{= \mbf{F}_r  + S_r (\mbf{U_r^*} - \mbf{U_r}} & \text{if}\;\;\; S_r < 0. \\
+\end{cases}
+\end{gather}
+
+The HLLD method is robust because it is positivity preserving and it is less computationally expensive than schemes such as Roe's that require eigenvalue decomposition.  Results from MHD shock tube problems solved using the HLLD fluxes are given in Sections~\ref{sec:riemann_mhd}-\ref{sec:nonuniform_converge}.  However, scheme produces compound waves for coplanar and near coplanar cases as demonstrated in Sections~\ref{sec:riemann_mhd}-\ref{sec:nonuniform_converge}, an issue all approximate Riemann solvers suffer from.  In Chapter \ref{chp:cwm}, a modification to the HLLD fluxes that removes compound waves from the solution to coplanar and near coplanar Riemann problems of ideal is described.  

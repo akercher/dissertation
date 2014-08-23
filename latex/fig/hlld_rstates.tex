@@ -1,0 +1,33 @@
+%----------------------------------------------------------------------------------------
+% hlld_rstates.tex
+%----------------------------------------------------------------------------------------
+
+\begin{tikzpicture}[scale = {0.0125\linewidth},inner sep = 1pt]
+%% \begin{tikzpicture}[scale = {0.015\linewidth},inner sep = 1pt]
+%% \tikzstyle{every node} = [draw,circle,fill=gray!30];
+%% \draw (-1.5,0.0) circle (0.8);
+%% \draw[<->,line width=1pt] (0,1) node[right]{\;$t$}|-(1,0) node[below]{$m$};
+\draw[line width=1pt] (0,0.7) node[left]{$t$}|-(0.7,0) node[below]{$x$};
+\draw[->,line width=1pt] (0.7,0)--(0.75,0);
+\draw[->,line width=1pt] (0,0.7)--(0,0.75);  
+\draw[line width=1pt] (-0,0)--(-0.75,0);
+\node[draw=white] (sr) at (0.58457,0.33750) {$S_r$};
+\node[draw=white] (ssr) at (0.33750,0.58457) {$S^*_r$};
+\node[draw=white] (cd) at (0.058830,0.67243) {$S_m$};
+\node[draw=white] (ssl) at (-0.33750,0.58457) {$S^*_l$};
+\node[draw=white] (sl) at (-0.58457,0.33750) {$S_l$};
+
+\node[draw=white] (ur) at (0.43467,0.11647) {$\mbf{U}_{r}$};
+\node[draw=white] (usl) at (0.31820,0.31820) {$\mbf{U}^*_{r}$};
+\node[draw=white] (usr) at (0.11647,0.43467) {$\mbf{U}^*_{2r}$};
+\node[draw=white] (usr) at (-0.11647,0.43467) {$\mbf{U}^*_{2l}$};
+\node[draw=white] (usl) at (-0.31820,0.31820) {$\mbf{U}^*_{l}$};
+\node[draw=white] (ul) at (-0.43467,0.11647) {$\mbf{U}_{l}$};
+
+\draw (0,0) -- (sr);  
+\draw (0,0) -- (ssr);  
+\draw (0,0) -- (cd);  
+\draw (0,0) -- (ssl);  
+\draw (0,0) -- (sl);  
+
+\end{tikzpicture}

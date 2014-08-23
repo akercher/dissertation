@@ -1,0 +1,269 @@
+%& -output-directory=../ -aux-directory=temp/
+
+%%
+%% GMU LaTeX PhD Dissertation Format Template
+%%
+%% Developed by:
+%%      Daniel O. Awduche and Christopher A. St. Jean
+%%      Communications and Networking Lab
+%%      Dept. of Electrical and Computer Engineering
+%%
+%% Notes on usage can be found in the accompanying USAGE_NOTES.txt file.
+%%
+%%**********************************************************************
+%% Legal Notice:
+%% This code is offered as-is without any warranty either
+%% expressed or implied; without even the implied warranty of
+%% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE!
+%% User assumes all risk.
+%% In no event shall any contributor to this code be liable for any damages
+%% or losses, including, but not limited to, incidental, consequential, or
+%% any other damages, resulting from the use or misuse of any information
+%% contained here.
+%%**********************************************************************
+%%
+%% $Id: GMU_dissertation_template.tex,v 1.7 2007/05/02 02:20:38 Owner Exp $
+%%
+
+\documentclass[11pt]{report}
+
+%%  The file ``gmudissertation.sty''  is the GMU latex style file and
+%%   should be placed in the same directory as your LaTeX files
+\usepackage{gmudissertation}
+
+%%
+%% other packages that need to be loaded
+%%
+\usepackage[numbers]{natbib} % format citations
+\usepackage{graphicx}                    %   for imported graphics
+\usepackage{amsmath,amssymb,amsthm} %math support
+\usepackage{amsfonts}                    %%  for AMS mathematics
+\usepackage[normalem]{ulem}              %   a nice standard underline package
+\usepackage[noadjust,verbose,sort]{cite} %   arranges reference citations neatly
+\usepackage{setspace}                    %   for line spacing commands
+%% \usepackage{layouts}                     %   for printing textwidth
+\usepackage{lscape}                      % to change page orientation
+\usepackage{float}              % figure placement
+%% \usepackage{floatrow}
+
+\usepackage{epstopdf} %covert .eps files to .pdf
+\usepackage{curves}
+\usepackage{url} %formatting for URL's
+\usepackage{setspace} %change line spacing
+\usepackage[mathlines]{lineno} %line numbers
+\usepackage{relsize} % resize subscripts
+
+\usepackage{tikz,pgfplots} % Creating pictures, images, cartoons, etc...
+\usepackage{gnuplot-lua-tikz}
+\usepackage{tikz-3dplot}
+\usetikzlibrary{arrows,shapes,trees,positioning}
+\usetikzlibrary{decorations.markings}
+\usetikzlibrary{external} % compile figures separately
+\tikzexternalize[prefix=tikz/]
+\usetikzlibrary{plotmarks}
+
+\graphicspath{{fig/}} % Location of the graphics files
+
+\usepackage{afterpage}
+\usepackage{longtable}
+\usepackage[acronym]{glossaries} % create abbreviation and nomenclature lists
+
+% decrease white space above and below caption
+\setlength{\abovecaptionskip}{-1ex}%{-11pt}
+\setlength{\belowcaptionskip}{-2ex}%{-8pt}
+
+
+
+%%------------------------------------------------------------
+%%  Abbreviations 
+%%------------------------------------------------------------
+%% The file ``dissertationabbrev.sty'' is an (optional) personalized file that
+%% may contain any and all LaTeX command (re)definitions that will be used
+%% throughout the document
+\usepackage{dissertationabbrev}
+
+%%------------------------------------------------------------
+%%  Glossary
+%%------------------------------------------------------------
+\input{dissertationglossary}
+%% \makeglossaries % comment out to compile tikz images ///////////////////////////////////////////////
+%% to update glossary: uncommented above line
+%%                     compile tex document
+%%                     run makeglossaries akercher_dissertation
+
+\beforedoc
+
+\begin{document}
+
+%% In this section, all of the user-specific fields to be used in the
+%% title pages are set
+
+\title{Computational Methods for Ideal \\
+            Magnetohydrodynamics}
+\onelinetitle{Computational Methods for Ideal
+            Magnetohydrodynamics}
+
+\author{Andrew D. Kercher}
+\degree{Doctor of Philosophy}
+\doctype{Dissertation}
+\dept{Physics, Astronomy, and Computational Science}
+\discipline{Computational Science and Informatics}
+
+%% \seconddeg{Master of Science}
+%% \seconddegschool{My Former School}
+%% \seconddegyear{Year of second degree}
+
+\firstdeg{Bachelor of Science}
+\firstdegschool{George Mason University}
+\firstdegyear{2008}
+
+\degreeyear{2014}
+
+% Note: semester name should be written in its full-form. For example, Fall Semester, not just Fall.
+\degreesemester{Fall Semester}
+
+\advisor{Dr. Robert Weigel}
+
+\firstmember{Dr. Rainald L{\"o}hner}
+
+\secondmember{Dr. Jie Zhang}
+
+\thirdmember{Dr. Fernando Camelli}
+
+\depthead{Dr. Chi Yang}
+
+\assdean{Dr. Donna M. Fox}
+
+\deanITE{Dr. Peggy Agouris}
+
+%%------------------------------------------------------------
+%% Introductory pages
+%%------------------------------------------------------------
+
+% Note: The signature sheet is set according to the requirements of the Volgenau School of
+% Information Technology and Engineering. If your college/school requirement is different,
+% please make appropriate changes in the "signaturepage" section of gmudissertation.sty file.
+\signaturepage
+
+\titlepage
+
+% copyright technically optional but should be included in to avoid potential pagination problems
+\copyrightpage
+
+%%------------------------------------------------------------
+%% Dedication page
+%%------------------------------------------------------------
+
+\dedicationpage
+
+%% \noindent I dedicate this dissertation to my wife, without whom, I would have faltered. 
+
+%%------------------------------------------------------------
+%% Acknowledgements
+%%------------------------------------------------------------
+
+\acknowledgementspage
+
+%% \noindent First, I would like thank my adviser, Dr. Robert Weigel for all his help and support throughout the years, for coming in on weekends to accommodate my schedule, and for guiding me through my graduate studies. 
+
+%% Second, I would like to thank Dr. Rainald L{\"o}hner for introducing me to computational fluid dynamics, for taking the time to answer all my questions, and for helping me overcome the initial problems I encountered during code development.  
+
+%% Third, I would like to thank Andrew Corrigan for all of our discussions on high performance computing and computer hardware.  
+
+%% Forth, I would like to thank the other members of my committee, Dr. Jie Zhang and Dr, Fernando Camelli for their time and effort. 
+ 
+%% My final thanks is to my friends and family for their love and support; to my daughter Abigail, for keeping a smile on my face during the frustrating times; to my expected child for keeping me motivated, and above all, to Anne for everything.
+
+%%------------------------------------------------------------
+%% Table of contents, list of tables, and lists of figures
+%%------------------------------------------------------------
+
+\tableofcontents
+
+\listoftables
+
+\listoffigures
+
+%%------------------------------------------------------------
+%% Abstract
+%%------------------------------------------------------------
+\abstractpage
+
+%% \begin{abstract}
+Numerical schemes for the ideal magnetohydrodynamics (MHD) are widely used for modeling space weather and astrophysical flows.  They are designed to resolve the different waves that propagate through a magnetohydro fluid, namely, the fast, Alfv{\'e}n, slow, and entropy waves.  Numerical schemes for ideal magnetohydrodynamics that are based on the standard finite volume (FV) discretization exhibit pseudo-convergence in which non-regular waves no longer exist only after heavy grid refinement.  A method is described for obtaining solutions for coplanar and near-coplanar cases that consist of only regular waves, independent of grid refinement.  The method, referred to as Compound Wave Modification (CWM), involves removing the flux associated with non-regular structures and can be used for simulations in two- and three-dimensions because it does not require explicitly tracking an Alfv{\'e}n wave.  For a near-coplanar case, and for grids with $2^{13}$ points or less, we find \glspl{rmse} that are as much as 6 times smaller.  For the coplanar case, in which non-regular structures will exist at all levels of grid refinement for the standard FVMs, the RMSE is as much as 25 times smaller.  
+ 
+A multidimensional ideal MHD code has implemented for simulations on \glspl{gpu}.  Performance measurements are conducted on both a NVIDIA GeForce 
+
+%% \end{abstract}
+
+%% Be sure to leave a line of whitespace immediately before this line!!!!!
+%% (If this comment segment runs together with the preceeding text, you might
+%%  see the second page of the abstract numbered "0".)
+%%
+%% If the abstract is more than one page, then place this line PRECISELY
+%% at the page break; otherwise, comment it out.  (See note about this line
+%% in the usage notes.)
+%%
+\abstractmultiplepage
+
+%% The second page of the abstract
+GTX Titan and Intel Xeon E5645 processor. The GPU is shown to perform one to two orders of magnitude greater than in serial on the CPU, and two to three times greater than when run in parallel with OpenMP on the CPU.  Performance measurements are also given for two methods of storing data on the GPU.  The first approach stores data as an Array of Structures (AoS), e.g., a point coordinate array of size $3\times n$ is iterated over.  The second approach stores data as a Structure of Arrays (SoA), e.g. three separate arrays of size $n$ are iterated over simultaneously.  For an AoS, coalescing does not occur, reducing memory efficiency.  The SoA approach is shown to improve performance by one and a half to two times depending on the algorithm used.  All results are given for Cartesian grids, but the algorithms are implemented for a general geometry on a unstructured grids.
+
+%%------------------------------------------------------------
+%%  the main body of the dissertation
+%%------------------------------------------------------------
+\startofchapters
+
+%% include the chapters one by one (or paste the chapter text in directly if desired)
+\include{chapterOne}
+\include{chapterTwo}
+\include{chapterThree}
+\include{chapterFour}
+\include{chapterFive}
+\include{chapterSix}
+
+%%------------------------------------------------------------
+%% appendix
+%%------------------------------------------------------------
+%% Note: appendix is now put before bibliography.
+%% include the following directives if there are any appendices
+\appendix
+\appendixeqnumbering
+\include{Appendix}
+
+%%------------------------------------------------------------
+%%  bibliography
+%%------------------------------------------------------------
+
+%% list all of the BibTeX files here for the WinEdt project (if applicable)
+%GATHER{bibfile.bib}
+
+%% any bibliography style can be used, but IEEEtran.bst is ideally suited to
+%% electrical engineering references
+
+%% \bibliographystyle{IEEEtran}
+%% \bibliography{IEEEfull,references}
+
+\bibliographystyle{model1c-num-names}	% elsarcticle short style alphabetical
+\bibliography{mn-jour,references}	% includes journal abbrevs.
+
+
+%%------------------------------------------------------------
+%% glossary
+%%------------------------------------------------------------
+\printglossary[type=\acronymtype,title=Abbreviations]
+%% \printglossary[title=Nomenclature]
+
+%%------------------------------------------------------------
+%% curriculum vitae
+%%------------------------------------------------------------
+\cvpage
+
+\noindent Include your \emph{curriculum vitae} here detailing your background,
+education, and professional experience.
+
+%% \input{Andrew_Kercher_CV}
+%% \printinunitsof{cm}\prntlen{\textwidth}
+
+\end{document}
+

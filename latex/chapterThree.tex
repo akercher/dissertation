@@ -1,0 +1,861 @@
+%
+% $Id: chapterThree.tex
+%
+
+% A first, optional argument in [ ] is the title as displayed in the table of contents
+% The second argument is the title as displayed here.  Use \\ as appropriate in
+%   this title to get desired line breaks
+
+%----------------------------------------------------------------------------------------
+% Numerical solutions for ideal magnetohydrodynamics
+%----------------------------------------------------------------------------------------
+\chapter[Numerical solutions for ideal magnetohydrodynamics]{Numerical solutions for Ideal magnetohydrodynamics}
+\label{chp:num_mhd}
+
+Riemann problems and the different waves that compose the solution were described in Chapter~\ref{chp:riemann}. The distinction that linear waves travel at a constant characteristic velocity and nonlinear waves do not, was made.  The linear and nonlinear waves emitted by the equations of ideal MHD were described.  The linear waves are: the entropy wave that carries a CD and the Alfv{\'e}n wave that carries an RD.  The nonlinear waves are: shocks and rarefactions.  
+
+This chapter applies the ideas developed in Chapter~\ref{chp:riemann} and numerically solves Riemann problems of ideal MHD. The finite volume discretization and Godunov's method for computing interface fluxes and  the structure of the solution to the non-planar case are then described.  The jumps in $\rho$ and $\mbf{B}_t$ associated with each wave of the non-planar case is discussed.  We then describe the nonlinear solver developed for this thesis.  The exact and approximate solution of non-planar and coplanar test cases are given to demonstrate the accuracy of the solvers.  The nonlinear solver is then used to provide new benchmarks that can be used for the development of ideal MHD codes.  
+
+We show a limitation of FV schemes for ideal MHD, which is the appearance of non-regular waves.  The physicality of these waves has been debated.  We describe the appearance of non-regular waves in terms of Riemann problems with non-unique solutions.  Non-uniqueness is shown to occur when the initial transverse magnetic fields are coplanar, i.e. anti-parallel.  For initial conditions near those that produce a non-unique solution, convergence is shown to be nonuniform consistent with \citep{Torrilhon:2003b}.  Initially, convergence is to the solution containing a non-regular wave; after heavy grid refinement, convergence is to the solution containing only regular waves.  In Chapter~\ref{chp:cwm}, we propose a new modification to the HLLD flux that converges to the solution containing regular waves at all grid resolutions.   
+
+%----------------------------------------------------------------------------------------
+% Finite volume discretization and Godunov's method
+%----------------------------------------------------------------------------------------
+\section[Finite volume discretization and Godunov's method]{Finite volume discretization and Godunov's method}
+\label{sec:fvm_mhd}
+
+For the cell-centered \gls{fv} discretization, the state is defined by the integral average of the cell, given as
+\begin{gather}
+\label{eqn:fv_state}
+\mbf{U}_{\text{cell}} = \frac{1}{V_{\text{cell}}} \int_{\Omega} \mbf{U} d\Omega,
+\end{gather}
+where $V_{cell}$ is the volume of the cell.  The volume integral of the fluxes can be rewritten using the divergence theorem as
+\begin{gather}
+\label{eqn:fv_flux}
+\int_{\Omega} \divergebf{F} d \Omega = \int_{\Gamma} \mbf{F} \cdot \mbf{n} d\Gamma,
+\end{gather}
+where $\mbf{n}$ is the unit normal vector.  Integration in time, from $t=n$ to $t = n+1$, gives the FV discretization as
+\begin{gather}
+\label{eqn:fvm}
+\mbf{U}^{n+1}_{\text{cell}} = \mbf{U}^n_{\text{cell}} - \frac{\delta t}{V_{\text{cell}}}\sum_{\text{faces}} \mbf{F}\cdot \mbf{s},
+\end{gather}
+where $\mbf{F} = \frac{1}{\delta t} \int_{\delta t} \mbf{F} dt$ is the time averaged fluxes, $\mbf{s} = A\mbf{n}$ is the scaled face normal, and $A$ is the face area.  The one-dimensional FV discretization for a cell center at $i$ is
+\begin{gather}
+\label{eqn:fvm1d}
+\mbf{U}^{n+1}_{i} = \mbf{U}^n_{i} - \frac{\delta t}{\delta x}\left(\mbf{F}^n_{i+1/2} - \mbf{F}_{i-1/2}^n \right),
+\end{gather}
+where $\delta x = x_{i+1} - x_{i}$.  The timestep $\delta t$ must satisfy \gls{clf} stability condition that a wave cannot transverse more than one cell per timestep.  An estimation for the timestep is given by
+\begin{gather}
+\label{time_clf}
+\delta t = C_r \delta x/\lambda_{\max},
+\end{gather}
+where $C_r \le 1$ is the Courant number.  In explicit schemes, $C_r \le 1$ is typically required.
+
+The flux can be evaluated in a variety of ways.  The Rusanov flux, given as
+\begin{gather}
+\label{eqn:rusanov}
+\mbf{F}_{i+1/2} = \half\left(\phantom{\frac{}{}}\mbf{F}\left(\mbf{U}_{i+1}\right) + \mbf{F}\left(\mbf{U}_{i}\right)
+            - |\lambda_{\max}|\left(\mbf{U}_{i+1} - \mbf{U}_{i} \right) \right)
+\end{gather}
+where $\lambda_{max}$ is the maximum wave speed, is a stable and efficient method for flux evaluation.  It simplifies Roe's method by substituting $|\lambda_{max}| = \max\{|\lambda_k|\}$, where $k$ corresponds to the characteristics of the solution, because the wave speed can then be factored out the last term on the right hand side of \eqref{eqn:roe_flux}.  The summation reduces to $\mbf{U}_{i+1} - \mbf{U}_{i}$, since $\mbf{l}_k\cdot\mbf{r}^l = \delta_{k,l}$ where $\delta_{k,l}$ is the Kronecker delta.  The Rusanov flux produces a more diffuse solution than Roe's flux, especially at linear discontinuities where the maximum wave speed is greater than the characteristic speed of the wave.  As discussed in Section~\ref{sec:higher_order}, the properties of the Rusanov flux are desirable for a low-order scheme when used in conjunction with FCT.  
+
+%-----------------------------------------------------------------
+% Riemann IVP states
+%-----------------------------------------------------------------
+\begin{figure}[htbp]
+\begin{center}
+\tikzsetnextfilename{interface_states}
+\input{fig/interface_states.tex}
+\end{center}
+\caption{Piecewise constant (dotted line) and piecewise linear (solid line) reconstruction of interface states that define the local Riemann problem for Godunov's method.}
+\label{fig:interface}
+\end{figure}
+
+Godunov's method uses the solution to a local Riemann problem at cell interfaces to calculate the time-averaged fluxes.  The local Riemann problem is defined by reconstructing the states of neighboring cells at the interface between the cells.  The reconstruction process using piecewise constant and piecewise linear interpolation is shown in Figure~\ref{fig:interface}.  Slope limiters, see Section~\ref{sec:higher_order}, are used during reconstruction to ensure new extrema are not created.  If the flow is not smooth, such as across a shock or discontinuity, the reconstructed states will not be equal, and a local Riemann problem at the interface is defined.  The approximate solution of to the local Riemann problem is used to calculate the time-averaged fluxes.  For the Euler equations, one of the schemes described in Section~\ref{sec:hydro_rsolvers} can be used to approximate the fluxes.  For ideal MHD, the fluxes can be approximated with the HLLD scheme described in Section~\ref{sec:hlld}.  
+
+%----------------------------------------------------------------------------------------
+% Higher-order extensions
+%----------------------------------------------------------------------------------------
+\section[Higher-order extensions]{Higher-order extensions}
+\label{sec:higher_order}
+
+In this section, two high-order extensions to first-order monotonicity preserving schemes are described. In Section~\ref{sec:riemann_mhd} one-dimensional Riemann problems are solved using both higher order extension.  The first higher order extension is implemented in Athena.  It is a \gls{tvd} scheme, and uses the third order accurate \gls{ppm} \citep{Colella:1984} for reconstruction of the interface states.  The second is an \gls{fct} scheme, that was implemented for this dissertation available at: \protect\gitrepo.
+
+%-----------------------------------------------------------------
+% Sod shock tube HLLE, HLLC, Roe
+%-----------------------------------------------------------------
+\begin{figure}[htbp]
+\begin{tabular}{ccc}
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hlle_3_1}\input{fig/sod_hlle_3_1.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hlle_3_2}\input{fig/sod_hlle_3_2.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hlle_3_3}\input{fig/sod_hlle_3_3.tex}} \\
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hllc_3_1}\input{fig/sod_hllc_3_1.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hllc_3_2}\input{fig/sod_hllc_3_2.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hllc_3_3}\input{fig/sod_hllc_3_3.tex}} \\
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_roe_3_1}\input{fig/sod_roe_3_1.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_roe_3_2}\input{fig/sod_roe_3_2.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_roe_3_3}\input{fig/sod_roe_3_3.tex}} 
+\end{tabular}
+\caption{(Top row) HLLE, (middle row) HLLC, and (bottom row) Roe approximate solution to Sod shock tube problem computed using third-order parabolic interpolation.  Athena \citep{AthenaSite} was used to compute the approximate solutions.  The exact solution was computed with code written for this dissertation available at: \protect\gitrepo.}
+\label{fig:euler_sod_3}
+\end{figure}
+
+TVD schemes preserve monotonicity by limiting the flux of a high-order scheme or with slope limiters during interface reconstruction.  To demonstrate this property, we outline the algorithm for second-order linear reconstruction of the primitive variable $\mbf{W_i} = (\rho,v_x,v_y,v_z,p_g,B_x,B_y,B_z)$ as implemented in \emph{Athena} \citep{Stone:2008}.  The reconstruction is done in terms of characteristic variables, $\mbf{a}$, and projected onto the primitive variables.  The differences in primitive variables are first projected to the characteristic variables 
+\begin{gather}
+\begin{split}
+\delta \mathbf{a}_{l} = \sum \mbf{l}_j \cdot (\mbf{W}_i - \mbf{W}_{i-1}) , \\
+\delta \mathbf{a}_{c} = \sum \mbf{l}_j \cdot (\mbf{W}_{i+1} - \mbf{W}_{i-1}) , \\
+\delta \mathbf{a}_{r} = \sum \mbf{l}_j \cdot (\mbf{W}_{i+1} - \mbf{W}_{i}) 
+\end{split}
+\end{gather}
+where $\mbf{l}_j$ are left eigenvectors computed with the primitive variable at cell $i$.  The monotonicity constraints are then applied, ensuring the reconstructed states are TVD:
+\begin{gather}
+\delta \mbf{a} = \text{sign}(\delta \mbf{a}_c) \min(2|\delta \mbf{a}_l|,2|\delta \mbf{a}_r|,|\delta \mbf{a}_c|). 
+\end{gather}
+The characteristic variables are then projected back to the primitive variables
+\begin{gather}
+\delta \mathbf{W} = \sum \delta \mbf{a} \cdot \mbf{r}_j ,
+\end{gather}
+where where $\mbf{r}_j$ are right eigenvectors computed with the primitive variables at cell $i$.  Interpolation to the left and right face is performed to reconstruct the interface states,
+\begin{gather}
+\mbf{w}_{i-1/2} = \mbf{W}_i - \left(\frac{1}{2} 
+            - \min(\lambda_{\min},0)\frac{\delta t}{2 \delta x} \right)\delta \mbf{W}_i , \\
+\mbf{w}_{i+1/2} = \mbf{W}_i + \left(\frac{1}{2} 
+            - \max(\lambda_{\max},0)\frac{\delta t}{2 \delta x} \right)\delta \mbf{W}_i , 
+\end{gather}
+where $\lambda_{\min}$, and $\lambda_{\max}$ are the minimum and maximum eigenvalue computed at cell $i$.  Finally, the influence of a wave that has not reached the face at the half timestep is removed from the reconstructed value
+\begin{gather}
+\label{eqn:lin_recon_l}
+\mbf{w}_{i-1/2} = \mbf{w}_{i-1/2} + \frac{\delta t}{2\delta x} \sum_{\lambda_j < 0} 
+                 \left(\left(\lambda_{\min} - \lambda_j\right) \mbf{l}_j 
+                 \cdot \mbf\delta \mbf{W}_i\right) \mbf{r}^j, \\
+\label{eqn:lin_recon_r}
+\mbf{w}_{i+1/2} = \mbf{w}_{i+1/2} + \frac{\delta t}{2\delta x} \sum_{\lambda_j > 0} 
+                 \left(\left(\lambda_{\max} - \lambda_j\right) \mbf{l}_j 
+                 \cdot \mbf\delta \mbf{W}_i\right) \mbf{r}^j, 
+\end{gather}
+where the sums include waves that propagate towards the face.  The HLL solvers use weighted averages of the flux in the left and right interfaces, and as such, a correction must be added to \eqref{eqn:lin_recon_l} and \eqref{eqn:lin_recon_r} for waves that propagate away from the interface.  The correction is \citep{Colella:1984}
+\begin{gather}
+\Delta \mbf{w}_{i-1/2} = -\frac{\delta t}{2\delta x} \sum_{\lambda_j > 0} 
+                 \left(\left(\lambda_j - \lambda_{\min}\right) \mbf{l}_j 
+                 \cdot \mbf\delta \mbf{W}_i\right) \mbf{r}^j, \\
+\Delta \mbf{w}_{i+1/2} = -\frac{\delta t}{2\delta x} \sum_{\lambda_j < 0} 
+                 \left(\left(\lambda_j - \lambda_{\max}\right) \mbf{l}_j 
+                 \cdot \mbf\delta \mbf{W}_i\right) \mbf{r}^j. 
+\end{gather}
+
+The Sod shock tube test of Section~\ref{sec:hydro_rsolvers} using higher order reconstruction is shown in Figure~\ref{fig:euler_sod_3}.  The higher order extension is less diffuse than the low order counterparts shown in Figure~\ref{fig:euler_sod_1}.  The contact discontinuity and shock are much better resolved.
+
+The TVD scheme presented above preserves monotonicity by limiting the slope used for interface reconstruction.  With FCT, the high order fluxes are limited in order to preserve monotonicity.  Advancing the state variables in time with a low order scheme that preserves monotonicity is the first step in applying FCT.  The time-advanced low order solution is denoted as $\mbf{U}^{td}$, where $td$ stands for transport and diffused.  The antidiffusive flux is defined as the difference between the high and low order fluxes, $\mbf{A}_{i+1/2} = \mbf{F}^{h}_{i+1/2} - \mbf{F^{l}}_{i+1/2}$.  For the Rusanov flux, the antidiffusive flux is the second term on the right hand side of \eqref{eqn:rusanov}, $\mbf{A}_{i+1/2} = \half|\lambda_{\max}|\left(\mbf{U}_{i+1} - \mbf{U}_{i} \right)$.  Upper and lower limiting bounds are chosen at each interface such that $\mbf{U}^{td}$ lies between them.  In this work, at the interface between $i$ and $i+1$, the limiter is chosen as
+\begin{gather}
+\label{eqn:fct_limit_max}
+\mbf{U}^{\max}_{i+1/2} = \max(\mbf{U}_{i+1},\mbf{U}_{i},\mbf{U}^{td}_{i+1},\mbf{U}^{td}_{i}) , \\
+\label{eqn:fct_limit_min}
+\mbf{U}^{\min}_{i+1/2} = \min(\mbf{U}_{i+1},\mbf{U}_{i},\mbf{U}^{td}_{i+1},\mbf{U}^{td}_{i}) , 
+\end{gather}   
+that is, the minimum and maximum values on the solution at the previous step and the low order solution.  The maximum and minimum at each cell are 
+\begin{gather}
+\mbf{U}^{\max}_{i} = \max(\mbf{U}^{\max}_{i+1/2},\mbf{U}^{\max}_{i-1/2}) , \\
+\mbf{U}^{\min}_{i} = \min(\mbf{U}^{\min}_{i+1/2},\mbf{U}^{\min}_{i-1/2}) .
+\end{gather}   
+The positive and negative contributions of the antidiffusive fluxes are separated and limited.  For the upper bounds
+\begin{align}
+\mbf{P}^+_i &= \max(\mbf{A}_{i-1/2},0) - \min(\mbf{A}_{i+1/2},0) , \\
+\mbf{Q}^+_i &= \mbf{U}^{\max}_i - \mbf{U}^{td}_i , \\
+\mbf{R}^+_i &= \min(1,\mbf{Q}^+/\mbf{P}^+) \text{, for} \; \mbf{P}^+_i > 0 \text{, and } \quad 0 \text{, otherwise.}.
+\end{align}
+For the lower bounds
+\begin{align}
+\mbf{P}^-_i &= \max(\mbf{A}_{i+1/2},0) - \min(\mbf{A}_{i-1/2},0) , \\
+\mbf{Q}^-_i &= \mbf{U}^{td}_i - \mbf{U}^{\min}_i , \\
+\mbf{R}^-_i &= \min(1,\mbf{Q}^-/\mbf{P}^-) \text{, for} \; \mbf{P}^-_i > 0 \text{, and } \quad 0 \text{ otherwise.}
+\end{align}
+The coefficient for limiting the antidiffusive fluxes is
+\begin{gather}
+\mbf{C}_{i+1/2} = \min(\mbf{R}^-_{i+1},\mbf{R}^-_{i},\mbf{R}^+_{i+1},\mbf{R}^+_{i}).
+\end{gather}
+The fluxes are synchronized by taking the minimum between the coefficients of energy and density, i.e., $C_{i+1/2} = \min(\mbf{C}_{i+1/2}(\rho),\mbf{C}_{i+1/2}(E))$.  The high order solution is then given by
+\begin{gather}
+\label{eqn:fvm1d}
+\mbf{U}^{n+1}_{i} = \mbf{U}^{td}_{i} - \frac{\delta t}{\delta x}\left(C_{i+1/2}\mbf{A}^n_{i+1/2} - C_{i-1/2}\mbf{A}_{i-1/2}^n\right).
+\end{gather}
+
+%-----------------------------------------------------------------
+% Sod shock tube Rusanpv and FCT
+%-----------------------------------------------------------------
+\begin{figure}[htbp]
+\begin{tabular}{ccc}
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_rusanov_3_1}\input{fig/sod_rusanov_3_1.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_rusanov_3_2}\input{fig/sod_rusanov_3_2.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_rusanov_3_3}\input{fig/sod_rusanov_3_3.tex}} \\ 
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_rusanov_fct_3_1}\input{fig/sod_rusanov_fct_3_1.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_rusanov_fct_3_2}\input{fig/sod_rusanov_fct_3_2.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_rusanov_fct_3_3}\input{fig/sod_rusanov_fct_3_3.tex}} 
+\end{tabular}
+\caption{(Top row) Rusanov without FCT , and (bottom row) with FCT, approximate solutions to Sod shock tube problem on a grid of 512 points.  Solutions computed with code written for this dissertation available at: \protect\gitrepo.}
+\label{fig:euler_sod_fct}
+\end{figure}
+
+The low order solution and high order extension using FCT for the Sod shock tube problem is shown in Figure~\ref{fig:euler_sod_fct}.  The low order solution is excessively diffuse, especially at the CD.  FCT produces a much less diffuse solution, resolving shocks in two or three cells.  
+
+In Section~\ref{sec:riemann_mhd} the high order extensions are used to approximate the solutions to Riemann problems of ideal MHD.  For ideal MHD, the Rusanov flux is replaced by the HLLD flux as the low order scheme in the FCT algorithm.  
+
+%----------------------------------------------------------------------------------------
+% Riemann problems of ideal magnetohydrodynamics
+%----------------------------------------------------------------------------------------
+\section[Riemann problems of ideal magnetohydrodynamics]{Riemann problems of ideal magnetohydrodynamics}
+\label{sec:riemann_mhd}
+
+The initial state of one-dimensional Riemann problems of ideal MHD are of the form
+\begin{gather}
+\begin{split}
+\label{eqn:init_mhd}
+\mbf{U}_l = (\rho_l,\vnl,\mbf{v}_{tl},\pgl,\mbf{B}_{tl}), \\
+\mbf{U}_r = (\rho_r,\vnr,\mbf{v}_{tr},\pgr,\mbf{B}_{tr}),
+\end{split}
+\end{gather}
+where $B_n$ is a parameter, $\mbf{B}_{t} = (B_{t}\cos\psi,B_{t}\sin\psi)$, $\psi$ is the rotation angle, defined by $\tan\psi = B_z/B_y$.  The problem is called planar if the tangential components are parallel, i.e. $\psi_l$ = $\psi_r$, and it is called coplanar if the tangential magnetic fields are anti-parallel, i.e. $\psi_r = \psi_l + n\pi$ for $\{n\in \mathbb{Z}^+ \text{and } n \text { odd} \}$.  If the magnetic fields do not lie in the same plane then the problem is called non-planar.  The initial configuration of the magnetic field of a non-planar problem is shown in Figure~\ref{fig:bfield_init}.  The twist angle $\alpha = \psi_r - \psi_l$ gives the total change in orientation of the transverse magnetic field produced by the two rotational discontinuities.  
+
+%-----------------------------------------------------------------
+% Init B field
+%-----------------------------------------------------------------
+\begin{figure}[htbp] 
+\begin{center}
+\tikzsetnextfilename{bfield_init}
+\input{fig/bfield_init.tex}
+\end{center}
+\caption{Initial configuration of magnetic field on both sides of the discontinuity.  The initial twist angle $\alpha = \psi_r - \psi_l$ is the difference in rotation angles of the left and right tangential field.}
+\label{fig:bfield_init}
+\end{figure}
+
+As time evolves, the waves associated with each characteristic separate and distinct regions with constant states can be identified.  This is shown in Figure~\ref{fig:riemann_3d}, for the $\rho$ and $\mbf{B}_t$ solutions of the non-planar Riemann problem \eqref{eqn:init_mhd}.  The evolution of $\mbf{B}_t$ across the regular waves of the solution is shown in Figure~\ref{fig:bperp_regular}.  The left-going fast wave is a rarefaction, across which, $\rho$ and $\mbf{B}_t$ decrease.  The right-going fast wave is a shock, across which both $\rho$ and $B_t$ increase.  The rotation angle, $\psi$, is modified across each rotational discontinuities to produce downstream tangential magnetic fields with the same orientation.  Both $\rho$, and $B_t$ remain unchanged across the rotational discontinuities.  The left-going slow wave is a rarefaction, across which, $\rho$ and $B_t$ decrease.  The right-going slow wave is a shock, across which, both $\rho$ and $B_t$ increase.  Between the states downstream of the left- and right-going slow waves, only a discontinuity in $\rho$ is present at the location of the CD.  The CD separates intermediate states $\mbf{U}^*_{3l}$ and ${\mbf{U}^*_{3r}}$ of Figure~\ref{fig:mhd_states}.  The CD is also known as the entropy wave, because it carries a jump in entropy.  
+
+\afterpage{
+%-----------------------------------------------------------------
+% Rieman problem in 3D
+%-----------------------------------------------------------------
+\begin{figure}[t!] 
+\begin{center}
+\tikzsetnextfilename{riemann_3d}
+\input{fig/riemann_3d.tex}
+\end{center}
+\caption{The density and tangential magnetic field of the solution to a Riemann problem of ideal MHD.  All rotations are about the x-axis.  In the frame of reference of the CD, the direction of each wave w.r.t. the x-axis is positive for those under the solid blue line, and negative for those under the solid blue line.}
+\label{fig:riemann_3d}
+\end{figure}
+
+%-----------------------------------------------------------------
+% Evolution of perpendicular magnetic field (regular)
+%-----------------------------------------------------------------
+\begin{figure}[h!]
+\begin{center}
+\tikzsetnextfilename{mhd_bperp}
+\input{fig/mhd_bperp.tex}
+\end{center}
+\caption{A view in the positive x-direction of Figure \ref{fig:riemann_3d}.  The influence of regular waves on the tangential magnetic field for a non-planar Riemann problem of ideal MHD. The orientation of the tangential magnetic field is given by the angle $\psi = \tan{B_z/B_y}$. Regular waves only influence the magnitude or orientation of the tangential magnetic field.  The intermediate states are defined in Figure~\ref{fig:mhd_states}, with $\mbf{B}^*_{t3l} = \mbf{B}^*_{t3r}$ denoted by the CD.}
+\label{fig:bperp_regular}
+\end{figure}
+
+\clearpage
+}
+
+%-----------------------------------------------------------------
+% Numerical tests
+%-----------------------------------------------------------------
+\section[Numerical tests]{Numerical tests}
+\label{sec:num_test}
+In this section we solve test cases that do and do not exhibit the uniqueness problem, in which more than one solution exists.  Solutions to the first four test cases are comprised of only regular waves.  The last two test cases involve compound waves.  A \gls{scw} is present in test 5, a \gls{fcw} is present in test 6, and two fast compound waves are present in Test~7.  Unless otherwise stated, the domain is $x\in [0,1]$ and the initial discontinuity is located at $x=0.5$.  In Chapter~\ref{chp:cwm}, tests 5, 6, and 7 are solved using a new modified flux method, and we show that only regular waves are present.
+  
+The results of several ideal MHD shock tube problems are given below.  The exact solution was calculated with the nonlinear solver developed for this thesis and described in Section~\ref{sec:mhd_exact}.  Three different approximation methods were used: a low order base scheme, a higher order TVD scheme, and a higher order FCT scheme.  All three schemes use a cell centered finite volume discretization and HLLD to approximate the interface flux.  The base scheme, which was implemented for this dissertation,  uses piece-constant interpolation for interface reconstruction and a two-stage Runge-Kutta time integration.  The TVD extension to the base scheme is implemented in \emph{Athena}.  Interfaces are reconstructed with PPM, and the \gls{ctu} plus \gls{ct} integrator is used to advance the solution in time.  The FCT extension to the base scheme was also implemented for this dissertation.  The algorithms of the base scheme and the FCT extention are implemented for general geometries, but structured grids were used for comparison with Athena.  Unless otherwise stated, the following values are used throughout the calculations, the gas constant $\gamma = 5/3$, the Courant number $C_r = 0.8$, and relaxation factor $r_k = 0.5$.
+
+The initial conditions of the first shock tube test are 
+\begin{gather}
+\begin{split}
+\label{eqn:rj2a_init}
+(\rho_l,\vnl,\mbf{v}_{tl},\pgl,\mbf{B}_{tl})= \left(1.08,1.2,(0.01,0.5),0.95,(3.6,2.0)/\sqrt{4\pi}\right), \\
+(\rho_r,\vnr,\mbf{v}_{tr},\pgr,\mbf{B}_{tr}) = \left(1.0,0.0,(0.0,0.0),1.0,(4.0,2.0)/\sqrt{4\pi}\right).
+\end{split}
+\end{gather}
+The solution with $B_n=2/\sqrt{4\pi}$ and $\gamma=5/3$ is given in Table~\ref{tab:rj2a}, and is shown in Figure~\ref{fig:rj2a_plot} at time $t_f=0.2$.  From left to right, the waves of the solution are: FS, RD SS, CD, SS, RD, and FS.  The solution can be compared with Table 2a of \citep{Ryu:1995a}, and Table 1a of \citep{Dai:1994a}.  The nonlinear solver displays quadratic convergence, as shown in Table~\ref{tab:rj2a_err}, where the residual, as well as the fast and slow waves speeds are listed for a sequence of iterations.  The wave speeds are consistent with the result given in Table 1b of \citep{Dai:1994a}.  
+
+The second shock tube test for ideal MHD has initial conditions
+\begin{gather}
+\begin{split}
+\label{eqn:AK2_init}
+(\rho_l,\vnl,\mbf{v}_{tl},\pgl,\mbf{B}_{tl})= \left(3.0,0.0,(0.0,0.0),3.0,(\cos\alpha_l,\sin\alpha_l)\right), \\
+(\rho_r,\vnr,\mbf{v}_{tr},\pgr,\mbf{B}_{tr}) = \left(1.0,0.0,(0.0,0.0),1.0,(\cos\alpha_r,\sin\alpha_r)\right),
+\end{split}
+\end{gather}
+where $\alpha_l = 2.0$, $\alpha_r = 1.0$, $B_n = 3/2$, and $\gamma=5/3$.  The solution is given in Table~\ref{tab:AK2}, and is shown in Figure~\ref{fig:AK2_plot} at time $t_f=0.2$.  From left to right the waves of the solution are: FR, RD SR, CD, SS, RD, and FS.  The residual, as well as the fast and slow waves speeds, are listed for a sequence of iterations in Table \ref{tab:AK2_err}.  
+
+The third test problem involves states of high density and low pressure.  The initial conditions are
+\begin{gather}
+\begin{split}
+\label{eqn:AK3_init}
+(\rho_l,\vnl,\mbf{v}_{tl},\pgl,\mbf{B}_{tl})= \left(10.0.0,0.0,(1.0,0.0),0.2,(2.0,2.0)\right), \\
+(\rho_r,\vnr,\mbf{v}_{tr},\pgr,\mbf{B}_{tr}) = \left(5.0,0.0,(-1.0,-0.5),0.2,2.0(\cos(\pi/4),\sin(\pi/4))\right),
+\end{split}
+\end{gather}
+where $B_n = 2.0$, and $\gamma=5/3$.  The solution is given in Table~\ref{tab:AK3}, and is shown in Figure~\ref{fig:AK3_plot} at time $t_f=0.3$.  From left to right, the waves of the solution are: FR, RD SS, CD, SS, and FR.  The residual, as well as the fast and slow waves speeds are listed for a sequence of iterations in Table \ref{tab:AK3_err}.  The contact discontinuity speed is stationary.  No scheme was able to accurately capture the transition across the CD.  HLLD-TVD is the most accurate to the left of the CD, but like the other schemes, produces significant error to the right of the CD.  The velocities of the left- and right-going slow shocks are $-0.1013$ and $0.1433$ respectively.  The error is caused by the fact that the waves have not had enough time to separate.
+
+The forth test retains the initial conditions of test 3, except the densities are reduced by an order of magnitude, the magnetic field components are reduced by one half, and $v_{yr} = -1.0$.  The initial conditions are
+\begin{gather}
+\begin{split}
+\label{eqn:AK4_init}
+(\rho_l,\vnl,\mbf{v}_{tl},\pgl,\mbf{B}_{tl})= \left(1.0.0,0.0,(1.0,0.0),0.5,(1.0, 0.0)\right), \\
+(\rho_r,\vnr,\mbf{v}_{tr},\pgr,\mbf{B}_{tr}) = \left(0.5,0.0,(-1.0,-0.5),0.5,(\cos(\pi/4),\sin(\pi/4))\right),
+\end{split}
+\end{gather}
+where $B_n = 1$, and $\gamma=5/3$.  The solution is given in Table~\ref{tab:AK4}, and is shown in Figure~\ref{fig:AK4_plot} at time $t_f=0.2$.  The same waves that comprise the solution to test 3 are also comprise the solution of this test. From left to right, the waves of the solution are: FR, RD SS, CD, SS, and FR.  Unlike test 3, there is no noticeable difference between the exact and approximate solutions in the states directly upstream and downstream of the contact discontinuity.  The residual, as well as the fast and slow waves speeds are listed for a sequence of iterations in Table \ref{tab:AK4_err}.  As in test 3, the contact discontinuity is stationary, but the waves have separated enough to avoid the error observed in test 3.
+
+The final three tests demonstrate non-uniqueness of solutions to certain Riemann problems of ideal MHD.  For test 5 and 6, we consider two cases: one coplanar and one near coplanar.  For the coplanar case, the initial perpendicular magnetic field is anti-parallel, i.e., $\alpha = \pi$.  For the near coplanar case, the twist angle is reduced so that the initial tangential magnetic fields do not lie in the same plane.  In the near coplanar case, we set $\alpha = 3.0.$.  Test~7 is a non-planar problem.  The solution the includes a left-going RD that rotates the tangential magnetic field by $2.95$ radians.  Riemann problems of ideal MHD with non-unique solutions are discussed in greater detail next section where the problem of non-uniform convergence is described.  In Section~\ref{sec:nonunique}, the problems related to non-uniqueness are overcome with a new modification to the flux calculation.  
+
+Test~5 involves a SCW comprised of a intermediate shock and fast rarefaction.  It was originally considered by \citet{Torrilhon:2003b}.  The conversion between the parameters used below and those used in \citep{Torrilhon:2003b} is given by \eqref{eqn:scaling}.  The initial conditions are 
+\begin{gather}
+\begin{split}
+\label{eqn:AK5_init}
+(\rho_l,\vnl,\mbf{v}_{tl},\pgl,\mbf{B}_{tl})= \left(1.0.0,0.0,(0.0,0.0),0.5,(0.7746, 0.0)\right), \\
+(\rho_r,\vnr,\mbf{v}_{tr},\pgr,\mbf{B}_{tr}) = \left(0.2,0.0,(0.0,0.0),0.12,0.7746(\cos \alpha,\sin \alpha)\right),
+\end{split}
+\end{gather}
+where $B_n = 0.7746$, and $\gamma=5/3$, and $\alpha = 3.0, \pi$.  In this test, the initial discontinuity is located at $x=0.4$ for comparison with the results in \citep{Torrilhon:2003b}.  Only the exact values of $\rho$ and $B_y$ are given in \citep{Torrilhon:2003b}.  We give the complete solution so that it can be used as a benchmark.  The exact solution for $\alpha = \pi$ ($3.0$) is listed in Table~\ref{tab:AK5}~(\ref{tab:AK5b}), and is shown in Figure~\ref{fig:AK5_plot}~(\ref{fig:AK5b_plot}) at time $t_f=0.20656$.  For both the coplanar and near coplanar cases, the structure of the approximate solution from left to right is: FR, SCW, CD, SS, FR.  An RD and SS are found in the exact solution instead of a slow compound wave.  For the near coplanar case, two rotational discontinuities are present.  The residual, as well as the fast and slow waves speeds are listed for a sequence of iterations is listed in Table~\ref{tab:AK5_err}~(\ref{tab:AK5b_err}), for $\alpha = \pi$ ($3.0$).  
+
+Test~6 involves a FCW comprised of a fast rarefaction and intermediate shock.  The initial conditions are
+\begin{gather}
+\begin{split}
+\label{eqn:AK6_init}
+(\rho_l,\vnl,\mbf{v}_{tl},\pgl,\mbf{B}_{tl})= \left(1.0.0,0.0,(0.0,0.0),0.5,(1.0, 0.0)\right), \\
+(\rho_r,\vnr,\mbf{v}_{tr},\pgr,\mbf{B}_{tr}) = \left(0.2,0.0,(0.0,0.0),0.12,(\cos \alpha,\sin \alpha)\right),
+\end{split}
+\end{gather}
+where $B_n = 1.25$, $\gamma=5/3$, and $\alpha = 3.0, \pi$.  The exact solution for $\alpha = \pi$ ($3.0$) is listed in Table~\ref{tab:AK6}~(\ref{tab:AK6b}), and is shown in Figure~\ref{fig:AK6_plot}~(\ref{fig:AK6b_plot}) at time $t_f=0.15$.  For both the coplanar and near coplanar cases, the structure of the approximate solution from left to right is: FCW SS, CD, SS, FR.  A FR and RD is found in the exact solution instead of a fast compound wave.  For the near coplanar case, two rotational discontinuities are present.  The residual, as well as the fast and slow waves speeds are listed for a sequence of iterations is listed in Table~\ref{tab:AK6_err}~(\ref{tab:AK6b_err}), for $\alpha = \pi$ ($3.0$).  
+
+Test~7 is the final test given in this section.  It involves a left-going and right-going FCW.  The initial conditions are
+\begin{gather}
+\begin{split}
+\label{eqn:AK7_init}
+(\rho_l,\vnl,\mbf{v}_{tl},\pgl,\mbf{B}_{tl})= \left(1.0.0,0.0,(5.0,0.0),0.6,(3.25, 0.0)\right), \\
+(\rho_r,\vnr,\mbf{v}_{tr},\pgr,\mbf{B}_{tr}) = \left(0.5,0.0,(-5.0,-2.5),0.3,3.25(\cos \alpha,\sin \alpha)\right),
+\end{split}
+\end{gather}
+where $B_n = 3.25$, $\gamma=5/3$, and $\alpha = \pi/4$.  The exact solution is listed in Table~\ref{tab:AK7}, and is shown in Figure~\ref{fig:AK7_plot} at time $t_f=0.05$.  From left to right is: FCW SS, CD, SS, FCW.  An RD and SS are found in the exact solution instead of a fast compound wave.  The left-going RD rotates the transverse magnetic field by 2.9442 radians, and the right-going RD rotates the transverse magnetic field by 2.1588 rad.  The residual, as well as the fast and slow waves speeds are listed for a sequence of iterations is listed in Table~\ref{tab:AK7_err}.  The CD is not accurately captured due to the lack of separation between the waves.
+
+%% \clearpage
+\afterpage{
+\begin{landscape}
+%-----------------------------------------------------------------
+% Solution to RJ2a
+%-----------------------------------------------------------------
+\begin{figure}[t!]
+\begin{tabular}{ccc}
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{RJ2a_csol_1}\input{fig/RJ2a_csol_1.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{RJ2a_csol_5}\input{fig/RJ2a_csol_5.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{RJ2a_csol_8}\input{fig/RJ2a_csol_8.tex}} \\
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{RJ2a_csol_2}\input{fig/RJ2a_csol_2.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{RJ2a_csol_3}\input{fig/RJ2a_csol_3.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{RJ2a_csol_4}\input{fig/RJ2a_csol_4.tex}} \\
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{RJ2a_csol_6}\input{fig/RJ2a_csol_6.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{RJ2a_csol_7}\input{fig/RJ2a_csol_7.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{RJ2a_csol_9}\input{fig/RJ2a_csol_9.tex}} 
+\end{tabular}
+\caption{Solution of MHD shock tube test 1 at time 0.2.  The initial conditions are given by \eqref{eqn:rj2a_init}.  HLLC-TVD solution generated with Athena \citep{AthenaSite}.  All other solutions generated with code written for this dissertation: \protect\gitrepo.}
+\label{fig:rj2a_plot}
+\end{figure}
+
+\end{landscape}
+%% \vspace*{0.5mm}
+\clearpage
+} % end afterpage
+
+\afterpage{
+\begin{landscape}
+%-----------------------------------------------------------------
+% Solution to AK2
+%-----------------------------------------------------------------
+\begin{figure}[t!]
+\begin{tabular}{ccc}
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK2_csol_1}\input{fig/AK2_csol_1.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK2_csol_5}\input{fig/AK2_csol_5.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK2_csol_8}\input{fig/AK2_csol_8.tex}} \\
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK2_csol_2}\input{fig/AK2_csol_2.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK2_csol_3}\input{fig/AK2_csol_3.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK2_csol_4}\input{fig/AK2_csol_4.tex}} \\
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK2_csol_6}\input{fig/AK2_csol_6.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK2_csol_7}\input{fig/AK2_csol_7.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK2_csol_9}\input{fig/AK2_csol_9.tex}} 
+\end{tabular}
+\caption{Solution of MHD shock tube test 2 at time 0.2.  The initial conditions are given by \eqref{eqn:AK2_init}.  HLLC-TVD solution generated with Athena \citep{AthenaSite}.  All other solutions generated with code written for this dissertation: \protect\gitrepo.}
+\label{fig:AK2_plot}
+\end{figure}
+
+\end{landscape}
+
+%% \vspace*{0.5mm}
+\clearpage
+}
+
+\afterpage{
+\begin{landscape}
+%-----------------------------------------------------------------
+% Solution to AK3
+%-----------------------------------------------------------------
+\begin{figure}[t!]
+\begin{tabular}{ccc}
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK3_csol_1}\input{fig/AK3_csol_1.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK3_csol_5}\input{fig/AK3_csol_5.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK3_csol_8}\input{fig/AK3_csol_8.tex}} \\
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK3_csol_2}\input{fig/AK3_csol_2.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK3_csol_3}\input{fig/AK3_csol_3.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK3_csol_4}\input{fig/AK3_csol_4.tex}} \\
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK3_csol_6}\input{fig/AK3_csol_6.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK3_csol_7}\input{fig/AK3_csol_7.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK3_csol_9}\input{fig/AK3_csol_9.tex}} 
+\end{tabular}
+\caption{Solution of MHD shock tube test 3 at time 0.3.  The initial conditions are given by \eqref{eqn:AK3_init}. HLLC-TVD solution generated with Athena \citep{AthenaSite}.  All other solutions generated with code written for this dissertation: \protect\gitrepo.}
+\label{fig:AK3_plot}
+\end{figure}
+
+\end{landscape}
+
+%% \vspace*{0.5mm}
+\clearpage
+}
+
+\afterpage{
+\begin{landscape}
+%-----------------------------------------------------------------
+% Solution to AK4
+%-----------------------------------------------------------------
+\begin{figure}[t!]
+\begin{tabular}{ccc}
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK4_csol_1}\input{fig/AK4_csol_1.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK4_csol_5}\input{fig/AK4_csol_5.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK4_csol_8}\input{fig/AK4_csol_8.tex}} \\
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK4_csol_2}\input{fig/AK4_csol_2.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK4_csol_3}\input{fig/AK4_csol_3.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK4_csol_4}\input{fig/AK4_csol_4.tex}} \\
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK4_csol_6}\input{fig/AK4_csol_6.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK4_csol_7}\input{fig/AK4_csol_7.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK4_csol_9}\input{fig/AK4_csol_9.tex}} 
+\end{tabular}
+\caption{Solution of MHD shock tube test 4 at time 0.2.  The initial conditions are given by \eqref{eqn:AK4_init}. HLLC-TVD solution generated with Athena \citep{AthenaSite}.  All other solutions generated with code written for this dissertation: \protect\gitrepo.}
+\label{fig:AK4_plot}
+\end{figure}
+
+\end{landscape}
+
+%% \vspace*{0.5mm}
+\clearpage
+}
+
+\afterpage{
+\begin{landscape}
+%-----------------------------------------------------------------
+% Solution to AK5
+%-----------------------------------------------------------------
+\begin{figure}[t!]
+\begin{tabular}{ccc}
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK5_csol_1}\input{fig/AK5_csol_1.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK5_csol_5}\input{fig/AK5_csol_5.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK5_csol_8}\input{fig/AK5_csol_8.tex}} \\
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK5_csol_2}\input{fig/AK5_csol_2.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK5_csol_3}\input{fig/AK5_csol_3.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK5_csol_4}\input{fig/AK5_csol_4.tex}} \\
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK5_csol_6}\input{fig/AK5_csol_6.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK5_csol_7}\input{fig/AK5_csol_7.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK5_csol_9}\input{fig/AK5_csol_9.tex}} 
+\end{tabular}
+\caption{Solution of MHD shock tube test 5a \eqref{eqn:AK5_init} with $\alpha = \pi$, at time 0.2066. HLLC-TVD solution generated with Athena \citep{AthenaSite}.  All other solutions generated with code written for this dissertation: \protect\gitrepo.}
+\label{fig:AK5_plot}
+\end{figure}
+
+\end{landscape}
+
+%% \vspace*{0.5mm}
+\clearpage
+}
+
+\afterpage{
+\begin{landscape}
+%-----------------------------------------------------------------
+% Solution to AK5b
+%-----------------------------------------------------------------
+\begin{figure}[t!]
+\begin{tabular}{ccc}
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK5b_csol_1}\input{fig/AK5b_csol_1.tex}} & 
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK5b_csol_5}\input{fig/AK5b_csol_5.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK5b_csol_8}\input{fig/AK5b_csol_8.tex}} \\
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK5b_csol_2}\input{fig/AK5b_csol_2.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK5b_csol_3}\input{fig/AK5b_csol_3.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK5b_csol_4}\input{fig/AK5b_csol_4.tex}} \\
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK5b_csol_6}\input{fig/AK5b_csol_6.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK5b_csol_7}\input{fig/AK5b_csol_7.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK5b_csol_9}\input{fig/AK5b_csol_9.tex}} 
+\end{tabular}
+\caption{Solution of MHD shock tube test 5b \eqref{eqn:AK5_init} with $\alpha = 3.0$, at time 0.2066. HLLC-TVD solution generated with Athena \citep{AthenaSite}.  All other solutions generated with code written for this dissertation: \protect\gitrepo.}
+\label{fig:AK5b_plot}
+\end{figure}
+
+\end{landscape}
+
+%% \vspace*{0.5mm}
+\clearpage
+}
+
+\afterpage{
+\begin{landscape}
+%-----------------------------------------------------------------
+% Solution to AK6a
+%-----------------------------------------------------------------
+\begin{figure}[t!]
+\begin{tabular}{ccc}
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK6_csol_1}\input{fig/AK6_csol_1.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK6_csol_5}\input{fig/AK6_csol_5.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK6_csol_8}\input{fig/AK6_csol_8.tex}} \\
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK6_csol_2}\input{fig/AK6_csol_2.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK6_csol_3}\input{fig/AK6_csol_3.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK6_csol_4}\input{fig/AK6_csol_4.tex}} \\
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK6_csol_6}\input{fig/AK6_csol_6.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK6_csol_7}\input{fig/AK6_csol_7.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK6_csol_9}\input{fig/AK6_csol_9.tex}} 
+\end{tabular}
+\caption{Solution of MHD shock tube test 6a \eqref{eqn:AK6_init} with $\alpha = \pi$, at time 0.15. HLLC-TVD solution generated with Athena \citep{AthenaSite}.  All other solutions generated with code written for this dissertation: \protect\gitrepo.}
+\label{fig:AK6_plot}
+\end{figure}
+
+\end{landscape}
+
+%% \vspace*{0.5mm}
+\clearpage
+}
+
+\afterpage{
+\begin{landscape}
+%-----------------------------------------------------------------
+% Solution to AK6b
+%-----------------------------------------------------------------
+\begin{figure}[t!]
+\begin{tabular}{ccc}
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK6b_csol_1}\input{fig/AK6b_csol_1.tex}} & 
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK6b_csol_5}\input{fig/AK6b_csol_5.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK6b_csol_8}\input{fig/AK6b_csol_8.tex}} \\
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK6b_csol_2}\input{fig/AK6b_csol_2.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK6b_csol_3}\input{fig/AK6b_csol_3.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK6b_csol_4}\input{fig/AK6b_csol_4.tex}} \\
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK6b_csol_6}\input{fig/AK6b_csol_6.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK6b_csol_7}\input{fig/AK6b_csol_7.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK6b_csol_9}\input{fig/AK6b_csol_9.tex}} 
+\end{tabular}
+\caption{Solution of MHD shock tube test 6b \eqref{eqn:AK6_init} with $\alpha=3.0$, at time 0.15. HLLC-TVD solution generated with Athena \citep{AthenaSite}.  All other solutions generated with code written for this dissertation: \protect\gitrepo.}
+\label{fig:AK6b_plot}
+\end{figure}
+
+\end{landscape}
+
+%% \vspace*{0.5mm}
+\clearpage
+}
+
+\afterpage{
+\begin{landscape}
+%-----------------------------------------------------------------
+% Solution to AK7
+%-----------------------------------------------------------------
+\begin{figure}[t!]
+\begin{tabular}{ccc}
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK7_csol_1}\input{fig/AK7_csol_1.tex}} & 
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK7_csol_5}\input{fig/AK7_csol_5.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK7_csol_8}\input{fig/AK7_csol_8.tex}} \\
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK7_csol_2}\input{fig/AK7_csol_2.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK7_csol_3}\input{fig/AK7_csol_3.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK7_csol_4}\input{fig/AK7_csol_4.tex}} \\
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK7_csol_6}\input{fig/AK7_csol_6.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK7_csol_7}\input{fig/AK7_csol_7.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK7_csol_9}\input{fig/AK7_csol_9.tex}} 
+\end{tabular}
+\caption{Solution of MHD shock tube test 7 \eqref{eqn:AK7_init} at time 0.05. HLLC-TVD solution generated with Athena \citep{AthenaSite}.  All other solutions generated with code written for this dissertation: \protect\gitrepo.}
+\label{fig:AK7_plot}
+\end{figure}
+
+\end{landscape}
+
+%% \vspace*{0.5mm}
+\clearpage
+}
+
+\afterpage{
+%-----------------------------------------------------------------
+% Solution of RJ2a
+%-----------------------------------------------------------------
+\begin{table}[t!]\footnotesize
+\caption{Exact solution of MHD shock tube test 1 (solid black line of Figure~\ref{fig:rj2a_plot})}
+\input{tab/RJ2a_table.tex}
+{\footnotesize$\phantom{1}B_n = 2/\sqrt{4\pi}$}
+\label{tab:rj2a}
+\end{table}
+
+%-----------------------------------------------------------------
+% Residual and wave speeds of RJ2a
+%-----------------------------------------------------------------
+\begin{table}[h!]\footnotesize
+\caption{Residual and wave speeds of MHD shock tube test 1}
+\input{tab/RJ2a_err_table.tex}
+\label{tab:rj2a_err}
+\end{table}
+
+%-----------------------------------------------------------------
+% Solution of AK2
+%-----------------------------------------------------------------
+\begin{table}[h!]\footnotesize
+\caption{Exact solution of MHD shock tube test 2 (solid black line of Figure~\ref{fig:AK2_plot})}
+\input{tab/AK2_table.tex}
+\label{tab:AK2}
+{\footnotesize$\phantom{11}B_n = 3/2$}
+\end{table}
+
+%-----------------------------------------------------------------
+% Residual and wave speeds of AK2
+%-----------------------------------------------------------------
+\begin{table}[h!]\footnotesize
+\caption{Residual and wave speeds of MHD shock tube test 2}
+\input{tab/AK2_err_table.tex}
+\label{tab:AK2_err}
+\end{table}
+
+\clearpage
+}
+
+\afterpage{
+%-----------------------------------------------------------------
+% Solution of AK3
+%-----------------------------------------------------------------
+\begin{table}[t!]\footnotesize
+\caption{Exact solution of MHD shock tube test 3 (solid black line of Figure~\ref{fig:AK3_plot})}
+\input{tab/AK3_table.tex}
+{\footnotesize$\phantom{111}B_n = 2$}
+\label{tab:AK3}
+\end{table}
+
+%-----------------------------------------------------------------
+% Residual and wave speeds of AK3
+%-----------------------------------------------------------------
+\begin{table}[h!]\footnotesize
+\caption{Residual and wave speeds of MHD shock tube test 3}
+\input{tab/AK3_err_table.tex}
+\label{tab:AK3_err}
+\end{table}
+
+%-----------------------------------------------------------------
+% Solution of AK4
+%-----------------------------------------------------------------
+\begin{table}[h!]\footnotesize
+\caption{Exact solution of MHD shock tube test 4 (solid black line of Figure~\ref{fig:AK4_plot})}
+\input{tab/AK4_table.tex}
+{\footnotesize$\phantom{111}B_n = 1$}
+\label{tab:AK4}
+\end{table}
+
+%-----------------------------------------------------------------
+% Residual and wave speeds of AK4
+%-----------------------------------------------------------------
+\begin{table}[h!]\footnotesize
+\caption{Residual and wave speeds of MHD shock tube test 4}
+\input{tab/AK4_err_table.tex}
+\label{tab:AK4_err}
+\end{table}
+
+\clearpage
+}
+
+\afterpage{
+%-----------------------------------------------------------------
+% Solution of AK5
+%-----------------------------------------------------------------
+\begin{table}[t!]\footnotesize
+\caption{Exact solution of MHD shock tube test 5a (solid black line of Figure~\ref{fig:AK5_plot})}
+\input{tab/AK5_table.tex}
+{\footnotesize$\phantom{1}B_n = 0.7746$}
+\label{tab:AK5}
+\end{table}
+
+%-----------------------------------------------------------------
+% Residual and wave speeds of AK5
+%-----------------------------------------------------------------
+\begin{table}[h!]\footnotesize
+\caption{Residual and wave speeds of MHD shock tube test 5a}
+\input{tab/AK5_err_table.tex}
+\label{tab:AK5_err}
+\end{table}
+
+%-----------------------------------------------------------------
+% Solution of AK5b
+%-----------------------------------------------------------------
+\begin{table}[h!]\footnotesize
+\caption{Exact solution of MHD shock tube test 5b (solid black line of Figure~\ref{fig:AK5b_plot})}
+\input{tab/AK5b_table.tex}
+{\footnotesize$\phantom{1}B_n = 0.7746$}
+\label{tab:AK5b}
+\end{table}
+
+%-----------------------------------------------------------------
+% Residual and wave speeds of AK5b
+%-----------------------------------------------------------------
+\begin{table}[h!]\footnotesize
+\caption{Residual and wave speeds of MHD shock tube test 5b}
+\input{tab/AK5b_err_table.tex}
+\label{tab:AK5b_err}
+\end{table}
+
+\clearpage
+}
+
+\afterpage{
+%-----------------------------------------------------------------
+% Solution of AK6a
+%-----------------------------------------------------------------
+\begin{table}[h!]\footnotesize
+\caption{Exact solution of MHD shock tube test 6a (solid black line of Figure~\ref{fig:AK6_plot})}
+\input{tab/AK6_table.tex}
+{\footnotesize$\phantom{1}B_n = 1.25$}
+\label{tab:AK6}
+\end{table}
+
+%-----------------------------------------------------------------
+% Residual and wave speeds of AK6a
+%-----------------------------------------------------------------
+\begin{table}[h!]\footnotesize
+\caption{Residual and wave speeds of MHD shock tube test 6a}
+\input{tab/AK6_err_table.tex}
+\label{tab:AK6_err}
+\end{table}
+
+%-----------------------------------------------------------------
+% Solution of AK6b
+%-----------------------------------------------------------------
+\begin{table}[h!]\footnotesize
+\caption{Exact solution of MHD shock tube test 6b (solid black line of Figure~\ref{fig:AK6b_plot})}
+\input{tab/AK6b_table.tex}
+{\footnotesize$\phantom{1}B_n = 1.25$}
+\label{tab:AK6b}
+\end{table}
+
+%-----------------------------------------------------------------
+% Residual and wave speeds of AK6b
+%-----------------------------------------------------------------
+\begin{table}[h!]\footnotesize
+\caption{Residual and wave speeds of MHD shock tube test 6b}
+\input{tab/AK6b_err_table.tex}
+\label{tab:AK6b_err}
+\end{table}
+
+\clearpage
+}
+
+\afterpage{
+%-----------------------------------------------------------------
+% Solution of AK7
+%-----------------------------------------------------------------
+\begin{table}[h!]\footnotesize
+\caption{Exact solution of MHD shock tube test 7 (solid black line of Figure~\ref{fig:AK7_plot})}
+\input{tab/AK7_table.tex}
+{\footnotesize$\phantom{1}B_n = 3.25$}
+\label{tab:AK7}
+\end{table}
+
+%-----------------------------------------------------------------
+% Residual and wave speeds of AK6b
+%-----------------------------------------------------------------
+\begin{table}[h!]\footnotesize
+\caption{Residual and wave speeds of MHD shock tube test 7}
+\input{tab/AK7_err_table.tex}
+\label{tab:AK7_err}
+\end{table}
+
+%% \clearpage
+}
+
+Further analysis has been performed for the coplanar case of tests 5 and 6 in order to determine the type of intermediate shock produced by the approximate solutions.  The states directly upstream and downstream of the intermediate shock were approximated with the HLLD-FCT code developed for this dissertation, on a grid consisting of 2048 cells.
+
+For coplanar case of test 5, the intermediate shock is traveling with a velocity of $S=-0.46546$.  The state variables directly upstream are: $\rho_u = 0.6428$, $v_{nu} = 0.5520$, $v_{yu} = -0.3723$, $v_{zu} = 0.0$, $p_{gu} = 0.2873$, $B_{tu} = 0.3027$, $c_{fu} = 1.1295$, $c_{au} = 0.9661$, $c_{su} = 0.7382$, $c_{0u} = 0.8630$, and $v_{su} = 1.0174$ is the flow velocity in the shock reference frame.  The state variables directly upstream are: $\rho_d = 0.8876$, $v_{nd} = 0.2686$, $v_{yd} = -0.8935$, $v_{zd} = 0.0$, $p_{gd} = 0.5152$, $B_{td} = -0.1168$, $c_{fd} = 1.0067$, $c_{ad} = 0.8222$, $c_{sd} = 0.8033$, $c_{0d} = 0.9835$, and $v_{sd} = 0.7341$.  The Mach number w.r.t. the Alfv{\'e}n speed is, $M_{au} = 1.0531$ upstream and $M_{ad} = 0.8928$ downstream.  The flow upstream is subfast, and super-Alfv{\'e}nic , $ c_{au} < v_{su} <c_{fu}$, while downstream it is subslow, and sub-Alfv{\'e}nic, $v_{sd} < c_{sd},c_{ad}$.  Thus, the compound wave is composed of a 2-4 intermediate shock followed by a SR.        
+
+For the coplanar case of test 6, the intermediate shock is traveling with a velocity of $S=-0.8961$.  The state variables directly upstream are: $\rho_u = 0.6671$, $v_{nu} = 0.6908$, $v_{yu} = -0.8670$, $v_{zu} = 0.0$, $p_{gu} = 0.5102$, $B_{tu} = 0.09560$, $c_{fu} = 1.5401$, $c_{au} = 1.5301$, $c_{su} = 1.1220$, $c_{0u} = 1.1290$, and $v_{su} = 1.5868$ is the flow velocity in the shock reference frame.  The state variables directly upstream are: $\rho_d = 0.7232$, $v_{nd} = 0.5677$, $v_{yd} = -1.3912$, $v_{zd} = 0.0$, $p_{gd} = 0.5862$, $B_{td} = -0.3462$, $c_{fd} = 1.5868$, $c_{ad} = 1.4698$, $c_{sd} = 1.0766$, $c_{0d} = 1.1622$, and $v_{sd} = 1.4638$.  The Mach number w.r.t. the Alfv{\'e}n speed is, $M_{au} = 1.0369$ upstream and $M_{ad} = 0.9959$ downstream.  The flow upstream is superfast, and super-Alfv{\'e}nic , $ c_{au}, c_{fu} < v_{su}$, while downstream it is superslow, and sub-Alfv{\'e}nic, $c_{sd} < v_{sd} < c_{ad}$.  Thus, the compound wave is composed of a FR followed by a 1-3 intermediate shock.        
+
+Tests 5a and 6a are examples of Riemann problems with non-unique solutions.  Both the exact and approximate solutions satisfy the jump conditions of the shock because the tangential magnetic fields are exactly coplanar.  Approximate solutions for Tests 5b and 6b give similar results, but are incorrect since the tangential magnetic field are only close to, but not exactly coplanar, the intermediate shock does not satisfy the jump conditions and should be considered unphysical.  A more detailed explanation of non-unique solutions and numerical complications in problems close to non-uniqueness is given next section.  In Chapter~\ref{chp:cwm}, a new method for removing the ambiguity, i.e., the solution the approximation converges to, is described. 
+
+%----------------------------------------------------------------------------------------
+% Non-unique solutions to Riemann problems of Ideal magnetohydrodynamics
+%----------------------------------------------------------------------------------------
+\section[Non-unique solutions to Riemann problems of ideal magnetohydrodynamics]{Non-unique solutions to Riemann problems of ideal magnetohydrodynamics}
+\label{sec:nonunique}
+
+Unique solutions to Riemann problems of ideal MHD are not guaranteed.  For certain initial conditions, the Riemann problem will have non-unique solutions.  Non-unique solutions will occur for problems with coplanar (anti-parallel) magnetic fields \citep{Barmin:1996}.  One solution has a $180\dsym$ rotational discontinuity and slow shock and the other solution has a compound wave.  A method for constructing Riemann problems with non-unique solutions and non-planar initial conditions is given by \citet{Torrilhon:2003a}.  As with the coplanar case, one solution consists of a $180\dsym$ rotational discontinuity and a slow shock and the other solution has a compound wave.  As discussed in this section, for cases with a $180\dsym$ rotation in the solution (either a compound wave or rotational discontinuity), convergence to the solution containing only a rotational discontinuity is impossible with numerical approximations based on the finite volume method.
+
+Using the same terminology and notation as \citet{Torrilhon:2003b}, intermediate shocks and compound waves are referred to as non-regular structures.  Regular structures include rarefactions, linear discontinuities, and Lax shocks.  The solution of the ideal MHD Riemann problem that includes only regular structures is referred to as the r-solution.  The solution that contains a compound wave is referred to as the c-solution.
+
+%-----------------------------------------------------------------
+% Coplanar original
+%-----------------------------------------------------------------
+\begin{figure}[htbp] 
+\begin{tabular}{cc}
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{coplanar_a_csol_1}\input{fig/coplanar_a_csol_1.tex}} &
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{coplanar_a_csol_6}\input{fig/coplanar_a_csol_6.tex}} \\
+\end{tabular}
+\caption{Non-convergence for the coplanar case. A non-regular structure (compound wave) in the approximate solution exists in place of the rotational discontinuity in the exact solution at $x=0.303$.  The domain used for error analysis is $x=[0.254,0.481]$.}
+\label{fig:coplanar_a_csol}
+\end{figure}
+       
+In this work, we use the coplanar and near coplanar cases of Test~5 and 6.  Test~5 was considered by \citet{Torrilhon:2003b}.  The initial conditions \eqref{eqn:AK5_init} and parameters used here are equivalent but have been scaled to the unit interval $[0,1]$ using
+\begin{gather}
+\label{eqn:scaling} \hat{\rho} = \frac{\rho}{\rho_l}, \;\;\;\; \hat{\mbf{v}} = \frac{\mbf{v}}{a_{l}}, \;\;\;\; \hat{\mbf{B}} = \frac{\mbf{B}}{\sqrt{\gamma p_{gl}}}, \;\;\;\; \hat{p}_g = \frac{p_g}{\gamma p_{gl}}, \;\;\hat{L}_x = 1 \text{, and} \;\;\; \hat{t}_f = \frac{a_{l} t_f}{L_x}.  
+\end{gather}
+The initial discontinuity is located at $x=0.4$, the final time is $t_f = 0.207$.  The exact solution containing only regular structures and the approximate solution containing a compound wave for $\rho$ and $B_y$ are shown in Figure \ref{fig:coplanar_a_csol}.  For a numerical scheme to converge to the r-solution, the density and the magnitude of the transverse magnetic field must remain constant between the left-going fast and slow structures, shown in Figure \ref{fig:coplanar_a_csol} at $x=0.254$ and $x=0.339$ respectively, otherwise a compound wave will appear.  
+
+%-----------------------------------------------------------------
+% Coplanar original
+%-----------------------------------------------------------------
+\begin{figure}[htbp] 
+\begin{tabular}{cc}
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{fast_coplanar_a_csol_1}\input{fig/fast_coplanar_a_csol_1.tex}} &
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{fast_coplanar_a_csol_6}\input{fig/fast_coplanar_a_csol_6.tex}} \\
+\end{tabular}
+\caption{Non-convergence for the coplanar case. A non-regular structure (compound wave) in the approximate solution exists in place of the rotational discontinuity in the exact solution at $x=0.365$.  The domain used for error analysis is $x=[0.346,0.551]$.}
+\label{fig:fast_coplanar_a_csol}
+\end{figure}
+
+The coplanar case of Test~6 is was considered in \citep{Ryu:1995a}, except we have used $p_{gr} = 1/3$, and $B_n = 1.25$.  The initial conditions are given by \eqref{eqn:AK6_init}.  The initial discontinuity is located at $x=0.5$, the final time is $t_f = 0.15$.  The exact solution containing only regular structures and the approximate solution containing a compound wave for $\rho$ and $B_y$ are shown in Figure \ref{fig:coplanar_a_csol}.  The density and the magnitude of the transverse magnetic field must remain constant between the left-going fast and slow structures, shown in Figure \ref{fig:fast_coplanar_a_csol} at $x=0.347$ and $x=0.401$ respectively, otherwise a compound wave will appear.  
+
+\citet{Falle:2001} described the appearance of compound waves in numerical simulations in terms of the properties of the planar ideal MHD equations.  In this case, the system of equations is reduced from seven to five by removing the equations for the $z$-component of the velocity and magnetic field.  In the reduced system, the Alfv{\'e}n waves are lost but the other characteristic fields are unchanged.  The Alfv{\'e}n velocity is no longer a characteristic speed of the system but rotational discontinuities still satisfy the jump conditions and propagate at that velocity. In planar ideal MHD, a rotational discontinuity can only rotate the perpendicular magnetic field by $180\dsym$ because it is restricted to a single plane.     
+
+Finite volume methods have no way of compensating for the reduction in dimension in the planar case.  If one of the perpendicular components of velocity and magnetic field vanish, there is no mechanism to transfer energy between the perpendicular field components across the rotational discontinuity.  The field in a cell would need to undergo a full $180\dsym$ rotation in one time step in order for the magnitude of the perpendicular magnetic field to remain constant.  Numerical diffusion and stability constraints prohibit the full rotation from being realized in one time step.  In addition, any interpolation with order greater than piecewise constant will produce a magnetic field at the cell interface (where the flux is calculated) with a magnitude that is less than that in the center of the adjoining cells.  From \eqref{eqn:energy}, any change in kinetic or magnetic energy will result in an increase in gas pressure that is connected to the upstream state through a shock and the downstream state through a rarefaction wave (i.e., a compound wave).  Thus, conservative finite volume schemes cannot converge to the r-solution for cases involving a $180\dsym$, or near $180\dsym$ rotation.  This is especially problematic for low-resolution grids because a greater amount of numerical diffusion is expected \citep{Barmin:1996,Torrilhon:2003b}.  
+
+%-----------------------------------------------------------------
+% Nonuniform convergence
+%-----------------------------------------------------------------
+\section[Nonuniform convergence]{Nonuniform convergence}
+\label{sec:nonuniform_converge}
+
+%-----------------------------------------------------------------
+% Pseudo-convergence slow compound wave
+%-----------------------------------------------------------------
+\begin{figure}[htbp] 
+\begin{tabular}{cc}
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{coplanar_b_pcon_1}\input{fig/coplanar_b_pcon_1.tex}} & 
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{coplanar_b_pcon_6}\input{fig/coplanar_b_pcon_6.tex}} \\
+\end{tabular}
+\caption{Pseudo-convergence for a near-coplanar case.  As the grid is refined from 1024 and 2048 points, the solution begins to diverge from the c-solution.}
+\label{fig:coplanar_b_pcon}
+\end{figure}
+
+%-----------------------------------------------------------------
+% Pseudo-convergence fast compound wave
+%-----------------------------------------------------------------
+\begin{figure}[htbp] 
+\begin{tabular}{cc}
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{fast_coplanar_b_pcon_1}\input{fig/fast_coplanar_b_pcon_1.tex}} & 
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{fast_coplanar_b_pcon_6}\input{fig/fast_coplanar_b_pcon_6.tex}} \\
+\end{tabular}
+\caption{Pseudo-convergence for a near-coplanar case.  As the grid is refined from 1024 and 2048 points, the solution begins to diverge from the c-solution.}
+\label{fig:fast_coplanar_b_pcon}
+\end{figure}
+
+Numerical diffusion also produces compound waves in Riemann problems with initial conditions near a critical state with a non-unique solution \citep{Torrilhon:2003b}.  For these problems, the angle between the perpendicular magnetic fields separated by the initial discontinuity, called the twist angle $\alpha$, determines uniqueness.  Solutions for $\alpha \ne n\pi$, with $n \in \mathbb{Z}$ are unique.  Compound waves appear in numerical solutions on coarse grids as $\alpha$ approaches $n\pi$ \citep{Torrilhon:2003b}.  A compound wave connecting non-planar states, i.e. $\alpha \ne n\pi$, does not satisfy the Rankine-Hugoniot equations~(\ref{eqn:jump1})-(\ref{eqn:jump7}) and a numerical solution containing one is therefore not correct.  As numerical diffusion is decreased through grid refinement, the compound wave loses its structure and the regular waves emerge.  \citet{Torrilhon:2003b} called this property pseudo-convergence because convergence is initially towards the c-solution; divergence from the c-solution only occurs when enough diffusion is eliminated through grid refinement.  The solution for various levels of grid refinement are shown for a near-coplanar case in Figure~\ref{fig:coplanar_b_pcon}.  \citet{Torrilhon:2003b} reported that a simulation using 20,000 grid points had not completely converged to the r-solution.  Pseudo-convergence also occurs in non-planar MHD Riemann problems with initial conditions near a critical state with a non-unique solution.  The new CWM technique for removing pseudo-convergence is described in the following chapter.  The technique is demonstrated on coplanar, near coplanar, and non-planar cases.
+

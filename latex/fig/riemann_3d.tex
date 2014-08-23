@@ -1,0 +1,245 @@
+%----------------------------------------------------------------------------------------
+% riemann_3d.tex
+% 3D Plot exact solution of density and perpendicular magnetic field.
+%----------------------------------------------------------------------------------------
+\tdplotsetmaincoords{110}{120}
+%% \tdplotsetmaincoords{80}{140}
+\begin{tikzpicture}[tdplot_main_coords,scale = 3.0,
+    %Option for nice arrows
+    >=stealth, %
+    inner sep=0pt, outer sep=2pt,%
+    axis/.style={thick,->},
+    wave/.style={thick,color=#1,smooth},
+    polaroid/.style={fill=black!60!white, opacity=0.3},
+    %% three sided/.style={
+    %% draw=none,
+    %% append after command={
+    %% [shorten <= -0.5\pgflinewidth]
+    %% ([shift={(-1.5\pgflinewidth,-0.5\pgflinewidth)}]\tikzlastnode.north east)
+    %% edge([shift={( 0.5\pgflinewidth,-0.5\pgflinewidth)}]\tikzlastnode.north west)
+    %% ([shift={( 0.5\pgflinewidth,-0.5\pgflinewidth)}]\tikzlastnode.north west)
+    %% edge([shift={( 0.5\pgflinewidth,+0.5\pgflinewidth)}]\tikzlastnode.south west)
+    %% ([shift={( 0.5\pgflinewidth,+0.5\pgflinewidth)}]\tikzlastnode.south west)
+    %% edge([shift={(-1.0\pgflinewidth,+0.5\pgflinewidth)}]\tikzlastnode.south east)
+    %% }
+    %% }
+]
+
+  % Colors
+  \colorlet{darkblue}{blue!50!black}
+  \colorlet{lightblue}{blue!80!black}
+  \colorlet{darkgreen}{green!50!black}
+  \colorlet{lightgreen}{green!80!black}
+  \colorlet{darkred}{red!50!black}
+  \colorlet{lightred}{red!80!black}
+
+  % Frame
+  \coordinate (O) at (0, 0, 0);
+  \draw[axis] (O) -- +(2.6 , 0, 0) node [left] {$x$};
+  \draw[axis] (O) -- +(0, 1.3, 0) node [right] {$B_y$};
+  \draw[axis] (O) -- +(0, -1.3, 0);
+  \draw[axis] (O) -- +(0, 0, 1.3) node [above] {$B_z$};
+  %% \draw[axis] (2.6 , 0, 0) -- (2.6, 1.3, 0);
+  %% \draw[axis] (2.6 , 0, 0) -- (2.6, -1.3, 0) node [left] {$B_y$};
+  %% \draw[axis] (2.6 , 0, 0) -- (2.6, 0, 1.3) node [above] {$B_z$};
+  
+  % location of waves
+  \coordinate (xflh) at (0.18879, 0.0, 0.0);
+  \coordinate (xfl) at (0.30790, 0.0, 0.0);
+  \coordinate (xflt) at (0.43965, 0.0, 0.0);
+  \coordinate (xal) at (0.64542, 0.0, 0.0);
+  \coordinate (xslh) at (0.70596, 0.0, 0.0);
+  \coordinate (xsl) at (0.73380, 0.0, 0.0);
+  \coordinate (xslt) at (0.76457, 0.0, 0.0);
+  \coordinate (xcd) at (1.22161, 0.0, 0.0);
+  \coordinate (xsrt) at (1.70153, 0.0, 0.0);
+  \coordinate (xsr) at (1.70153, 0.0, 0.0);
+  \coordinate (xsrh) at (1.70153, 0.0, 0.0);
+  \coordinate (xar) at (1.87325, 0.0, 0.0);
+  \coordinate (xfrt) at (2.15227, 0.0, 0.0);
+  \coordinate (xfr) at (2.15227, 0.0, 0.0);
+  \coordinate (xfrh) at (2.15227, 0.0, 0.0);
+
+  % label axis
+  %% \node[draw=white,below] (x1) at (xfl) {\small $x_1$};
+  %% \node[draw=white,below] (x2) at (xal) {\small $x_2$};
+  %% \node[draw=white,below] (x3) at (xsl) {\small $x_3$};
+  %% \node[draw=white,below] (x4) at (xcd) {\small $x_4$};
+  %% \node[draw=white,below] (x5) at (xsr) {\small $x_5$};
+  %% \node[draw=white,below] (x6) at (xar) {\small $x_6$};
+  %% \node[draw=white,below] (x7) at (xfr) {\small $x_7$};
+
+  % perpendicular magnetic field
+  \coordinate (btla) at (0, 0.73169, 0.68164);
+  \coordinate (btlb) at (0.18879, 0.73169, 0.68164);
+  \coordinate (btl1a) at (0.43965, 0.48554, 0.45233);
+  \coordinate (btl1b) at (0.64542, 0.48554, 0.45233);
+  \coordinate (btl2a) at (0.64542, -0.00268, 0.66359);
+  \coordinate (btl2b) at (0.70596, -0.00268, 0.66359);
+  \coordinate (btl3a) at (0.76457, -0.00340, 0.84199);
+  \coordinate (btl3b) at (1.22161, -0.00340, 0.84199);
+  \coordinate (btr3b) at (1.22161, -0.00340, 0.84199);
+  \coordinate (btr3a) at (1.70153, -0.00340, 0.84199);
+  \coordinate (btr2b) at (1.70153, -0.00467, 1.15620);
+  \coordinate (btr2a) at (1.87325, -0.00467, 1.15620);
+  \coordinate (btr1b) at (1.87325, -0.48115, 1.05134);
+  \coordinate (btr1a) at (2.15227, -0.48115, 1.05134);
+  \coordinate (btrb) at (2.15227, -0.41615, 0.90930);
+  \coordinate (btra) at (2.5, -0.41615, 0.90930);
+
+  % fast rarefaction
+  \coordinate (xfla) at (0.22463, 0.0, 0.0);
+  \coordinate (xflb) at (0.26047, 0.0, 0.0);
+  \coordinate (xflc) at (0.29631, 0.0, 0.0);
+  \coordinate (xfld) at (0.33214, 0.0, 0.0);
+  \coordinate (xfle) at (0.36798, 0.0, 0.0);
+  \coordinate (xflf) at (0.40382, 0.0, 0.0);
+
+  \coordinate (rfla) at (0.22463, 0.69653, 0.64888);
+  \coordinate (rflb) at (0.26047, 0.66136, 0.61612);
+  \coordinate (rflc) at (0.29631, 0.62620, 0.58336);
+  \coordinate (rfld) at (0.33214, 0.59103, 0.55060);
+  \coordinate (rfle) at (0.36798, 0.55587, 0.51785);
+  \coordinate (rflf) at (0.40382, 0.52071, 0.48509);
+
+  % slow rarefaction
+  \coordinate (xsla) at (0.7143284, 0.0, 0.0);
+  \coordinate (xslb) at (0.7227013, 0.0, 0.0);
+  \coordinate (xslc) at (0.7310742, 0.0, 0.0);
+  \coordinate (xsld) at (0.7394471, 0.0, 0.0);
+  \coordinate (xsle) at (0.7478200, 0.0, 0.0);
+  \coordinate (xslf) at (0.7561929, 0.0, 0.0);
+
+  \coordinate (rsla) at (0.7143284, -0.0027849, 0.6890721);
+  \coordinate (rslb) at (0.7227013, -0.0028880, 0.7145590);
+  \coordinate (rslc) at (0.7310742, -0.0029910, 0.7400458);
+  \coordinate (rsld) at (0.7394471, -0.0030940, 0.7655327);
+  \coordinate (rsle) at (0.7478200, -0.0031970, 0.7910195);
+  \coordinate (rslf) at (0.7561929, -0.0033000, 0.8165064);
+
+  % mag. of perp. field across rotation and (rotated) rotation angles
+  \pgfmathsetmacro{\bperpl}{0.66359};
+  \pgfmathsetmacro{\psila}{47.028};
+  \pgfmathsetmacro{\psilb}{-0.232};
+
+  \pgfmathsetmacro{\bperpr}{1.15621};
+  \pgfmathsetmacro{\psirb}{-0.232};
+  \pgfmathsetmacro{\psira}{-24.592};
+
+  % left state ------------------------------------------------------------------
+  \draw[darkred, line width=2pt] (btla) -- (btlb) -- (rfla) -- (rflb) -- (rflc)
+        -- (rfld) -- (rfle) -- (rflf) -- (btl1a) -- (btl1b);
+
+  % left rotational discontinuity -----------------------------
+
+  \draw[darkred, line width=2pt] (btl2a) -- (btl2b) -- (rsla) -- (rslb) -- (rslc)
+        -- (rsld) -- (rsle) -- (rslf) -- (btl3a) -- (btl3b);
+
+  % contact discontinuity ------------------------------------------------------------------
+
+  \draw[darkblue, line width=2pt] (btr2a) -- (btr2b) -- (btr3a) -- (btr3b);
+
+  % right rotational discontinuity -----------------------------
+
+  \draw[darkblue, line width=2pt] (btra) -- (btrb) -- (btr1a) -- (btr1b);
+  % right state ------------------------------------------------------------------
+
+
+  %translate the rotated coordinate system
+  %syntax: \tdplotsetrotatedcoordsorigin{point}
+  %define the rotated coordinate frame to lie in the "theta plane"
+  \tdplotsetthetaplanecoords{90};
+
+  % rotated axis
+  %% \draw[darkred, ->, line width=2pt,tdplot_rotated_coords] (0.0,0.0,0.0) -- (1.0,0.0,0.0) node [above] {$x'$};
+  %% \draw[darkred, ->, line width=2pt,tdplot_rotated_coords] (0.0,0.0,0.0) -- (0.0,1.0,0.0) node [above] {$y'$};
+  %% \draw[darkred, ->, line width=2pt,tdplot_rotated_coords] (0.0,0.0,0.0) -- (0.0,0.0,1.0) node [above] {$z'$};
+
+  % syntax: \tdplotdrawarc[coordinate frame, draw options]{center point}{r}{angle0}{angle1}{label}
+  \tdplotdrawarc[darkred,line width=2pt,tdplot_rotated_coords]{(xal)}{\bperpl}{\psila}{\psilb}{anchor=north}{};
+  \tdplotdrawarc[darkblue,line width=2pt,tdplot_rotated_coords]{(xar)}{\bperpr}{\psira}{\psirb}{anchor=north}{};
+
+  % --------------------------------------------------------------------------------------------
+  % density
+  % --------------------------------------------------------------------------------------------
+
+  \fill[black!100!,opacity=.8] (O) -- (btla) -- (btlb) --(xflh);
+  \shade[left color = black!97!,right color = black!82!,opacity=.8] (xflh) -- (btlb) -- (btl1a) -- (xflt);
+  \fill[black!79!,opacity=.8] (xflt) -- (btl1a) -- (btl1b) -- (xal);
+  \fill[black!79!,opacity=.8] (xal) -- (btl2a) -- (btl2b) -- (0.72,0.0,0.0);%(xslh);
+
+  %% \coordinate (xslh) at (0.70596, 0.0, 0.0);
+
+  %% \draw[black!71!,opacity=.8, very thin] (xslh) -- (btl2b);
+  \shade[left color = black!79!, right color = black!73!, opacity=.8]
+  (xslh) -- (btl2b) -- (btl3a) -- (0.78,0,0);%(xslt);
+
+  %% \coordinate (xslt) at (0.76457, 0.0, 0.0);
+
+  %% \draw[black!73!,opacity=.8] (btl3a) -- (xslt);
+  \fill[black!73!,opacity=.8] (xslt) -- (btl3a) -- (btl3b) -- (xcd);
+
+  \fill[black!47!,opacity=.8] (xcd)-- (btr3b) -- (btr3a) -- (xsrt);
+  %% \fill[black!36!,opacity=.8] (xsrt)-- (btr3a) -- (btr2b) -- (xsrh);
+  \fill[black!36!,opacity=.8] (xsrh)-- (btr2b) -- (btr2a) -- (xar);
+  \fill[black!36!,opacity=.8] (xar)-- (btr1b) -- (btr1a) -- (xfrt);
+  \fill[black!33!,opacity=.8] (xfrh)-- (btrb) -- (btra) -- (2.5,0.0,0.0);
+
+  %% \draw[darkblack, line width=2pt] (btr2a) -- (btr2b) -- (btr3a) -- (btr3b);
+
+  % --------------------------------------------------------------------------------------------
+  % colormap
+  % --------------------------------------------------------------------------------------------
+  %% \tdplotsetphiplanecoords{120};
+
+  \shade[top color = black!100!, bottom color = black!33!, opacity=.8,tdplot_screen_coords]
+   (0.8,0.5,0.0) -- (0.8,1.25,0.0) -- (0.95,1.25,0.0) -- (0.95,0.5,0.0);
+   
+  \node[draw=white,right,,tdplot_screen_coords] (dmax) at (0.95,1.2,0.0) {\small $\rho_l$};
+  \node[draw=white,right,,tdplot_screen_coords] (dmax) at (0.95,0.55,0.0) {\small $\rho_r$};
+
+  % --------------------------------------------------------------------------------------------
+  % annotations
+  % --------------------------------------------------------------------------------------------
+
+  % angles
+  \tdplotdrawarc[->,line width=1pt,tdplot_rotated_coords,left]{(0.0,0.0,0.0)}{0.4}{90}{\psila}
+                {anchor=north east}{\small$\psi_l$};
+  \tdplotdrawarc[->,line width=1pt,tdplot_rotated_coords]{(xal)}{0.4}{\psila}{\psilb}
+                {anchor=north}{\small$\alpha_l$};
+  \tdplotdrawarc[->,line width=1pt,tdplot_rotated_coords]{(xar)}{0.6}{\psira}{\psirb}
+                {anchor=north}{};%{\small$\alpha_r$};
+  \node[draw=white,below] at (1.87325,-0.12425,0.56459) {\small $\alpha_r$};
+  
+  % initial left and right states
+  \draw[-latex,thick](0.3,0.73169,0.8)node[left]{\small $\mbf{U}_l$}
+         to[out=0,in=90] (0.05,0.73169,0.72);\
+  \draw[-latex,thick](2.375,-0.2,1.05)node[right]{\small $\mbf{U}_r$}
+         to[out=180,in=90] (2.375,-0.41615,0.92);
+
+  % perpendicular field
+  %% \draw[-latex,thick](1.0,0.1,0.95)node[right]{\small $\mbf{B}_{\perp}$}
+  \draw[-latex,thick](0.8,0.2,0.8)node[below]{\small $\mbf{B}_t$}
+         to[out=90,in=90] (1.0,-0.0034,0.84199);
+
+  % Left fast rarefaction
+  \draw[-latex,thick](0.30790,-0.2,-0.05)node[left]{\small FR}
+         to[out=0,in=90] (0.30790,-0.025,0.0);
+
+  % right slow shock
+  \draw[-latex,thick](0.73380,-0.2,-0.05)node[left]{\small SR}
+         to[out=0,in=90] (0.73380,-0.025,0.0);
+
+  % contact discontinuity
+  \draw[-latex,thick](1.22161,-0.2,-0.05)node[left]{\small CD}
+         to[out=0,in=90] (1.22161,-0.025,0.0);
+
+  % right slow shock
+  \draw[-latex,thick](1.70153,-0.2,-0.05)node[left]{\small SS}
+         to[out=0,in=90] (1.70153,-0.025,0.0);
+
+  % right fast shock
+  \draw[-latex,thick](2.15227,-0.2,-0.05)node[left]{\small FS}
+         to[out=0,in=90] (2.15227,-0.025,0.0);
+
+\end{tikzpicture}
