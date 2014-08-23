@@ -78,15 +78,15 @@ The electromotive forces are initially calculated at the faces and must be integ
 
 The derivatives of the emf, $\partial \xi_z / \partial y$ ($\partial \xi_z / \partial x$) , at the x (y) interfaces are upwinded based on the contact mode.  In \citep{Gardiner:2005}, they are given as
 \begin{gather}
-\label{eqn:emf_upwind} = 
-\left( \pd{\xi_z}{y}\right)_{i+1/2,j+1/4}
+\label{eqn:emf_upwind}
+\left( \pd{\xi_z}{y}\right)_{i+1/2,j+1/4} =
 \begin{cases}
 \left( \pd{\xi_z}{y}\right)_{i,j+1/4} & \text{if}\;\;\; v_{n,i-+1/2,j} > 0 , \\
 \left( \pd{\xi_z}{y}\right)_{i+1,j+1/4} & \text{if}\;\;\; v_{n,i+1/2,j} < 0 , \\
 \frac{1}{2}\left(\left( \pd{\xi_z}{y}\right)_{i,j+1/4} + \left( \pd{\xi_z}{y}\right)_{i+1,j+1/4} \right)& \text{otherwise}.
 \end{cases}
 \end{gather}
-The derivatives are given as
+The derivatives are 
 \begin{gather}
 \left( \pd{\xi_z}{y} \right)_{i,j-1/4} = \frac{\xi^r_{z,i,j} - \xi_{z,i,j-1/2}}{2\delta y}.
 \end{gather}
@@ -146,8 +146,6 @@ A possible coloring, and the one implemented for this dissertation, of the inter
 
 Coloring is more complicated when CT is used in conjunction with a cell-centered FV scheme.  In this case, each loop over the faces consists of a contribution to the residual at the cell center and a contribution to the emf at the cell corner.  Not only accessing the same cell, but also the same point must be avoided.  The coloring scheme shown in Figure~\ref{fig:face_color_1} only avoids one these potential pitfalls, because the faces/edges of each group can access the same point simultaneously.  An alternative coloring scheme is shown in Figure~\ref{fig:face_color_2} where eight colors are used instead of four.  In this case, the faces and the edges are colored,  this is equivalent to doubling the amount of colors for the faces since edges and faces are the same in two-dimensions.
 
-
-
 %----------------------------------------------------------------------------------------
 %	GPU and CPU Results
 %----------------------------------------------------------------------------------------
@@ -183,7 +181,61 @@ $1024\times1024$ & $7.2134\times10^7$ & $8.3354\times10^5$ & 86 \\
 \section[Efficient algorithms]{Efficient algorithms}
 \label{sec:efficient_algo}
 
-This section discusses increasing parallel performance with efficient data storage and utilization computational power.  The two types of data storage are AoS and SoA.  
+This section discusses increasing parallel performance with efficient data storage and utilization computational power.  The two types of data storage are AoS and SoA.  With limited memory available on the GPU, it is important to limit data storage.  This is achieved through function composition, or operator fusion.
+
+The goal of operator fusion is to reduce storage of temporary data for similar operations.  As an example, consider the two transformations, $f(x)$ and $g(f(x))$ \citep{Thrust}.
+\lstset{language=C++,
+                basicstyle=\footnotesize\ttfamily,
+                keywordstyle=\color{blue}\ttfamily,
+                stringstyle=\color{darkred}\ttfamily,
+                commentstyle=\color{darkorange}\ttfamily,
+                morecomment=[l][\color{magenta}]{\#},
+                breaklines=true,
+                tabsize=2,
+                lineskip={-1.5pt} % single line spacing
+}
+%[language=C++]
+\begin{lstlisting}
+  device_vector<float> x(n);  // independent variable
+  device_vector<float> y(n);  // y = f(x)
+  device_vector<float> z(n);  // z = g(y)
+
+  // compute y = f(x)
+  thrust::transform(x.begin(),x.end(),y.begin(),f());
+
+  // compute z = g(y) 
+  thrust::transform(y.begin(),y.end(),z.begin(),g());
+\end{lstlisting} 
+The above example requires storage of $3n$ floats, reads $2n$ floats, writes $2n$ floats, and uses $n$ temporary floats.  The operations can be fused by using transform iterators.
+\begin{lstlisting}
+  device_vector<float> x(n);  // independent variable
+  device_vector<float> z(n);  // z = g(y) = g(f(x))
+
+  // compute z = g(f(x))
+  thrust::transform(make_transform_iterator(x.begin(),f()),
+                    make_transform_iterator(x.end(),f()),
+                    z.begin(),
+                    g());
+\end{lstlisting} 
+Using \verb+transform_iterators+ reduces the storage requirements to $2n$ floats, $n$ reads, $n$ writes, and no temporary storage. 
+\begin{lstlisting}
+  thrust::transform_n(make_transform_iterator(
+                          make_transform_iterator(
+                               make_device_counting_iterator(),
+                               cells_init(mesh.ndim,
+                               mesh.ncell_x,
+                               mesh.ncell_y,
+                               mesh.dx,
+                               mesh.dy)),
+                          shock_tube_initialize(discontinuity_postion,
+                                                state_l,
+                                                state_r)),
+                      mesh.ncell(),
+                      state.begin(),
+                      convert_primitive_to_conservative(gamma));
+
+\end{lstlisting}
+
 
  The results indicate that the cost to performance ratio for a  GPUs such as NVIDIAs GTX Titan, which retails for about \$1000.00, makes them ideal choices for shared memory processors, if the limited memory is managed properly.  The availability of memory on a GPU is the greatest obstacle to using it for flow simulations.  The relatively large memory capacity of 6 GB on the GTX Titan is around $6.5\%$ of the 92 GB available on the Xeon E5.  For the equivalent memory of one, Xeon E5, fifteen GPUs are required, costing nearly three times that of one Xeon E5.  In order for GPUs to be worth the investment, computations on the fly must be maximized and data storage minimized.   
 
