@@ -21,6 +21,10 @@
 % The first argument in [ ] is the title as displayed in the table of contents
 % The second argument is the title as displayed here.  Use \\ as appropriate in
 %   this title to get desired line breaks
+
+%----------------------------------------------------------------------------------------
+%	HLL fluxes
+%----------------------------------------------------------------------------------------
 \appchapter[Derivation of HLL fluxes]{Derivation of HLL fluxes}
 \label{app:hll_flux}
 
@@ -52,3 +56,50 @@ Rearranging \eqref{eqn:hll_flux_4}, and approximating the integral of the left h
 \label{eqn:hll_flux_5}
 \mbf{F}^* = \frac{S_r \mbf{F}_l - S_l \mbf{F}_r + S_r S_l (\mbf{U}_l - \mbf{U}_r) }{S_r - S_l}.
 \end{gather}.
+
+\clearpage
+
+%----------------------------------------------------------------------------------------
+%	Additional functionality
+%----------------------------------------------------------------------------------------
+%% \appchapter[Thrust: \verb+transorm_n+]{Thrust: \verb+transorm_n+}
+\appchapter[Thrust templates]{Thrust templates}
+\label{app:thrust_add}
+
+Below are \verb+transform_n+ templates for unary and binary functors, as well as the inline function \verb+make_device_counting_iterator+ [A. Corrigan, private correspondence].  The type \verb+Struct+ is being iterated over when used in conjunction with \verb+make_device_counting_iterator+.
+\begin{lstlisting}
+namespace thrust
+{
+  template<typename InputIterator,
+           typename Size,
+           typename OutputIterator,
+           typename UnaryFunction>
+  OutputIterator transform_n(InputIterator first, Size n,
+			     OutputIterator result,
+			     UnaryFunction op)
+	 {
+	   return transform(first, first+n, result, op);
+	 }
+  template<typename InputIterator1,
+           typename Size,
+           typename InputIterator2,
+           typename OutputIterator,
+           typename BinaryFunction>
+    OutputIterator transform_n(InputIterator1 first1, Size n,
+			       InputIterator2 first2,
+			       OutputIterator result,
+			       BinaryFunction op)
+	   {
+	     return transform(first1, first1+n, first2, result, op);
+	   }
+
+} //end namespace
+
+typedef int Index;
+typedef thrust::device_vector<Struct>::iterator StructIterator;
+typedef thrust::iterator_system<StructIterator>::type device_iterator_system;
+typedef thr::counting_iterator<Index,device_iterator_system> device_counting_iterator;
+
+inline device_counting_iterator make_device_counting_iterator(Index start=Index(0)) { return device_counting_iterator(start); }
+
+\end{lstlisting}

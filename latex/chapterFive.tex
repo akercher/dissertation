@@ -152,7 +152,7 @@ Coloring is more complicated when CT is used in conjunction with a cell-centered
 \section[GPU and CPU results]{GPU and CPU results}
 \label{sec:gpu_results}
 
-The timing was done on a Dell Precision 7500 workstation with a (Dual CPU) Intel Xeon E5645 @ 2.40 Ghz.  The graphics card is a GeFroce GTX TITAN with a memory bandwidth of 288.4 GB/sec and 2688 CUDA cores.  The Orszag-Tang vortex was chosen as the test problem for the timing results.  Each CPU has six physical cores and two logical cores per physical, making 24 cores available with hyper-threading enabled.  Assuming near perfect scaling, running on the GPU is approximately three and a half times faster than running in parallel on the CPUs.
+The timing was done on a Dell Precision 7500 workstation with a (Dual CPU) Intel Xeon E5645 @ 2.40 Ghz.  The graphics card is a GeFroce GTX TITAN with a memory bandwidth of 288.4 GB/sec and 2688 CUDA cores.  The Orszag-Tang vortex \citep{Orszag:1979} was chosen as the test problem for the timing results.  This problem has been extensively studied and used as a comparison.  Each CPU has six physical cores and two logical cores per physical, making 24 cores available with hyper-threading enabled.  Assuming near perfect scaling, running on the GPU is approximately three and a half times faster than running in parallel on the CPUs.
 
 %-----------------------------------------------------------------
 % Timing Results Orszag-Tang
@@ -184,21 +184,10 @@ $1024\times1024$ & $7.2134\times10^7$ & $8.3354\times10^5$ & 86 \\
 This section discusses increasing parallel performance with efficient data storage and utilization computational power.  The two types of data storage are AoS and SoA.  With limited memory available on the GPU, it is important to limit data storage.  This is achieved through function composition, or operator fusion.
 
 The goal of operator fusion is to reduce storage of temporary data for similar operations.  As an example, consider the two transformations, $f(x)$ and $g(f(x))$ \citep{Thrust}.
-\lstset{language=C++,
-                basicstyle=\footnotesize\ttfamily,
-                keywordstyle=\color{blue}\ttfamily,
-                stringstyle=\color{darkred}\ttfamily,
-                commentstyle=\color{darkorange}\ttfamily,
-                morecomment=[l][\color{magenta}]{\#},
-                breaklines=true,
-                tabsize=2,
-                lineskip={-1.5pt} % single line spacing
-}
-%[language=C++]
 \begin{lstlisting}
-  device_vector<float> x(n);  // independent variable
-  device_vector<float> y(n);  // y = f(x)
-  device_vector<float> z(n);  // z = g(y)
+  thrust::device_vector<float> x(n);  // independent variable
+  thrust::device_vector<float> y(n);  // y = f(x)
+  thrust::device_vector<float> z(n);  // z = g(y)
 
   // compute y = f(x)
   thrust::transform(x.begin(),x.end(),y.begin(),f());
@@ -206,10 +195,10 @@ The goal of operator fusion is to reduce storage of temporary data for similar o
   // compute z = g(y) 
   thrust::transform(y.begin(),y.end(),z.begin(),g());
 \end{lstlisting} 
-The above example requires storage of $3n$ floats, reads $2n$ floats, writes $2n$ floats, and uses $n$ temporary floats.  The operations can be fused by using transform iterators.
+The above example requires storage of $3n$ floats, $2n$ reads, $2n$ writes, and uses $n$ temporary floats.  The operations can be fused by using transform iterators.
 \begin{lstlisting}
-  device_vector<float> x(n);  // independent variable
-  device_vector<float> z(n);  // z = g(y) = g(f(x))
+  thrust::device_vector<float> x(n);  // independent variable
+  thrust::device_vector<float> z(n);  // z = g(y) = g(f(x))
 
   // compute z = g(f(x))
   thrust::transform(make_transform_iterator(x.begin(),f()),
@@ -217,26 +206,164 @@ The above example requires storage of $3n$ floats, reads $2n$ floats, writes $2n
                     z.begin(),
                     g());
 \end{lstlisting} 
-Using \verb+transform_iterators+ reduces the storage requirements to $2n$ floats, $n$ reads, $n$ writes, and no temporary storage. 
+Using \verb+transform_iterators+ reduces the storage requirements to $2n$ floats, $n$ reads, $n$ writes, and no temporary storage.  As another example, consider initializing the cell-centered variables for an HD shock tube problem in one-dimension.  The initial discontinuity is given by \verb+discontinuity_position+ and the initial left and right states are given in primitive variables by the tuples of floats \verb+state_l+ and \verb+state_r+ respectively.  The inefficient method for initializing the cell centers with conservative state variables is given below.
 \begin{lstlisting}
+  // type definitions
+  typedef thrust::device_vector<float,float>       Point; // (x,y)
+  typedef thrust::device_vector<float,float,float> Vector;// (d, mx, E)
+  typedef thrust::device_vector<Point>             PointArray;  // SoA
+  typedef thrust::device_vector<Vector>            VectorArray; // SoA
+
+  int         n;                     // number of cells
+  float       discontinuity_postion;
+  PointArray  cell_positions(n);
+  VectorArray primitive_states(ncell);
+  VectorArray conservative_states(n);
+
+  // compute cell positions 
+  thrust::transform_n(thrust::make_counting_iterator(0),
+                      n,
+                      cell_positions.begin(),
+                      cells_initialize());
+  			  
+  
+  // set state of cell based on position                 
+  thrust::transform_n(cell_positions.begin(),
+                      cell_positions.size(),
+                      primitive_states.begin(),
+                      shock_tube_initialize(discontinuity_postion,
+                                            state_l,
+                                            state_r));
+
+  // convert primitive variables to conservative variables
+  thrust::transform_n(primitive_states.begin(),
+                      primitive_states.size(),
+                      conservative_states.begin(),
+                      convert_primitive_to_conservative());
+\end{lstlisting}
+The storage of the cell positions and primitive variables is eliminated using the \verb+make_transform_iterator+ as follows 
+\begin{lstlisting}
+  // type definitions
+  typedef thrust::device_vector<float,float,float> Vector;// (d, mx, E)
+  typedef thrust::device_vector<Vector>            VectorArray; // SoA
+
+  int n;
+  float discontinuity_postion;
+  VectorArray conservative_states(n);
+
+  // set conservative state at cell center based on position
   thrust::transform_n(make_transform_iterator(
                           make_transform_iterator(
                                make_device_counting_iterator(),
-                               cells_init(mesh.ndim,
-                               mesh.ncell_x,
-                               mesh.ncell_y,
-                               mesh.dx,
-                               mesh.dy)),
+                               cells_initialize()),
                           shock_tube_initialize(discontinuity_postion,
                                                 state_l,
                                                 state_r)),
-                      mesh.ncell(),
-                      state.begin(),
-                      convert_primitive_to_conservative(gamma));
-
+                       ncell(),
+                       conservative_states.begin(),
+                       convert_primitive_to_conservative());
 \end{lstlisting}
+see Appendix~\ref{app:thrust_add} for the definitions of \verb+transform_n+ and \verb+make_device_counting_iterator+.  By fusing the transformations, the need to store $5n$ floats was eliminate, the number of reads and writes was reduce by $5n$, and no temporaries were stored.  The storage requirements are reduced by $10n$ in the case of multi-dimensional MHD.  Transform iterators help reduce the amount of stored data, however, it is important to properly store the remaining data to achieve memory coalescing.
 
+Memory coalescing occurs when multiple memory address are accessed with a single transaction.  A warp is 32 consecutive thread om the GPU.  It can access 128 bytes, i.e., 32 single precision values, with one transaction.  If memory is uncoalesced, multiple transactions are required to load 128 bytes.  Coalescing does not occur when data is stored with AoS, it will however, with SoA.  Below is an example of a structure containing one-dimensional hydrodynamic state variables.
+\begin{lstlisting}
+\struc conservative_variables{
+  float density;
+  float momentum_x;
+  float energy;
+}
 
- The results indicate that the cost to performance ratio for a  GPUs such as NVIDIAs GTX Titan, which retails for about \$1000.00, makes them ideal choices for shared memory processors, if the limited memory is managed properly.  The availability of memory on a GPU is the greatest obstacle to using it for flow simulations.  The relatively large memory capacity of 6 GB on the GTX Titan is around $6.5\%$ of the 92 GB available on the Xeon E5.  For the equivalent memory of one, Xeon E5, fifteen GPUs are required, costing nearly three times that of one Xeon E5.  In order for GPUs to be worth the investment, computations on the fly must be maximized and data storage minimized.   
+conservative_variables *state;  // AoS
+
+state[i].density = some_number;
+state[i].momentum_x = another_number;
+state[i].energy = one_more_number;
+\end{lstlisting} 
+
+To ensure memory is coalesced, the variables need to load to a SoA, as shown below.
+\begin{lstlisting}
+\struc conservative_variables{
+  float *density;
+  float *momentum_x;
+  float *energy;
+}
+
+conservative_variables state; // SoA
+
+state.density[i] = some_number;
+state.momentum_x[i] = another_number;
+state.energy[i] = one_more_number;
+\end{lstlisting} 
+Memory coalescing can be achieved with thrust through the use of the \verb+zip_iteraor+.  It creates tuples from arrays on the fly.  Converting from primitive variables to conservative variables using the slower AoS approach is shown below.
+\begin{lstlisting}
+\struc convert_primitive_to_conservative 
+  : public thrust::unary_function<primitive_variables,
+                                 conservative_variables>
+{
+  float _gamma;
+  
+  convert_primitive_to_conservative(float gamma)
+  : _gamma(gamma) {}
+
+  __host__ __device__
+  conservative_variables operator()(const primitive_variables& pstate)
+
+  float half = 1.0f/2.0f;
+  float d  = pstate.density;
+  float vx = pstate.velocity_x;
+  float pg = pstate.pressure_gas;
+
+  float density = d;
+  float momentum_x = d*vx;
+  float energy = pg/(1.0f - this->_gamma) + half*d*vx*vx;
+  
+  return make_conservative_variables(density,momentum_x,energy);
+}
+
+thrust::device_vector<primitive_variables>    pstate(n);  // AoS
+thrust::device_vector<conservative_variables> state(n);   // AoS
+thrust::transform_n(pstate.begin(),
+                    pstate.size(),
+                    state.begin(),
+                    convert_primitive_to_conservative(gamma));
+\end{lstlisting} 
+The faster SoA approach using the \verb+zip_operator+ is shown below.
+\begin{lstlisting} 
+\struc convert_primitive_to_conservative
+  : public thrust::unary_function<tuple<float,float,float>,
+                                  tuple<float,float,float>>
+{
+  float _gamma;
+  
+  convert_primitive_to_conservative(float gamma)
+  : _gamma(gamma) {}
+
+  __host__ __device__
+  tuple<float,float,float> operator()(const tuple<float,float,float>& pstate)
+
+  float half = 1.0f/2.0f;
+  float d  = thrust::get<0>(pstate);
+  float vx = thrust::get<1>(pstate);
+  float pg = thrust::get<2>(pstate);
+
+  float density = d;
+  float momentum_x = d*vx;
+  float energy = pg/(1.0f - this->_gamma) + half*d*vx*vx;
+  
+  return make_tuple(density,momentum_x,energy);
+}
+thrust::device_vector<float> d(n),vx(n),pg(n); 
+thrust::device_vector<float> mx(n),en(n); 
+thrust::transform_n(thrust::make_zip_operator(make_tuple(d.begin(),
+                                                        vx.begin(),
+                                                        pg.begin())),
+                    n,
+                    thrust::make_zip_operator(make_tuple(d.begin(),
+                                                        mx.begin(),
+                                                        en.begin())),
+                    convert_primitive_to_conservative(gamma));
+\end{lstlisting} 
+
+ The results indicate that the cost to performance ratio for a  GPUs such as NVIDIAs GTX Titan, which retails for about \$1000.00, makes them ideal choices for shared memory processors, if the limited memory is managed properly.  The relatively large memory capacity of 6 GB on the GTX Titan is around $6.5\%$ of the 92 GB available on the Xeon E5.  For the equivalent memory of one, Xeon E5, fifteen GPUs are required, costing nearly three times that of one Xeon E5.  In order for GPUs to be worth the investment, computations on the fly must be maximized and data storage minimized.   
 
 
