@@ -69,8 +69,8 @@
 \usepackage[acronym]{glossaries} % create abbreviation and nomenclature lists
 
 % decrease white space above and below caption
-\setlength{\abovecaptionskip}{-1ex}%{-11pt}
-\setlength{\belowcaptionskip}{-2ex}%{-8pt}
+%% \setlength{\abovecaptionskip}{-1ex}%{-11pt}
+%% \setlength{\belowcaptionskip}{-2ex}%{-8pt}
 
 
 \definecolor{darkorange}{rgb}{0.9,0.3,0.0}
@@ -172,7 +172,7 @@
 
 \dedicationpage
 
-%% \noindent I dedicate this dissertation to my wife, without whom, I would have faltered. 
+\noindent This dissertation is dedicated to my wife, without whom, I would have faltered. 
 
 %%------------------------------------------------------------
 %% Acknowledgements
@@ -186,7 +186,7 @@ Second, I would like to thank Dr. Rainald L{\"o}hner for introducing me to compu
 
 Third, I would like to thank Andrew Corrigan for always being available when I hit a wall.
 
-Forth, I would like to thank the other members of my committee, Dr. Jie Zhang and Dr, Fernando Camelli for their time and effort. 
+Forth, I would like to thank Dr. Jie Zhang and Dr. Fernando Camelli for their time and effort. 
  
 My final thanks is to my friends and family for their love and support; to my daughter Abigail, for keeping a smile on my face during the frustrating times; to my expected child for keeping me motivated, and above all, to Anita for everything.
 
@@ -206,10 +206,9 @@ My final thanks is to my friends and family for their love and support; to my da
 \abstractpage
 
 %% \begin{abstract}
-Numerical schemes for the ideal magnetohydrodynamics (MHD) are widely used for modeling space weather and astrophysical flows.  They are designed to resolve the different waves that propagate through a magnetohydro fluid, namely, the fast, Alfv{\'e}n, slow, and entropy waves.  Numerical schemes for ideal magnetohydrodynamics that are based on the standard finite volume (FV) discretization exhibit pseudo-convergence in which non-regular waves no longer exist only after heavy grid refinement.  A method is described for obtaining solutions for coplanar and near-coplanar cases that consist of only regular waves, independent of grid refinement.  The method, referred to as Compound Wave Modification (CWM), involves removing the flux associated with non-regular structures and can be used for simulations in two- and three-dimensions because it does not require explicitly tracking an Alfv{\'e}n wave.  For a near-coplanar case, and for grids with $2^{13}$ points or less, we find \glspl{rmse} that are as much as 6 times smaller.  For the coplanar case, in which non-regular structures will exist at all levels of grid refinement for the standard FVMs, the RMSE is as much as 25 times smaller.  
+Numerical schemes for the ideal magnetohydrodynamics (MHD) are widely used for modeling space weather and astrophysical flows.  They are designed to resolve the different waves that propagate through a magnetohydro fluid, namely, the fast, Alfv{\'e}n, slow, and entropy waves.  Numerical schemes for ideal magnetohydrodynamics that are based on the standard finite volume (FV) discretization exhibit pseudo-convergence in which non-regular waves no longer exist only after heavy grid refinement.  A method is described for obtaining solutions for coplanar and near-coplanar cases that consist of only regular waves, independent of grid refinement.  The method, referred to as Compound Wave Modification (CWM), involves removing the flux associated with non-regular structures and can be used for simulations in two- and three-dimensions because it does not require explicitly tracking an Alfv{\'e}n wave.  For a near-coplanar case, and for grids with $2^{13}$ points or less, we find \glspl{rmse} that are as much as 6 times smaller.  For the coplanar case, in which non-regular structures will exist at all levels of grid refinement for standard FV schemes, the RMSE is as much as 25 times smaller.  
  
-A multidimensional ideal MHD code has implemented for simulations on \glspl{gpu}.  Performance measurements are conducted on both a NVIDIA GeForce 
-
+A multidimensional ideal MHD code has implemented for simulations on \glspl{gpu}.  Performance measurements were conducted for both the NVIDIA 
 %% \end{abstract}
 
 %% Be sure to leave a line of whitespace immediately before this line!!!!!
@@ -221,9 +220,10 @@ A multidimensional ideal MHD code has implemented for simulations on \glspl{gpu}
 %% in the usage notes.)
 %%
 \abstractmultiplepage
-
 %% The second page of the abstract
-GTX Titan and Intel Xeon E5645 processor. The GPU is shown to perform one to two orders of magnitude greater than in serial on the CPU, and two to three times greater than when run in parallel with OpenMP on the CPU.  Performance measurements are also given for two methods of storing data on the GPU.  The first approach stores data as an Array of Structures (AoS), e.g., a point coordinate array of size $3\times n$ is iterated over.  The second approach stores data as a Structure of Arrays (SoA), e.g. three separate arrays of size $n$ are iterated over simultaneously.  For an AoS, coalescing does not occur, reducing memory efficiency.  The SoA approach is shown to improve performance by one and a half to two times depending on the algorithm used.  All results are given for Cartesian grids, but the algorithms are implemented for a general geometry on a unstructured grids.
+\noindent GeForce GTX Titan and Intel Xeon E5645 processor. The GPU is shown to perform one to two orders of magnitude greater than the CPU when using a single core, and two to three times greater than when run in parallel with OpenMP.  Performance comparisons are made for two methods of storing data on the GPU.  The first approach stores data as an Array of Structures (AoS), e.g., a point coordinate array of size $3\times n$ is iterated over.  The second approach stores data as a Structure of Arrays (SoA), e.g. three separate arrays of size $n$ are iterated over simultaneously.  For an AoS, coalescing does not occur, reducing memory efficiency.    All results are given for Cartesian grids, but the algorithms are implemented for a general geometry on a unstructured grids.
+
+%% The SoA approach is shown to improve performance by one and a half to two times depending on the algorithm used.
 
 %%------------------------------------------------------------
 %%  the main body of the dissertation

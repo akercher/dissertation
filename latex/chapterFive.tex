@@ -265,9 +265,9 @@ The storage of the cell positions and primitive variables is eliminated using th
 \end{lstlisting}
 see Appendix~\ref{app:thrust_add} for the definitions of \verb+transform_n+ and \verb+make_device_counting_iterator+.  By fusing the transformations, the need to store $5n$ floats was eliminate, the number of reads and writes was reduce by $5n$, and no temporaries were stored.  The storage requirements are reduced by $10n$ in the case of multi-dimensional MHD.  Transform iterators help reduce the amount of stored data, however, it is important to properly store the remaining data to achieve memory coalescing.
 
-Memory coalescing occurs when multiple memory address are accessed with a single transaction.  A warp is 32 consecutive thread om the GPU.  It can access 128 bytes, i.e., 32 single precision values, with one transaction.  If memory is uncoalesced, multiple transactions are required to load 128 bytes.  Coalescing does not occur when data is stored with AoS, it will however, with SoA.  Below is an example of a structure containing one-dimensional hydrodynamic state variables.
+Memory coalescing occurs when multiple memory addresses are accessed with a single transaction.  A warp is 32 consecutive thread on the GPU.  It can access 128 bytes, i.e., 32 single precision values, with one transaction.  If memory is uncoalesced, multiple transactions are required to load 128 bytes.  Coalescing does not occur when data is stored with AoS, it will however, with SoA.  Below is an example of a structure containing one-dimensional hydrodynamic state variables.
 \begin{lstlisting}
-\struc conservative_variables{
+struc conservative_variables{
   float density;
   float momentum_x;
   float energy;
@@ -280,9 +280,9 @@ state[i].momentum_x = another_number;
 state[i].energy = one_more_number;
 \end{lstlisting} 
 
-To ensure memory is coalesced, the variables need to load to a SoA, as shown below.
+To ensure memory is coalesced, the variables need to stored in an SoA, as shown below.
 \begin{lstlisting}
-\struc conservative_variables{
+struc conservative_variables{
   float *density;
   float *momentum_x;
   float *energy;
@@ -296,7 +296,7 @@ state.energy[i] = one_more_number;
 \end{lstlisting} 
 Memory coalescing can be achieved with thrust through the use of the \verb+zip_iteraor+.  It creates tuples from arrays on the fly.  Converting from primitive variables to conservative variables using the slower AoS approach is shown below.
 \begin{lstlisting}
-\struc convert_primitive_to_conservative 
+struc convert_primitive_to_conservative 
   : public thrust::unary_function<primitive_variables,
                                  conservative_variables>
 {
@@ -329,7 +329,7 @@ thrust::transform_n(pstate.begin(),
 \end{lstlisting} 
 The faster SoA approach using the \verb+zip_operator+ is shown below.
 \begin{lstlisting} 
-\struc convert_primitive_to_conservative
+struc convert_primitive_to_conservative
   : public thrust::unary_function<tuple<float,float,float>,
                                   tuple<float,float,float>>
 {
@@ -339,7 +339,7 @@ The faster SoA approach using the \verb+zip_operator+ is shown below.
   : _gamma(gamma) {}
 
   __host__ __device__
-  tuple<float,float,float> operator()(const tuple<float,float,float>& pstate)
+  tuple<float,float,float>operator()(const tuple<float,float,float>& pstate)
 
   float half = 1.0f/2.0f;
   float d  = thrust::get<0>(pstate);
