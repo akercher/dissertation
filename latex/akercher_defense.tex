@@ -80,7 +80,6 @@
 \setbeamercolor{frametitle}{fg=XDarkBlue}
 \setbeamercolor{normal text}{fg=black}
 
-
 %%------------------------------------------------------------
 %%  Listing options
 %%------------------------------------------------------------
@@ -164,6 +163,22 @@
 %----------------------------------------------------------------------------------------
 \begin{frame}[fragile]
 \frametitle{Introduction}
+\bei
+\item Solutions to Riemann problems of hydrodynamics and ideal magnetohydrodynamics.
+\pause
+\item High resolution schemes produce incorrect results for coplanar and near coplanar Riemann problems of ideal MHD.
+\pause
+\item Explanation of why these problems are difficult for conservative numerical schemes based on a finite volume discretization.
+\pause
+\item Description of new method called compound wave modification (CWM) that corrects the inaccuracies.
+\bei
+\item Modifies the HLLD flux.
+\item Converges at all grid resolutions.
+\item Reduces error by 6 to 25 times.
+\ebi 
+\pause
+\item Description multi-dimensional fluid solvers capable of shared memory parallelism.
+\ebi
 \end{frame}
 
 %----------------------------------------------------------------------------------------
@@ -284,7 +299,7 @@ u_r & \text{if}\;\;\; x > at, \\
 \bei
 \item Self-similar solutions for a system of linear waves.
 \only<5->{
-\item Information is global, state across wave is known.
+\item Information is global, state across each wave is known.
 }
 \ebi 
 } 
@@ -361,7 +376,7 @@ $$\mbf{U} = \mbf{U}_l + \sum_{i=1}^m \alpha_i \mbf{r}^i$$ or $$\mbf{U} = \mbf{U}
 %% }
 %% \only<4->{
 \pause
-\item Information only local, state across wave unknown.
+\item Information only local, state each across wave unknown.
 %% }
 \ebi
 \end{frame}
@@ -678,6 +693,7 @@ v_n \pm c_f &: \text{fast rarefaction or shock,}
 \only<4->{
 \item Flux corrected transport.
 \item Limit fluxes so that no new extrema are created.
+\item Higher resolution with FCT and TVD schemes. 
 }
 
 \ebi
@@ -929,18 +945,23 @@ v_n \pm c_f &: \text{fast rarefaction or shock,}
 }
 \only<3-3>{
 \bei
-\item An intermediate shock is a non-regular wave that changes the orientation of the magnetic field.
-\item Slow compound wave: super-Alfv{\'e}nic $\rightarrow$ sub-slow.
-\item In shock frame upstream: $$v_n = 1.0174, c_a = 0.9661,c_f = 1.1295 $$
-\item In shock frame downstream: $$ v_n = 0.7341, c_s = 0.8033, c_a = 0.8222$$
+\item An intermediate shock is a non-regular, i.e., not a Lax shock, wave that changes the orientation of the magnetic field.
+\item Slow compound wave: super-Alfv{\'e}nic $\rightarrow$ sub-slow. 
+\item In shock frame upstream: $c_a < v_n < c_f$
+  $$v_n = 1.0174, c_a = 0.9661,c_f = 1.1295 $$
+\item In shock frame downstream: $v_n < c_s,c_a$
+  $$ v_n = 0.7341, c_s = 0.8033, c_a = 0.8222$$
 \ebi
 }
 \only<4->{
 \bei
 \item An intermediate shock is a non-regular wave that changes the orientation of the magnetic field.
 \item Fast compound wave: super-fast $\rightarrow$ sub-Alfv{\'e}nic. 
-\item In shock frame upstream: $$v_n = 1.5868, c_a = 1.5041, c_f = 1.5401$$
-\item In shock frame downstream: $$v_n = 1.4638, c_s = 1.0766, c_a = 1.4698$$ 
+\item In shock frame upstream: $v_n > c_a,c_f$
+  $$v_n = 1.5868, c_a = 1.5041, c_f = 1.5401$$
+\item 
+  In shock frame downstream: $c_s < v_n < c_a$ 
+  $$v_n = 1.4638, c_s = 1.0766, c_a = 1.4698$$ 
 \ebi
 }
 \end{frame}
@@ -979,13 +1000,13 @@ v_n \pm c_f &: \text{fast rarefaction or shock,}
 %----------------------------------------------------------------------------------------
 \begin{frame}[fragile]
 \frametitle{Compound Wave modification}
-\only<1-3>{
+\only<1-2>{
 \begin{tabular}{cc}
 \resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{coplanar_a_cwaves_1}\input{fig/coplanar_a_cwaves_1.tex}} &
 \resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{coplanar_a_cwaves_6}\input{fig/coplanar_a_cwaves_6.tex}} \\
 \end{tabular}
 }
-\only<4->{
+\only<3->{
 \begin{tabular}{cc}
 \resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{fast_coplanar_a_cwaves_1}\input{fig/fast_coplanar_a_cwaves_1.tex}} &
 \resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{fast_coplanar_a_cwaves_6}\input{fig/fast_coplanar_a_cwaves_6.tex}} \\
@@ -997,7 +1018,13 @@ v_n \pm c_f &: \text{fast rarefaction or shock,}
 \item Compound waves are product of numerical diffusion for near coplanar problems.
 \item Reduce diffusion to recover correct solution. How?
 \pause
-\item $\rho$ and $B_t$ should remain constant across the rotational discontinuity.
+\only<1-2>{
+\item $\rho$ and $B_t$ should remain constant across the rotational discontinuity $x = 0.303$.
+}
+\only<3->{
+\item $\rho$ and $B_t$ should remain constant across the rotational discontinuity $x = 0.375$.
+}
+\pause
 \pause
 \item Limit flux associated with the compound wave.
 \ebi
@@ -1049,21 +1076,21 @@ v_n \pm c_f &: \text{fast rarefaction or shock,}
 %----------------------------------------------------------------------------------------
 \begin{frame}[fragile]
 \frametitle{CWM Results}
-\only<1-2>{
+\only<1-1>{
 \begin{tabular}{cc}
 \resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{coplanar_b_rsol_init_1}\input{fig/coplanar_b_rsol_init_1.tex}}
 & 
 \resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{coplanar_b_rsol_init_6} \input{fig/coplanar_b_rsol_init_6.tex}}
 \end{tabular}
 }
-\only<3-3>{
+\only<2-2>{
 \begin{tabular}{cc}
 \resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{fast_coplanar_b_rsol_init_1}\input{fig/fast_coplanar_b_rsol_init_1.tex}}
 & 
 \resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{fast_coplanar_b_rsol_init_6} \input{fig/fast_coplanar_b_rsol_init_6.tex}}
 \end{tabular}
 }
-\only<4->{
+\only<3->{
 \begin{tabular}{cc}
 \resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{AK7_rsol_init_1}\input{fig/AK7_rsol_init_1.tex}}
 & 
@@ -1077,6 +1104,7 @@ v_n \pm c_f &: \text{fast rarefaction or shock,}
 \item Transition across rotational discontinuity is unresolved.
 \item Resolve it?  
 \pause
+\pause
 \item Simple but non-conservative.
 \ebi
 }
@@ -1088,7 +1116,8 @@ v_n \pm c_f &: \text{fast rarefaction or shock,}
 %----------------------------------------------------------------------------------------
 \begin{frame}[fragile]
 \frametitle{CWM Resolving the transition}
-\only<1-1>{
+\begin{columns}
+\begin{column}{0.5\textwidth}
 \begin{tabular}{cc}
 \resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{coplanar_b_crsol_1}\input{fig/coplanar_b_crsol_1.tex}}
 & 
@@ -1097,30 +1126,360 @@ v_n \pm c_f &: \text{fast rarefaction or shock,}
 & 
 \resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{coplanar_b_crsol_6} \input{fig/coplanar_a_crsol_6.tex}}
 \end{tabular}
-}
-\only<2-2>{
+\only<3->{
 \begin{tabular}{cc}
 \resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{fast_coplanar_b_crsol_1}\input{fig/fast_coplanar_b_crsol_1.tex}}
-& 
+&
 \resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{fast_coplanar_b_crsol_6} \input{fig/fast_coplanar_b_crsol_6.tex}} \\
 \resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{fast_coplanar_b_crsol_1}\input{fig/fast_coplanar_a_crsol_1.tex}}
 & 
-\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{fast_coplanar_b_crsol_6} \input{fig/fast_coplanar_a_crsol_6.tex}}
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{fast_coplanar_b_crsol_6} \input{fig/fast_coplanar_a_crsol_6.tex}} 
 \end{tabular}
 }
-\only<3->{
+\end{column}
+\begin{column}{0.5\textwidth}
+\only<4->{
 \begin{tabular}{cc}
 \resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{AK7_crsol_1}\input{fig/AK7_crsol_1.tex}}
 & 
 \resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{AK7_crsol_6} \input{fig/AK7_crsol_6.tex}}
 \end{tabular}
 }
-
-\only<3->{
 \bei
-\item In the case of weaker intermediate shocks, there is very little deviation at the rotational discontinuity.
-\ebi
+\only<1-2>{
+\item Jump conditions in Lagrangian mass coordinates, $V = 1/\rho$, $W$ is wave speed.
+\item Brackets denote difference across discontinuity.
 }
+\only<1-1>{
+\begin{align*} 
+W[V] &= -[v_n], \\ 
+W[v_n] &= -[P - B_n^2], \\
+W[\mbf{v}_{t}] &= -B_n[\mbf{B}_{t}], \\
+%% \label{eqn:jump4} W[v_z] &= -B_x[B_z], \\
+W[V\mbf{B}_{t}] &= -B_n[\mbf{v}_{t}], %\text{ and}\\
+%% \label{eqn:jump6} W[VB_z] &= -B_x[v_z],   \\
+%% \label{eqn:jump7} W[VE] &= [v_nP] - B_n[B_nv_n + \mbf{B}_{t}\cdot\mbf{v}_{t}],
+\end{align*}
+}
+\only<2-2>{
+\item Across linear rotational discontinuity
+\begin{align*} 
+[V] &= 0, \\ 
+[v_n] &= 0, \\
+[p_g] &= 0, \\
+[B_t] &= 0, \\
+W[\mbf{v}_{t}] &= -B_n[\mbf{B}_{t}], \\
+\end{align*}
+}
+\only<3->{
+\item In the case of weaker intermediate shocks, there is very little deviation at the rotational discontinuity.
+\item This is a desirable property of CWM.  Modification applied is proportional to the strength of the shock.
+}
+\only<4->{
+\item Improves result is present of other numerical errors.
+}
+\ebi
+%% \only<3->{
+%% \bei
+%% \item 
+
+%% \ebi
+%% }
+\end{column}
+\end{columns}
+\end{frame}
+
+%----------------------------------------------------------------------------------------
+% Error
+%----------------------------------------------------------------------------------------
+\begin{frame}[fragile]
+\frametitle{Error analysis}
+\begin{columns}
+\begin{column}{0.5\textwidth}
+\only<1->{
+\begin{tabular}{cc}
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{coplanar_b_L1_err_1}\input{fig/coplanar_b_L1_err_1.tex}} &
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{coplanar_a_L1_err_1}\input{fig/coplanar_a_L1_err_1.tex}} \\
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{fast_coplanar_b_L1_err_1}\input{fig/fast_coplanar_b_L1_err_1.tex}} &
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{fast_coplanar_a_L1_err_1}\input{fig/fast_coplanar_a_L1_err_1.tex}} 
+
+\end{tabular}
+}
+\end{column}
+\begin{column}{0.5\textwidth}
+\begin{tabular}{cc}
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{coplanar_b_rsol_init_1}\input{fig/coplanar_b_rsol_init_1.tex}}
+& 
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{coplanar_b_rsol_init_6} \input{fig/coplanar_b_rsol_init_6.tex}} \\
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{fast_coplanar_b_rsol_init_1}\input{fig/fast_coplanar_a_rsol_init_1.tex}}
+& 
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{fast_coplanar_b_rsol_init_6} \input{fig/fast_coplanar_a_rsol_init_6.tex}}
+\end{tabular}
+\end{column}
+\end{columns}
+
+
+\bei
+\item Error calculation without applying the correction at the rotational discontinuity.
+\item Without CWM, the compoiund wave starts to break apart between $2^{10}$ and $2^{11}$.
+\item CWM produces convergence at low grid resolutions.
+\ebi
+
+\end{frame}
+
+%----------------------------------------------------------------------------------------
+% Higher dimensions
+%----------------------------------------------------------------------------------------
+\begin{frame}[fragile]
+\frametitle{Higher dimensions}
+\begin{columns}
+\begin{column}{0.5\textwidth}
+\begin{figure}[htbp]
+\resizebox{\linewidth}{!}{\tikzsetnextfilename{ct_grid} \input{fig/ct_grid.tex}}
+\end{figure}
+\end{column}
+\begin{column}{0.5\textwidth}
+Maintaining $\divergebf{B} = 0$ with constrained transport \citep{Evans:1988}.
+\bei
+\item Staggered grid.
+\item Hydrodynamical variables at cell centers.
+\item Magnetic field at interface.
+\item $\mbf{E} = -\crossproductbf{v}{B}$ at corners.
+\item Denote z-component of the emf as $\xi_z$.
+\ebi
+\end{column}
+\end{columns}
+\only<1-1>{
+Finite area integration of interface $\mbf{B}$
+\begin{gather*}
+B^{n+1}_{x,i+1/2,j} = B^{n}_{x,i+1/2,j} - \frac{\delta t}{\delta y}\left( \xi_{z,i+1/2,j+1/2} - \xi_{z,i+1/2,j-1/2}\right) \\
+B^{n+1}_{y,i,j+1/2} = B^{n}_{y,i,j+1/2} + \frac{\delta t}{\delta x}\left( \xi_{z,i+1/2,j+1/2} - \xi_{z,i-1/2,j-1/2}\right)
+\end{gather*}
+}
+\only<2->{
+Due to perfect cancellation, the numerical divergence in the cell remains zero to machine precision.
+\begin{gather*}
+(\diverge{\mbf{B}})_{i,j} = \frac{1}{\delta x} \left( B_{x,i+1/2,j}  - B_{x,i-1/2,j}\right) + \frac{1}{\delta y} \left( B_{y,i,j+1/2}  - B_{y,i,j-1/2}\right) 
+\end{gather*}
+}
+\end{frame}
+
+%----------------------------------------------------------------------------------------
+% Shared memory parallelism
+%----------------------------------------------------------------------------------------
+\begin{frame}[fragile]
+\frametitle{Shared memory parallelism}
+\begin{columns}
+\begin{column}{0.5\textwidth}
+\begin{figure}[htbp]
+\only<1-1>{
+\resizebox{\linewidth}{!}{\tikzsetnextfilename{face_color_1} \input{fig/face_color_1.tex}}
+}
+\only<2->{
+\resizebox{\linewidth}{!}{\tikzsetnextfilename{face_color_2} \input{fig/face_color_2.tex}}
+}
+\end{figure}
+\end{column}
+\begin{column}{0.5\textwidth}
+\bei
+\item Faces must be grouped to avoid memory contention.
+\item Loop over the faces becomes loop over the colors.
+\pause
+\item With constrained transport, each face contributes to the residual at the cell center and the residual at the corner.
+\ebi
+\end{column}
+\end{columns}
+\end{frame}
+
+%----------------------------------------------------------------------------------------
+% Efficient algorithms
+%----------------------------------------------------------------------------------------
+\begin{frame}[fragile]
+\frametitle{Efficient algorithms}
+
+\begin{lstlisting}
+  thrust::device_vector<float> x(n);  // independent variable
+  thrust::device_vector<float> y(n);  // y = f(x)
+  thrust::device_vector<float> z(n);  // z = g(y)
+
+  // compute y = f(x)
+  thrust::transform(x.begin(),x.end(),y.begin(),f());
+
+  // compute z = g(y) 
+  thrust::transform(y.begin(),y.end(),z.begin(),g());
+\end{lstlisting} 
+\bei
+\item Function composition \citep{Thrust}.
+\item $3n$ floats, $2n$ reads, $2n$ writes, and uses $n$ temporary floats.
+\ebi
+\end{frame}
+
+%----------------------------------------------------------------------------------------
+% Efficient algorithms
+%----------------------------------------------------------------------------------------
+\begin{frame}[fragile]
+\frametitle{Efficient algorithms}
+
+\begin{lstlisting}
+  thrust::device_vector<float> x(n);  // independent variable
+  thrust::device_vector<float> z(n);  // z = g(y) = g(f(x))
+
+  // compute z = g(f(x))
+  thrust::transform(make_transform_iterator(x.begin(),f()),
+                    make_transform_iterator(x.end(),f()),
+                    z.begin(),
+                    g());
+\end{lstlisting} 
+
+\bei
+\item Function composition \citep{Thrust}.
+\item $2n$ floats, $n$ reads, $n$ writes, and no temporary storage.
+\ebi
+\end{frame}
+
+%----------------------------------------------------------------------------------------
+% Efficient algorithms
+%----------------------------------------------------------------------------------------
+\begin{frame}[fragile]
+\frametitle{Efficient algorithms}
+
+\begin{lstlisting}
+  thrust::device_vector<float> x(n);  // independent variable
+  thrust::device_vector<float> z(n);  // z = g(y) = g(f(x))
+
+  // compute z = g(f(x))
+  thrust::transform(make_transform_iterator(x.begin(),f()),
+                    make_transform_iterator(x.end(),f()),
+                    z.begin(),
+                    g());
+\end{lstlisting} 
+
+\bei
+\item Function composition \citep{Thrust}.
+\item $2n$ floats, $n$ reads, $n$ writes, and no temporary storage.
+\ebi
+\end{frame}
+
+%----------------------------------------------------------------------------------------
+% Efficient algorithms
+%----------------------------------------------------------------------------------------
+\begin{frame}[fragile]
+\frametitle{Memory access}
+\begin{columns}
+\begin{column}{0.5\textwidth}
+\begin{lstlisting}
+struc conservative_variables{
+  float density;
+  float momentum_x;
+  float energy;
+}
+
+conservative_variables 
+  *state;  // AoS
+
+state[i].density = some_number;
+state[i].momentum_x = another_number;
+state[i].energy = one_more_number;
+\end{lstlisting} 
+\end{column}
+\begin{column}{0.5\textwidth}
+\begin{lstlisting}
+struc conservative_variables{
+  float *density;
+  float *momentum_x;
+  float *energy;
+}
+
+conservative_variables state; // SoA
+
+state.density[i] = some_number;
+state.momentum_x[i] = another_number;
+state.energy[i] = one_more_number;
+\end{lstlisting} 
+\end{column}
+\end{columns}
+\bei
+\item Memory coalescing occurs when multiple memory addresses are accessed with a single transaction.
+\item Memory does not coalesce with AoS (left).
+\item Memory does coalesce with SoA (right).
+\ebi
+\end{frame}
+
+%----------------------------------------------------------------------------------------
+% Efficient algorithms
+%----------------------------------------------------------------------------------------
+\begin{frame}[fragile]
+\frametitle{Memory access}
+\begin{lstlisting}
+thrust::device_vector<primitive_variables>    
+     primitive_state(n);  // AoS
+thrust::device_vector<conservative_variables> 
+     conservative_state(n);   // AoS
+thrust::transform_n(primitive_state.begin(),
+                    primitive_state.size(),
+                    conservative_state.begin(),
+                    convert_primitive_to_conservative(gamma));
+\end{lstlisting} 
+\bei
+\item Converting from primitive variables $(\rho,v_x, p_g)$ to conservative variables $(\rho,\rho v_x, en)$.
+\item No coalescing.
+\ebi
+\end{frame}
+
+%----------------------------------------------------------------------------------------
+% Efficient algorithms
+%----------------------------------------------------------------------------------------
+\begin{frame}[fragile]
+\frametitle{Memory access}
+\begin{lstlisting}
+thrust::device_vector<float> d(n),vx(n),pg(n); 
+thrust::device_vector<float> mx(n),en(n); 
+thrust::transform_n(
+          thrust::make_zip_operator(
+            make_tuple(d.begin(),
+                       vx.begin(),
+                       pg.begin())),
+           n,
+           thrust::make_zip_operator(
+             make_tuple(d.begin(),
+                        mx.begin(),
+                        en.begin())),
+           convert_primitive_to_conservative(gamma));
+\end{lstlisting} 
+\bei
+\item Converting from primitive variables $(\rho,v_x, p_g)$ to conservative variables $(\rho,\rho v_x, en)$.
+\item Arrays can be combined on the fly with a \verb+zip_operator+ to achieve coalescing.
+\ebi
+\end{frame}
+
+%----------------------------------------------------------------------------------------
+% Speed results
+%----------------------------------------------------------------------------------------
+\begin{frame}[fragile]
+\frametitle{Performance Comparison}
+\begin{table}[htbp]%\footnotesize
+\caption{Performance comparison for Orszag-Tang \citep{Orszag:1979} test.}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}} cccc}
+\\ 
+\hline 
+\hline 
+grid size & cells/second (GPU) & cells/second (CPU) & ratio \\
+\hline
+$64\times64$ & $4.1894\times10^6$ & $7.3955\times10^5$ & 5 \\
+$128\times128$ & $1.6540\times10^7$ & $7.5060\times10^5$ & 22 \\
+$256\times256$ & $4.4497\times10^7$ & $7.3155\times10^5$ & 60 \\
+$512\times512$ & $6.3286\times10^7$ & $7.9437\times10^5$ & 79 \\
+$1024\times1024$ & $7.2134\times10^7$ & $8.3354\times10^5$ & 86 \\
+\hline
+\end{tabular*}
+\end{table}
+
+\bei
+\item Dell Precision 7500 workstation with a (Dual CPU) 
+\item CPU Intel Xeon E5645 @ 2.40 Ghz.
+\item GPU GeFroce GTX TITAN with a memory bandwidth of 288.4 GB/sec and 2688 CUDA cores.
+\item Almost a factor of three increase of speed ratio form $128\times128$ to $256\times256$.
+\ebi
 \end{frame}
 
 %----------------------------------------------------------------------------------------
@@ -1129,7 +1488,21 @@ v_n \pm c_f &: \text{fast rarefaction or shock,}
 \begin{frame}[fragile]
 \frametitle{Conclusion}
 \bei
-\item FAST! HLLD intermediate states are already calculated, flux evaluation nearly free.
+\item Provided new benchmarks for MHD model development.
+\item Released* a nonlinear solver for ideal MHD.
+\item Developed the compound wave modification:
+\bei
+\item First method able to produce the rotational discontinuity for coplanar Riemann problems of ideal MHD without using a nonlinear solver.
+\item First method to avoid pseudo-convergence for near coplanar problems of ideal MHD.
+\item FAST! HLLD intermediate states are already calculated, modification for little cost.
+\item Produces the correct result when other numerical inaccuracies are present.
+\ebi
+\item Released* a high-order multi-dimensional fluid solver.  
+\bei 
+\item Algorithms implemented for general geometry on unstructured grids. 
+\item Capable of shared memory parallelism on GPU and CPU.
+\item Can be used as blueprint or benchmark by anyone in computational physics and space weather communities wishing to increase performance. 
+\ebi
 \ebi
 \end{frame}
 
