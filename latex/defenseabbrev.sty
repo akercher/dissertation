@@ -1,0 +1,132 @@
+
+%% This file contains any and all redefined commands that the user would like 
+%%  to use in the dissertation.  Those commands listed here are merely examples 
+%%  and may be removed at will.
+%%
+%%**********************************************************************
+%% Legal Notice:
+%% This code is offered as-is without any warranty either
+%% expressed or implied; without even the implied warranty of
+%% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE!
+%% User assumes all risk.
+%% In no event shall any contributor to this code be liable for any damages 
+%% or losses, including, but not limited to, incidental, consequential, or 
+%% any other damages, resulting from the use or misuse of any information 
+%% contained here.
+%%**********************************************************************
+%%
+%% $Id: mydissertationabbrev.sty,v 1.3 2006/05/22 20:11:28 cstjean Exp $
+
+
+
+\newcommand{\gitrepo}[0]{\url{https://github.com/akercher/dissertation}}
+
+\newcommand{\CC}{C\nolinebreak\hspace{-.05em}\raisebox{.4ex}{\tiny\bf +}\nolinebreak\hspace{-.10em}\raisebox{.4ex}{\tiny\bf +}}
+\def\cpp{{C\nolinebreak[4]\hspace{-.05em}\raisebox{.4ex}{\tiny\bf ++}}}
+
+\newcommand{\be}[1]{\begin{#1}}
+\newcommand{\eb}[1]{\end{#1}}
+\newcommand{\beenum}[0]{\begin{enumerate}}
+\newcommand{\ebenum}[0]{\end{enumerate}}
+\newcommand{\bei}[0]{\begin{itemize}}
+\newcommand{\ebi}[0]{\end{itemize}}
+\newcommand{\ds}[0]{\displaystyle}
+\newcommand{\tbf}[1]{\textbf{#1}}
+\newcommand{\vecnote}[1]{\ensuremath{\mathbf{#1}}}
+\newcommand{\scinote}[2]{\ensuremath{#1 \times 10^{#2}}}
+\newcommand{\mbf}[1]{\ensuremath{\mathbf{#1}}}
+\newcommand{\ret}{\\[10 pt]}
+\newcommand{\ms}[1]{_{\mathsmaller{#1}}}
+
+% derivatives and partial derivaties
+\newcommand{\dd}[2]{\ensuremath{\frac{d #1}{d #2}}}
+\newcommand{\pd}[2]{\ensuremath{\frac{\partial #1}{\partial #2}}}
+
+% nth-degree derivatives and partial derivaties
+\newcommand{\ddn}[3]{\ensuremath{\frac{d^{#1} #2}{d #3^{#1}}}}
+\newcommand{\pdn}[3]{\ensuremath{\frac{\partial^{#1} #2}{\partial #3^{#1}}}}
+
+% derivatives and partial derivaties (boldface)
+\newcommand{\ddbf}[2]{\ensuremath{\frac{d \mathbf{#1}}{d #2}}}
+\newcommand{\pdbf}[2]{\ensuremath{\frac{\partial \mathbf{#1}}{\partial #2}}}
+
+% nth-degree derivatives and partial derivaties (boldface)
+\newcommand{\ddnbf}[3]{\ensuremath{\frac{d^{#1} \mathbf{#2}}{d #3^{#1}}}}
+\newcommand{\pdnbf}[3]{\ensuremath{\frac{\partial^{#1} \mathbf{#2}}{\partial #3^{#1}}}}
+
+% scalar operations
+\newcommand{\grad}[1]{\ensuremath{\mathbf{\nabla}#1}}
+\newcommand{\laplace}[1]{\ensuremath{\mathbf{\nabla}^2#1}}
+
+% scalar operations (boldface)
+\newcommand{\gradbf}[1]{\ensuremath{\mathbf{\nabla}\mathbf{#1}}}
+\newcommand{\laplacebf}[1]{\ensuremath{\mathbf{\nabla}^2\mathbf{#1}}}
+
+% vector operations
+\newcommand{\innerproduct}[2]{\ensuremath{#1 \cdot #2}}
+\newcommand{\outerproduct}[2]{\ensuremath{#1 \otimes #2}}
+\newcommand{\crossproduct}[2]{\ensuremath{#1 \times #2}}
+\newcommand{\diverge}[1]{\ensuremath{\mathbf{\nabla} \cdot #1}}
+\newcommand{\curl}[1]{\ensuremath{\mathbf{\nabla} \times #1}}
+
+% vector operations (boldface)
+\newcommand{\innerproductbf}[2]{\ensuremath{\mathbf{#1} \cdot \mathbf{#2}}}
+\newcommand{\outerproductbf}[2]{\ensuremath{\mathbf{#1} \otimes \mathbf{#2}}}
+\newcommand{\crossproductbf}[2]{\ensuremath{\mathbf{#1} \times \mathbf{#2}}}
+\newcommand{\divergebf}[1]{\ensuremath{\mathbf{\nabla} \cdot \mathbf{#1}}}
+\newcommand{\curlbf}[1]{\ensuremath{\mathbf{\nabla} \times \mathbf{#1}}}
+
+\newcommand{\ta}[1]{\ensuremath{\langle #1 \rangle}} %time average
+\newcommand{\nhat}[0]{\ensuremath{\mbf{\hat{n}}}} %unit normal vector
+\newcommand{\xhat}[0]{\ensuremath{\mbf{\hat{x}}}} %x normal vector
+\newcommand{\yhat}[0]{\ensuremath{\mbf{\hat{y}}}} %y normal vector
+\newcommand{\zhat}[0]{\ensuremath{\mbf{\hat{z}}}} %z normal vector
+
+%% \newcommand{\degree}{\ensuremath{^\circ}} %degree symbol
+\newcommand{\dsym}{\ensuremath{^\circ}} %degree symbol
+
+% variables
+\newcommand{\ed}[0]{\ensuremath{E_{\rho}}}
+\newcommand{\bperp}[0]{\ensuremath{B_{\perp}}}
+\newcommand{\vperp}[0]{\ensuremath{v_{\perp}}}
+\newcommand{\vnl}[0]{\ensuremath{v_{nl}}}
+\newcommand{\vnr}[0]{\ensuremath{v_{nr}}}
+\newcommand{\vtl}[0]{\ensuremath{\mbf{v}_{t l}}}
+\newcommand{\vtr}[0]{\ensuremath{\mbf{v}_{t r}}}
+\newcommand{\btl}[0]{\ensuremath{\mbf{B}_{t l}}}
+\newcommand{\btr}[0]{\ensuremath{\mbf{B}_{t r}}}
+\newcommand{\pgl}[0]{\ensuremath{p_{gl}}}
+\newcommand{\pgr}[0]{\ensuremath{p_{gr}}}
+
+% constants
+\newcommand{\half}[0]{\ensuremath{\frac{1}{2}}}
+\newcommand{\conk}[0]{\ensuremath{\frac{1}{4\pi\epsilon_0}}}
+
+% brackets
+\newcommand{\norm}[1]{\left\Vert#1\right\Vert}
+\newcommand{\abs}[1]{\left\vert#1\right\vert}
+\newcommand{\set}[1]{\left\{#1\right\}}
+\newcommand{\parens}[1]{\left(#1\right)}
+\newcommand{\brac}[1]{\left[#1\right]}
+\newcommand{\ang}[1]{\left<#1\right>}
+\newcommand{\ceil}[1]{\left\lceil #1 \right\rceil}
+\newcommand{\floor}[1]{\left\lfloor #1 \right\rfloor}
+
+% Greek letters
+\renewcommand{\a}{\alpha}
+\renewcommand{\b}{\beta}
+\newcommand{\g}{\gamma}
+\newcommand{\G}{\Gamma}
+\newcommand{\e}{\epsilon}
+\newcommand{\la}{\lambda}
+\newcommand{\m}{\mu}
+\renewcommand{\r}{\rho}
+\newcommand{\s}{\sigma}
+\newcommand{\x}{\hat{x}}
+
+\newcommand{\nat}{\mathbb{N}}
+\newcommand{\reals}{\mathbb{R}}
+
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+

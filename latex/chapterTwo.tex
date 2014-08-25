@@ -88,7 +88,7 @@ In the $x$-$t$ plane, the solution changes from the initial left state, $u_l$, t
 \label{eqn:rh_jump}
 \mbf{F}_r - \mbf{F}_l = S_i (\mbf{U}_r - \mbf{U}_l),
 \end{gather}      
-where $S_i$ is the speed of a discontinuity connecting two states $\mbf{U}_l$ and $\mbf{U}_l$.  For the linear advection equation, the jump conditions are
+where $S_i$ is the speed of a discontinuity connecting two states $\mbf{U}_l$ and $\mbf{U}_r$.  For the linear advection equation, the jump conditions are
 \begin{gather*}
 a u_r - a u_l = S (u_r - u_l),
 \end{gather*}      
@@ -147,7 +147,7 @@ The results from the previous sections are now extended to nonlinear hyperbolic 
 \label{eqn:nonlinear_sys}
 \pdbf{U}{t} + \pdbf{F}{x} = 0,
 \end{gather}
-where $\mbf{U}$ is a vector of conserved variables and $\mbf{F}(\mbf{U})$ is the flux vector.  The system is called hyperbolic if the Jacobian matrix, $\mbf{J}(\mbf{U}) = \partial{\mbf{F}}/\partial{\mbf{U}}$, has $n$ real eigenvalues and a corresponding set of $n$ linearly independent right eigenvectors.  Again the The system is also assumed to be strictly-hyperbolic so that the eigenvalues can be cosidered ordered based on speed.  For each of the $n$ eigenvalues there is an associated wave with speed $S_i$.  As with the linear system, the $n$ waves partition the solution into $n+1$ states.  Each wave in the linear system travels at a constant speed, $\lambda_i$, and has an associated jump discontinuity.  In the nonlinear systems, the wave speeds are functions of the conservative variables and the structure of the wave is not always a jump discontinuity.
+where $\mbf{U}$ is a vector of conserved variables and $\mbf{F}(\mbf{U})$ is the flux vector.  The system is called hyperbolic if the Jacobian matrix, $\mbf{J}(\mbf{U}) = \partial{\mbf{F}}/\partial{\mbf{U}}$, has $n$ real eigenvalues and a corresponding set of $n$ linearly independent right eigenvectors.  Again the The system is also assumed to be strictly-hyperbolic so that the eigenvalues can be considered ordered based on speed.  For each of the $n$ eigenvalues there is an associated wave with speed $S_i$.  As with the linear system, the $n$ waves partition the solution into $n+1$ states.  Each wave in the linear system travels at a constant speed, $\lambda_i$, and has an associated jump discontinuity.  In the nonlinear systems, the wave speeds are functions of the conservative variables and the structure of the wave is not always a jump discontinuity.
 
 %-----------------------------------------------------------------
 % Characteristics of shocks, linear waves, and rarefactions
@@ -215,9 +215,9 @@ $v^2 = v_n^2 + \mbf{v}_{t}^2$, and the gas constant $\gamma$ is the ratio of spe
 \end{gather}
 The Jacobian of $\mbf{A}(\mbf{U})$ must have three real and distinct eigenvalues and a set of three linearly independent right eigenvectors because the system is strictly-hyperbolic.  If the eigenvalues are arranged such that $\lambda_1 < \lambda_2 < \lambda_3$, then $\lambda_1  \text{ and } \lambda_3$ correspond to nonlinear waves, and $\lambda_2$ is a linear wave.  The nonlinear waves can be either a shock (i.e., discontinuous wave) or rarefaction (i.e. smooth wave).  The linear wave is \gls{cd} that carries a carries a single jump in density and satisfies the jump conditions given by Equation~\ref{eqn:rh_jump}.  The three eigenvalues and their associated waves are:
 \begin{align*}
-\lambda_3 &= v_n + a : \text{fast rarefaction or shock,} \\
+\lambda_3 &= v_n + a : \text{rarefaction or shock,} \\
 \lambda_2 &= v_n \phantom{+ a} : \text{contact discontinuity, \text{ and }} \\
-\lambda_1 &= v_n - a : \text{slow rarefaction or shock,} 
+\lambda_1 &= v_n - a : \text{rarefaction or shock,} 
 \end{align*}
 where $a = \sqrt{\gamma p_g/\rho}$ is the speed of sound.  
 

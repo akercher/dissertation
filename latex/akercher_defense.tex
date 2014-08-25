@@ -1,0 +1,1145 @@
+\documentclass{beamer}
+
+% for themes, etc.
+%% \mode<presentation>
+%% { \usefonttheme{professionalfonts}}
+%% \usetheme{boxes} }
+
+%% \usepackage{xunicode}
+\usepackage{inputenc}  % fonts 
+\usepackage{hyperref}
+\usepackage{multirow}
+
+\usepackage[natbib=true,bibstyle=numeric,citestyle=numeric,backend=bibtex,doi=false,eprint=false]{biblatex}
+%% \bibliographystyle{model1c-num-names}	% elsarcticle short style alphabetical
+\bibliography{mn-jour,references}	% includes journal abbrevs.
+
+%% \usepackage[numbers]{natbib} % format citations
+\usepackage{graphicx}                    %   for imported graphics
+\usepackage{epstopdf} %covert .eps files to .pdf
+\usepackage{multimedia}
+\usepackage{amsmath,amssymb,amsthm} %math support
+\usepackage{amsfonts}                    %%  for AMS mathematics
+\usepackage[normalem]{ulem}              %   a nice standard underline package
+%% \usepackage[noadjust,verbose,sort]{cite} %   arranges reference citations neatly
+\usepackage{lscape}                      % to change page orientation
+\usepackage{listings}                    % to include source code
+\usepackage{color}                       % for colors
+\usepackage{float}              % figure placement
+%% \usepackage{floatrow}
+
+\usepackage{curves}
+\usepackage{url} %formatting for URL's
+\usepackage{setspace} %change line spacing
+\usepackage[mathlines]{lineno} %line numbers
+\usepackage{relsize} % resize subscripts
+
+\usepackage{tikz,pgfplots} % Creating pictures, images, cartoons, etc...
+\usepackage{gnuplot-lua-tikz}
+\usepackage{tikz-3dplot}
+\usetikzlibrary{arrows,shapes,trees,positioning}
+\usetikzlibrary{decorations.markings}
+\usetikzlibrary{external} % compile figures separately
+\tikzexternalize[prefix=tikz/]
+\usetikzlibrary{plotmarks}
+
+\graphicspath{{fig/}} % Location of the graphics files
+
+%% \usepackage{afterpage}
+%% \usepackage{longtable}
+%% \usepackage[acronym]{glossaries} % create abbreviation and nomenclature lists
+
+
+\definecolor{darkorange}{rgb}{0.9,0.3,0.0}
+\def\charcoal{4D4944}
+\def\xgold{989400}
+\def\xblue{4a7798}
+\def\xorange{9a3b00}
+
+\definecolor{DarkCharcoal}{HTML}{\charcoal}
+\colorlet{Charcoal}{DarkCharcoal!85!white}
+\colorlet{HalfLightCharcoal}{Charcoal!66!white}
+\colorlet{LightCharcoal}{Charcoal!50!white}
+
+\def\lightenfactor{!70!white}
+\def\darkenfactor{!85!black}
+
+\definecolor{XGold}{HTML}{\xgold}
+\definecolor{XBlue}{HTML}{\xblue}
+\definecolor{XOrange}{HTML}{\xorange}
+\colorlet{XLightGold}{XGold\lightenfactor}
+\colorlet{XLightBlue}{XBlue\lightenfactor}
+\colorlet{XLightOrange}{XOrange\lightenfactor}
+\colorlet{XDarkGold}{XGold\darkenfactor}
+\colorlet{XDarkBlue}{XBlue\darkenfactor}
+\colorlet{XDarkOrange}{XOrange\darkenfactor}
+
+\colorlet{AlertColor}{XOrange}
+
+\setbeamercolor{title}{fg=XOrange}
+\setbeamercolor{frametitle}{fg=XDarkBlue}
+\setbeamercolor{normal text}{fg=black}
+
+
+%%------------------------------------------------------------
+%%  Listing options
+%%------------------------------------------------------------
+\lstset{language=C++,
+  basicstyle=\footnotesize\ttfamily, % the size of the fonts that are used for the code
+  morekeywords={Point,Vector,PointArray,VectorArray},
+  keywordstyle=\color{blue}\ttfamily,
+  stringstyle=\color{darkred}\ttfamily,
+  commentstyle=\color{darkorange}\ttfamily,
+  morecomment=[l][\color{magenta}]{\#},
+  shownumbers = false,
+  %% numbers=left,                   % where to put the line-numbers
+  %% numberstyle=\footnotesize,      % the size of the fonts that are used for the line-numbers
+  %% stepnumber=1,                   % the step between two line-numbers. If it is 1 each line will be numbered
+  %% numbersep=5pt,                  % how far the line-numbers are from the code
+  backgroundcolor=\color{white},  % choose the background color. You must add \usepackage{color}
+  showspaces=false,               % show spaces adding particular underscores
+  showstringspaces=false,         % underline spaces within strings
+  showtabs=false,                 % show tabs within strings adding particular underscores
+  frame=single,                   % adds a frame around the code
+  tabsize=2,
+  breaklines=true,        % sets automatic line breaking
+  breakatwhitespace=false,    % sets if automatic breaks should only happen at whitespace
+  lineskip={-1.5pt} % single line spacing
+%% escapeinside={\%}{)}          % if you want to add a comment within your code
+}
+
+%%------------------------------------------------------------
+%%  Abbreviations 
+%%------------------------------------------------------------
+\usepackage{defenseabbrev}
+\setbeamertemplate{frametitle}
+  {\begin{centering}\smallskip
+   \insertframetitle\par
+   \smallskip\end{centering}}
+
+%% \setsansfont{Futura}
+%% \setmonofont{Monaco}
+
+\setbeamercolor{block title}{fg=black,bg=XGold!25!white}
+\setbeamercolor{block body}{fg=black,bg=XGold!25!white}
+\setbeamercolor{alerted text}{fg=AlertColor}
+%% \setbeamercolor{palette primary}{fg=white,bg=black}
+%% \setbeamercolor{palette secondary}{fg=white,bg=black}
+%% \setbeamercolor{palette tertiary}{fg=white,bg=black}
+\setbeamertemplate{itemize item}{$\bullet$}
+\setbeamercolor{itemize item}{fg=black}
+
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}[text line]{%
+    \hfill\strut{%
+        \scriptsize\color{black!70}%
+        \insertframenumber
+    }%
+    \hfill
+}
+
+
+
+%%------------------------------------------------------------
+%%  Title page
+%%------------------------------------------------------------
+\title[Computational MHD]{Computational Methods for Ideal Magnetohydrodynamics}
+\author[A. Kercher]{Andrew Kercher}
+\institute[GMU]{A defense of the dissertation submitted in partial fulfillment of the requirements for the degree of  Doctor of Philosophy \\ George Mason University}
+\date{25 August 2014}
+
+%%***********************************************************************************************************
+\begin{document}
+
+
+%----------------------------------------------------------------------------------------
+% Title
+%----------------------------------------------------------------------------------------
+\begin{frame}
+\titlepage
+\end{frame}
+
+%----------------------------------------------------------------------------------------
+% Introduction
+%----------------------------------------------------------------------------------------
+\begin{frame}[fragile]
+\frametitle{Introduction}
+\end{frame}
+
+%----------------------------------------------------------------------------------------
+% Riemann Problems 1
+%----------------------------------------------------------------------------------------
+\begin{frame}[fragile]
+\frametitle{Riemann Problems}
+\begin{columns}
+\begin{column}{0.5\textwidth}
+\only<1-1>{
+\begin{figure}[htbp]
+\resizebox{\textwidth}{!}{\tikzsetnextfilename{riemann_ivp}\input{fig/riemann_ivp.tex}}
+\end{figure}
+\bei
+\item Initial discontinuity at $x_d$ separates two constant states.
+\ebi} 
+\only<2-2>{
+\begin{figure}[htbp]
+\resizebox{\textwidth}{!}{\tikzsetnextfilename{riemann_ivp_2}\input{fig/riemann_ivp_2.tex}}
+\end{figure}
+\bei
+\item Solution at time $t$.
+\item Wave speed: $a$.
+\ebi}  
+\only<3->{
+\begin{figure}[htbp]
+\resizebox{0.75\textwidth}{!}{\tikzsetnextfilename{lin_ad_rstates}\input{fig/lin_ad_rstates.tex}}
+\end{figure}
+\bei
+\item Linear advection, $\mbf{U}_l = u_l$ and $\mbf{U}_r = u_r$.
+\item Self-similar solution in $(x,t)$-plane.
+\ebi}  
+
+\end{column}
+\begin{column}{0.5\textwidth}
+\only<1-2>{
+\begin{gather*}
+\pdbf{U}{t} + \pdbf{F}{\mbf{x}} = \mbf{0} \text{ ,}
+\end{gather*} 
+}
+\only<3->{
+\begin{gather*}
+\pd{u}{t} + a\pd{u}{x} = \mbf{0} \text{ ,}
+\end{gather*} 
+}
+
+\only<1-2>{
+\begin{gather*}
+\label{eqn:ivp} 
+\mbf{U}_0 = 
+\begin{cases}
+\mbf{U}_l & \text{if}\;\;\; x < x_d, \\
+\mbf{U}_r & \text{if}\;\;\; x > x_d, \\
+\end{cases}
+\end{gather*}
+} 
+
+\only<3->{
+\begin{gather*}
+\label{eqn:ivp} 
+u_0 = 
+\begin{cases}
+u_l & \text{if}\;\;\; x < x_d, \\
+u_r & \text{if}\;\;\; x > x_d, \\
+\end{cases}
+\end{gather*}
+} 
+\only<2-2>{
+\begin{gather*}
+\label{eqn:ivp_sol} 
+\mbf{U} = 
+\begin{cases}
+\mbf{U}_l & \text{if}\;\;\; x < at, \\
+\mbf{U}_r & \text{if}\;\;\; x > at, \\
+\end{cases}
+\end{gather*}}
+ 
+\only<3->{
+\begin{gather*}
+\label{eqn:lin_ad_sol} 
+u = 
+\begin{cases}
+u_l & \text{if}\;\;\; x < at, \\
+u_r & \text{if}\;\;\; x > at, \\
+\end{cases}
+\end{gather*}} 
+
+\end{column}
+\end{columns}
+\end{frame}
+
+%----------------------------------------------------------------------------------------
+% Riemann Problems 2
+%----------------------------------------------------------------------------------------
+\begin{frame}[fragile]
+\frametitle{Riemann Problems: Systems of linear equations}
+\begin{columns}
+\begin{column}{0.65\textwidth}
+
+\only<1-3>{
+\bei
+\item Hyperbolic $\rightarrow$ real eigenvalues, $\lambda_1, \hdots, \lambda_n$, and linearly independent right eigenvectors, $\mbf{r}^1,\hdots,\mbf{r}^n$.
+\item Strictly hyperbolic $\rightarrow$ distinct eigenvalues.
+\only<2-3>{
+\item Characteristic form, $\mbf{W} = \mbf{l}^i \mbf{U}$, where $\mbf{l}^i$ is the matrix of left eigenvectors.
+}
+\only<3-3>{
+\item $n$ scalar equations.
+}
+\ebi
+}
+
+
+\only<4->{
+\begin{figure}[htbp]
+\resizebox{0.9\textwidth}{!}{\tikzsetnextfilename{lin_sys_rstates}\input{fig/lin_sys_rstates.tex}}
+\end{figure}
+\bei
+\item Self-similar solutions for a system of linear waves.
+\only<5->{
+\item Information is global, state across wave is known.
+}
+\ebi 
+} 
+
+\end{column}
+\begin{column}{0.35\textwidth}
+\only<1-3>{
+\begin{gather*}
+\pdbf{U}{t} + \mbf{A}\pdbf{U}{x} = 0,
+\end{gather*}
+}
+\only<2-3>{
+\begin{gather*}
+\pdbf{W}{t} + \mbf{\Lambda} \pdbf{W}{x} = 0,
+\end{gather*}
+}
+\only<3-3>{
+\begin{gather*}
+\pd{w_i}{t} + \lambda_i \pd{w_i}{x} = 0,
+\end{gather*}
+}
+
+\only<4->{
+\bei
+\item Difference across each wave $\alpha_i = \mbf{l}_i \cdot (\mbf{U}_l - \mbf{U}_r)$.
+\ebi 
+}
+\only<5->{
+\bei
+\item In terms of conservative variables
+$$\mbf{U} = \mbf{U}_l + \sum_{i=1}^m \alpha_i \mbf{r}^i$$ or $$\mbf{U} = \mbf{U}_r - \sum_{i=m+1}^n \alpha_i \mbf{r}^i$$
+
+\ebi
+}
+\end{column}
+\end{columns}
+\end{frame}
+
+%----------------------------------------------------------------------------------------
+% Riemann Problems 3
+%----------------------------------------------------------------------------------------
+\begin{frame}[fragile]
+\frametitle{Riemann Problems: Systems of nonlinear equations}
+
+\begin{tabular}{ccc}
+\only<1->{
+\resizebox{0.25\linewidth}{!}{\tikzsetnextfilename{linear_char}\input{fig/linear_char.tex}} &
+}
+\only<2->{
+\resizebox{0.25\linewidth}{!}{\tikzsetnextfilename{shock_char}\input{fig/shock_char.tex}} &
+}
+\only<3->{
+\resizebox{0.25\linewidth}{!}{\tikzsetnextfilename{rarefaction_char}\input{fig/rarefaction_char.tex}} 
+}
+\end{tabular}
+
+\only<1->{
+\begin{gather*}
+\label{eqn:nonlinear_sys}
+\pdbf{U}{t} + \pdbf{F}{x} = 0,
+\end{gather*}
+}
+\bei
+\only<1->{
+\item linear wave, characteristics parallel.
+}
+%% \only<2->{
+\pause
+\item Shock wave, compression, characteristics converge.
+%% }
+%% \only<3->{
+\pause
+\item Rarefaction wave, expansion, characteristics diverge.
+%% }
+%% \only<4->{
+\pause
+\item Information only local, state across wave unknown.
+%% }
+\ebi
+\end{frame}
+
+%----------------------------------------------------------------------------------------
+% Compressible hydrodynamics
+%----------------------------------------------------------------------------------------
+\begin{frame}[fragile]
+\frametitle{Compressible hydrodynamics}
+\only<1-1>{
+\begin{gather*}
+\label{eqn:euler1} \pd{\rho}{t} + \diverge{\left(\rho\mbf{v}\right)} = 0 \text{ ,} \\
+\label{eqn:euler2} \pd{(\rho \mbf{v})}{t} + \diverge{\left[ \outerproduct{\rho\mbf{v}}{\mbf{v}} + p_g \right]}  = 0 \text{ ,}\\
+\label{eqn:euler3} \pd{E}{t} + \diverge{\left[ \left(E + p_g \right)\mbf{v}\right]}  = 0 \text{ ,}
+\end{gather*}
+where the energy density is defined as
+\begin{gather*}
+  \label{eqn:energy} E = \frac{p_g}{\gamma - 1} + \frac{\rho v^2}{2}\text{ ,}
+\end{gather*}
+}
+
+
+%% \only<2->{
+%% 1D quasi-linear form
+%% \begin{gather*}
+%% \label{eqn:euler_qlin}
+%% \pdbf{U}{t} + \mbf{A}(\mbf{U})\pdbf{U}{x} = 0.
+%% \end{gather*}
+%% }
+\only<2-2>{
+The Euler equations are strictly hyperbolic.
+
+1D conservative form
+\begin{gather*}
+\label{eqn:euler_qlin}
+\pdbf{U}{t} + \pdbf{F}{x} = 0.
+\end{gather*}
+
+Jacobian $\mbf{J}(\mbf{U}) = \partial{\mbf{F}}/\partial{\mbf{U}}$ has three real and distinct eigenvalues:
+}
+\only<3-3>{
+\begin{figure}[htbp]
+\resizebox{0.65\textwidth}{!}{\tikzsetnextfilename{euler_rstates}\input{fig/euler_rstates.tex}}
+\end{figure}
+
+}
+\only<4->{
+\begin{tabular}{ccc}
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_1}\input{fig/sod_1.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_2}\input{fig/sod_2.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_3}\input{fig/sod_3.tex}} 
+\end{tabular}
+}
+
+\only<2-2>{
+\begin{align*}
+\lambda_3 &= v_n + a : \text{rarefaction or shock} \\
+\lambda_2 &= v_n \phantom{+ a}\,\; : \text{contact discontinuity}\\
+\lambda_1 &= v_n - a : \text{rarefaction or shock} 
+\end{align*}
+where $a = \sqrt{\gamma p_g/\rho}$ is the speed of sound.  
+}
+\only<3-3>{
+\begin{align*}
+\lambda_3 &= S_l  \phantom{+ a} : \text{rarefaction} \\
+\lambda_2 &= v^*_n \phantom{+ a} : \text{contact discontinuity}\\
+\lambda_1 &= S_r   \phantom{+ a} : \text{shock} 
+\end{align*}
+}
+
+\only<4->{
+\bei
+\item Exact solution to Sod shock tube problem \citep{Sod:1978}.  
+\pause
+\pause
+\pause
+\pause
+\item Rarefaction head: $x \approx 0.2$.
+\pause
+\item Rarefaction tail: $x \approx 0.45$.  
+\pause
+\item Contact discontinuity: $x \approx 0.72$.
+\pause
+\item Shock: $x \approx 0.95$.
+\ebi
+}
+
+\end{frame}
+
+%----------------------------------------------------------------------------------------
+% Approx. Riemann solvers
+%----------------------------------------------------------------------------------------
+\begin{frame}[fragile]
+\frametitle{HLL family of approximate Riemann solvers}
+%% \begin{columns}
+%% \begin{column}{0.5\textwidth}
+\only<1-1>{
+\begin{figure}[htbp]
+\resizebox{0.55\textwidth}{!}{\tikzsetnextfilename{hlle_rstates}\input{fig/hlle_rstates.tex}}
+\end{figure}
+}
+\only<2-2>{
+\begin{figure}[htbp]
+\resizebox{0.55\textwidth}{!}{\tikzsetnextfilename{hllc_rstates}\input{fig/hlle_rstates.tex}}
+\end{figure}
+}
+\only<3->{
+\begin{tabular}{cc}
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{toro7_hlle_1}\input{fig/toro7_hlle_1.tex}} &
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{toro7_hllc_1}\input{fig/toro7_hllc_1.tex}} 
+\end{tabular}
+}
+%% \end{column}
+%% \begin{column}{0.5\textwidth}
+\bei
+\item The solver of Harden-Lax-van Leer-Einfeldt (HLLE) \citep{Einfeldt:1988} assumes a two state solution.
+\item The solution approximated as weighted average of the left and right states.
+\pause
+\item \citet{Toro:1994} included the contact discontinuity and termed the solver HLLC.
+\pause
+\item HLLC less diffuse at contact discontinuity.
+%% }
+\ebi
+%% \end{column}
+%% \end{columns}
+\end{frame}
+
+%----------------------------------------------------------------------------------------
+% Ideal MHD
+%----------------------------------------------------------------------------------------
+\begin{frame}[fragile]
+\frametitle{Ideal magnetohydrodynamics}
+\only<1-1>{
+\begin{gather*}
+\pd{\rho}{t} + \diverge{\left(\rho\mbf{v}\right)} = 0 \text{ ,} \\
+\pd{(\rho \mbf{v})}{t} + \diverge{\left[ \outerproduct{\rho\mbf{v}}{\mbf{v}} + \left( p_g + \frac{B^2}{2}\right)\underline{\mbf{I}} - \outerproductbf{B}{B}\right]}  = 0 \text{ ,}\\
+\pd{E}{t} + \diverge{\left[ \left(E + p_g + \frac{B^2}{2}\right)\mbf{v} - \innerproduct{\mbf{v}}{\outerproductbf{B}{B}}\right]}  = 0 \text{ , and} \\
+\pdbf{B}{t} + \diverge{\left[ \outerproductbf{v}{B} - \outerproductbf{B}{v}\right]}  = 0 \text{ ,}
+\end{gather*}
+where the energy density is defined as
+\begin{gather*}
+  \label{eqn:energy} E = \frac{p_g}{\gamma - 1} + \frac{\rho v^2}{2} + \frac{B^2}{2}\text{ ,}
+\end{gather*}
+}
+
+
+\only<2-2>{
+The ideal MHD equations are non-strictly hyperbolic.
+1D conservative form
+\begin{gather*}
+\label{eqn:euler_qlin}
+\pdbf{U}{t} + \pdbf{F}{x} = 0.
+\end{gather*}
+
+
+Jacobian $\mbf{J}(\mbf{U}) = \partial{\mbf{F}}/\partial{\mbf{U}}$ has seven real, but not necessarily distinct eigenvalues:
+}
+\only<2-2>{
+\begin{align*}
+v_n &: \text{contact or tangential discontinuity (entropy),} \\
+v_n \pm c_s &: \text{slow rarefaction or shock,} \\
+v_n \pm c_a &: \text{rotational discontinuity (Alfv{\'e}n), and} \\
+v_n \pm c_f &: \text{fast rarefaction or shock,} 
+\end{align*}
+\begin{gather*}
+ c^2_{f,s} = \frac{1}{2}\left[ a^2 + c_a^2 + c_{t}^2 \pm \sqrt{\left(a^2 + c_a^2 + c_{t}^2 \right)^2 - 4a^2c_a^2}\right], 
+\end{gather*}
+\begin{gather*}
+c^2_a = \frac{B_n^2}{\rho} \text{, and } c^2_t = \frac{B_t^2}{\rho}.
+\end{gather*} 
+ 
+}
+
+\only<3-3>{
+\begin{figure}[htbp]
+\resizebox{0.6\textwidth}{!}{\tikzsetnextfilename{mhd_rstates}\input{fig/euler_rstates.tex}}
+\end{figure}
+
+}
+\only<3-3>{
+\begin{align*}
+v_n &: \text{contact or tangential discontinuity (entropy),} \\
+v_n \pm c_s &: \text{slow rarefaction or shock,} \\
+v_n \pm c_a &: \text{rotational discontinuity (Alfv{\'e}n), and} \\
+v_n \pm c_f &: \text{fast rarefaction or shock,} 
+\end{align*}
+}
+
+\end{frame}
+
+%----------------------------------------------------------------------------------------
+% HLLD
+%----------------------------------------------------------------------------------------
+\begin{frame}[fragile]
+\frametitle{Extension of HLLC for MHD}
+%% \begin{columns}
+%% \begin{column}{0.5\textwidth}
+\only<1-1>{
+\begin{figure}[htbp]
+\resizebox{0.55\textwidth}{!}{\tikzsetnextfilename{hllc_rstates}\input{fig/hllc_rstates.tex}}
+\end{figure}
+}
+\only<2->{
+\begin{figure}[htbp]
+\resizebox{0.55\textwidth}{!}{\tikzsetnextfilename{hlld_rstates}\input{fig/hlld_rstates.tex}}
+\end{figure}
+}
+%% \end{column}
+%% \begin{column}{0.5\textwidth}
+\bei
+\item HLLD \citep{Miyoshi:2005} is an MHD extention to HLLC.
+\pause
+\item Captures all linear discontinuities, contact and rotational.
+
+%% }
+\ebi
+%% \end{column}
+%% \end{columns}
+\end{frame}
+
+%----------------------------------------------------------------------------------------
+% Numerical methods
+%----------------------------------------------------------------------------------------
+\begin{frame}[fragile]
+\frametitle{Finite volume discretization}
+%% \begin{columns}
+%% \begin{column}{0.5\textwidth}
+\only<1->{
+\begin{figure}[htbp]
+\resizebox{0.55\textwidth}{!}{\tikzsetnextfilename{interface_states}\input{fig/interface_states.tex}}
+\end{figure}
+}
+\bei
+\item Conservative variables are located at the cell centers.
+\item Flux is evaluated at cell interface.
+\only<1-1>{
+\item Flux contribution of each face added to cell. 
+\begin{gather*}
+\mbf{U}^{n+1}_{\text{cell}} = \mbf{U}^n_{\text{cell}} - \frac{\delta t}{V_{\text{cell}}}\sum_{\text{faces}} \mbf{F}\cdot \mbf{s}
+\end{gather*} 
+}
+\only<2->{
+\item In 1D
+\begin{gather*}
+\mbf{U}^{n+1}_{i} = \mbf{U}^n_{i} - \frac{\delta t}{\delta x}\left(\mbf{F}^n_{i+1/2} - \mbf{F}_{i-1/2}^n \right)
+\end{gather*}
+}
+
+\ebi
+%% }
+
+%% \end{column}
+%% \end{columns}
+\end{frame}
+
+%----------------------------------------------------------------------------------------
+% Higher Order Extensions
+%----------------------------------------------------------------------------------------
+\begin{frame}[fragile]
+\frametitle{Higher order extensions}
+%% \begin{columns}
+%% \begin{column}{0.5\textwidth}
+\only<1-1>{
+\begin{figure}[htbp]
+\resizebox{0.55\textwidth}{!}{\tikzsetnextfilename{interface_states}\input{fig/interface_states.tex}}
+\end{figure}
+}
+\only<2-2>{
+\begin{tabular}{ccc}
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hlle_1_1}\input{fig/sod_hlle_1_1.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hlle_1_2}\input{fig/sod_hlle_1_2.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hlle_1_3}\input{fig/sod_hlle_1_3.tex}} \\
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hllc_1_1}\input{fig/sod_hllc_1_1.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hllc_1_2}\input{fig/sod_hllc_1_2.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hllc_1_3}\input{fig/sod_hllc_1_3.tex}} \\
+\end{tabular}
+}
+\only<3-3>{
+\begin{tabular}{ccc}
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hlle_3_1}\input{fig/sod_hlle_3_1.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hlle_3_2}\input{fig/sod_hlle_3_2.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hlle_3_3}\input{fig/sod_hlle_3_3.tex}} \\
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hllc_3_1}\input{fig/sod_hllc_3_1.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hllc_3_2}\input{fig/sod_hllc_3_2.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hllc_3_3}\input{fig/sod_hllc_3_3.tex}} \\
+\end{tabular}
+}
+\only<4-4>{
+\begin{figure}[htbp]
+\resizebox{0.55\textwidth}{!}{\tikzsetnextfilename{interface_states}\input{fig/interface_states.tex}}
+\end{figure}
+}
+
+\only<5-5>{
+\begin{tabular}{ccc}
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_rusanov_3_1}\input{fig/sod_rusanov_3_1.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_rusanov_3_2}\input{fig/sod_rusanov_3_2.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_rusanov_3_3}\input{fig/sod_rusanov_3_3.tex}}  
+\end{tabular}
+}
+\only<6->{
+\begin{tabular}{ccc}
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_rusanov_fct_3_1}\input{fig/sod_rusanov_fct_3_1.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_rusanov_fct_3_2}\input{fig/sod_rusanov_fct_3_2.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_rusanov_fct_3_3}\input{fig/sod_rusanov_fct_3_3.tex}} 
+\end{tabular}
+}
+\bei
+\item {Increase accuracy and preserve monotonicity.}
+\only<1-3>{
+\item Total variation diminishing (TVD).
+\item Limit slope to ensure no new extrema are created.
+}
+\only<4->{
+\item Flux corrected transport.
+\item Limit fluxes so that no new extrema are created.
+}
+
+\ebi
+\end{frame}
+
+%----------------------------------------------------------------------------------------
+% Riemann problems for ideal MHD
+%----------------------------------------------------------------------------------------
+\begin{frame}[fragile]
+\frametitle{Riemann problems for ideal MHD}
+
+\only<1-1>{
+\begin{figure}[htbp] 
+\resizebox{0.4\linewidth}{!}{\tikzsetnextfilename{bfield_init}\input{fig/bfield_init.tex}} 
+\end{figure}
+}
+
+\only<2-2>{
+\begin{figure}[htbp] 
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{riemann_3d}\input{fig/riemann_3d.tex}} 
+\end{figure}
+}
+
+\only<3->{
+\begin{columns}
+\begin{column}{0.5\textwidth}
+\begin{figure}[htbp] 
+\resizebox{\linewidth}{!}{\tikzsetnextfilename{riemann_3d}\input{fig/riemann_3d.tex}} 
+\end{figure}
+\end{column}
+
+\begin{column}{0.5\textwidth}
+
+\only<3-3>{
+\begin{figure}[htbp] 
+\resizebox{\linewidth}{!}{\tikzsetnextfilename{mhd_bperp_0}\input{fig/mhd_bperp_0.tex}} 
+\end{figure}
+}
+\only<4-4>{
+\begin{figure}[htbp] 
+\resizebox{\linewidth}{!}{\tikzsetnextfilename{mhd_bperp_1}\input{fig/mhd_bperp_1.tex}} 
+\end{figure}
+}
+\only<5-5>{
+\begin{figure}[htbp] 
+\resizebox{\linewidth}{!}{\tikzsetnextfilename{mhd_bperp_2}\input{fig/mhd_bperp_2.tex}} 
+\end{figure}
+}
+\only<6->{
+\begin{figure}[htbp] 
+\resizebox{\linewidth}{!}{\tikzsetnextfilename{mhd_bperp}\input{fig/mhd_bperp.tex}} 
+\end{figure}
+}
+
+\end{column}
+\end{columns}
+}
+
+\only<1-1>{
+\bei
+\item Initial discontinuity separates two states.
+\item Rotation angle $\arctan{B_z/B_y}$.
+\item The initial twist angle $\alpha = \psi_r - \psi_l$.
+\ebi
+}
+\only<2-2>{
+\bei
+\item Seven waves propagate away from initial discontinuity creating eight distinct states.
+\ebi
+}
+\only<3->{
+\bei
+\item Regular waves only alter the magnitude or orientation of $B_t$.
+%% \only<4->{
+\pause
+\pause
+\pause
+\item $B_t$ increases across fast shock, decreases across fast rarefaction.
+%% }
+%% \only<5->{
+\pause
+\item $B_t$ changes orientation across a rotational discontinuity.
+%% }
+%% \only<6->{
+\pause
+\item $B_t$ decreases across slow shock, increases across slow rarefaction.
+%% }
+\ebi
+}
+
+\end{frame}
+
+
+%----------------------------------------------------------------------------------------
+% Ideal MHD test problems
+%----------------------------------------------------------------------------------------
+\begin{frame}[fragile]
+\frametitle{Ideal MHD test problems}
+
+\only<1-1>{
+%-----------------------------------------------------------------
+% Solution to AK2
+%-----------------------------------------------------------------
+\begin{tabular}{ccc}
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK2_csol_1}\input{fig/AK2_csol_1.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK2_csol_5}\input{fig/AK2_csol_5.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK2_csol_8}\input{fig/AK2_csol_8.tex}} \\
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK2_csol_2}\input{fig/AK2_csol_2.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK2_csol_3}\input{fig/AK2_csol_3.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK2_csol_4}\input{fig/AK2_csol_4.tex}} \\
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK2_csol_6}\input{fig/AK2_csol_6.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK2_csol_7}\input{fig/AK2_csol_7.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK2_csol_9}\input{fig/AK2_csol_9.tex}} 
+\end{tabular}
+}
+\only<2-2>{
+%-----------------------------------------------------------------
+% Solution to RJ2a
+%-----------------------------------------------------------------
+\begin{tabular}{ccc}
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{RJ2a_csol_1}\input{fig/RJ2a_csol_1.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{RJ2a_csol_5}\input{fig/RJ2a_csol_5.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{RJ2a_csol_8}\input{fig/RJ2a_csol_8.tex}} \\
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{RJ2a_csol_2}\input{fig/RJ2a_csol_2.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{RJ2a_csol_3}\input{fig/RJ2a_csol_3.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{RJ2a_csol_4}\input{fig/RJ2a_csol_4.tex}} \\
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{RJ2a_csol_6}\input{fig/RJ2a_csol_6.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{RJ2a_csol_7}\input{fig/RJ2a_csol_7.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{RJ2a_csol_9}\input{fig/RJ2a_csol_9.tex}} 
+\end{tabular}
+}
+\only<3-3>{
+%-----------------------------------------------------------------
+% Solution to AK3
+%-----------------------------------------------------------------
+\begin{tabular}{ccc}
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK3_csol_1}\input{fig/AK3_csol_1.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK3_csol_5}\input{fig/AK3_csol_5.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK3_csol_8}\input{fig/AK3_csol_8.tex}} \\
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK3_csol_2}\input{fig/AK3_csol_2.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK3_csol_3}\input{fig/AK3_csol_3.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK3_csol_4}\input{fig/AK3_csol_4.tex}} \\
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK3_csol_6}\input{fig/AK3_csol_6.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK3_csol_7}\input{fig/AK3_csol_7.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK3_csol_9}\input{fig/AK3_csol_9.tex}} 
+\end{tabular}
+}
+\only<4-4>{
+%-----------------------------------------------------------------
+% Solution to AK4
+%-----------------------------------------------------------------
+\begin{tabular}{ccc}
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK4_csol_1}\input{fig/AK4_csol_1.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK4_csol_5}\input{fig/AK4_csol_5.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK4_csol_8}\input{fig/AK4_csol_8.tex}} \\
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK4_csol_2}\input{fig/AK4_csol_2.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK4_csol_3}\input{fig/AK4_csol_3.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK4_csol_4}\input{fig/AK4_csol_4.tex}} \\
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK4_csol_6}\input{fig/AK4_csol_6.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK4_csol_7}\input{fig/AK4_csol_7.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK4_csol_9}\input{fig/AK4_csol_9.tex}} 
+\end{tabular}
+}
+\only<5-5>{
+%-----------------------------------------------------------------
+% Solution to AK5
+%-----------------------------------------------------------------
+\begin{tabular}{ccc}
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK5_csol_1}\input{fig/AK5_csol_1.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK5_csol_5}\input{fig/AK5_csol_5.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK5_csol_8}\input{fig/AK5_csol_8.tex}} \\
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK5_csol_2}\input{fig/AK5_csol_2.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK5_csol_3}\input{fig/AK5_csol_3.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK5_csol_4}\input{fig/AK5_csol_4.tex}} \\
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK5_csol_6}\input{fig/AK5_csol_6.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK5_csol_7}\input{fig/AK5_csol_7.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK5_csol_9}\input{fig/AK5_csol_9.tex}} 
+\end{tabular}
+}
+\only<6-6>{
+%-----------------------------------------------------------------
+% Solution to AK6a
+%-----------------------------------------------------------------
+\begin{tabular}{ccc}
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK6_csol_1}\input{fig/AK6_csol_1.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK6_csol_5}\input{fig/AK6_csol_5.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK6_csol_8}\input{fig/AK6_csol_8.tex}} \\
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK6_csol_2}\input{fig/AK6_csol_2.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK6_csol_3}\input{fig/AK6_csol_3.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK6_csol_4}\input{fig/AK6_csol_4.tex}} \\
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK6_csol_6}\input{fig/AK6_csol_6.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK6_csol_7}\input{fig/AK6_csol_7.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK6_csol_9}\input{fig/AK6_csol_9.tex}} 
+\end{tabular}
+}
+\only<7-7>{
+%-----------------------------------------------------------------
+% Solution to AK7
+%-----------------------------------------------------------------
+\begin{tabular}{ccc}
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK7_csol_1}\input{fig/AK7_csol_1.tex}} & 
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK7_csol_5}\input{fig/AK7_csol_5.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK7_csol_8}\input{fig/AK7_csol_8.tex}} \\
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK7_csol_2}\input{fig/AK7_csol_2.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK7_csol_3}\input{fig/AK7_csol_3.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK7_csol_4}\input{fig/AK7_csol_4.tex}} \\
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK7_csol_6}\input{fig/AK7_csol_6.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK7_csol_7}\input{fig/AK7_csol_7.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{AK7_csol_9}\input{fig/AK7_csol_9.tex}} 
+\end{tabular}
+}
+
+\end{frame}
+
+%----------------------------------------------------------------------------------------
+% Non-uniqueness
+%----------------------------------------------------------------------------------------
+\begin{frame}[fragile]
+\frametitle{Non-unique solutions}
+\only<1-2>{
+\begin{tabular}{cc}
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{coplanar_a_csol_1}\input{fig/coplanar_a_csol_1.tex}} &
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{coplanar_a_csol_6}\input{fig/coplanar_a_csol_6.tex}} \\
+\end{tabular}
+}
+\only<3-3>{
+\begin{tabular}{cc}
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{coplanar_a_cwaves_1}\input{fig/coplanar_a_cwaves_1.tex}} & 
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{coplanar_a_cwaves_6}\input{fig/coplanar_a_cwaves_6.tex}}
+\end{tabular}
+}
+
+\only<4->{
+\begin{tabular}{cc}
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{fast_coplanar_a_cwaves_1}\input{fig/fast_coplanar_a_cwaves_1.tex}} & 
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{fast_coplanar_a_cwaves_6}\input{fig/fast_coplanar_a_cwaves_6.tex}}
+\end{tabular}
+}
+\only<1-2>{
+\bei
+\item Solutions to coplanar Riemann problems of ideal MHD are non-unique.
+\item At $x = 0.303$, rotational discontinuity $\rightarrow$ compound wave.
+\pause
+\item Compound wave is composed of an intermediate shock and a slow rarefaction.
+\item Physical?
+\item Unstable for under small perturbations \citep{Landau:1984}.
+\item Satisfies jump conditions in the coplanar case.
+\ebi
+}
+\only<3-3>{
+\bei
+\item An intermediate shock is a non-regular wave that changes the orientation of the magnetic field.
+\item Slow compound wave: super-Alfv{\'e}nic $\rightarrow$ sub-slow.
+\item In shock frame upstream: $$v_n = 1.0174, c_a = 0.9661,c_f = 1.1295 $$
+\item In shock frame downstream: $$ v_n = 0.7341, c_s = 0.8033, c_a = 0.8222$$
+\ebi
+}
+\only<4->{
+\bei
+\item An intermediate shock is a non-regular wave that changes the orientation of the magnetic field.
+\item Fast compound wave: super-fast $\rightarrow$ sub-Alfv{\'e}nic. 
+\item In shock frame upstream: $$v_n = 1.5868, c_a = 1.5041, c_f = 1.5401$$
+\item In shock frame downstream: $$v_n = 1.4638, c_s = 1.0766, c_a = 1.4698$$ 
+\ebi
+}
+\end{frame}
+
+%----------------------------------------------------------------------------------------
+% Psuedo-convergence
+%----------------------------------------------------------------------------------------
+\begin{frame}[fragile]
+\frametitle{Psuedo-convergence}
+\only<1-1>{
+\begin{tabular}{cc}
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{coplanar_b_pcon_1}\input{fig/coplanar_b_pcon_1.tex}} & 
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{coplanar_b_pcon_6}\input{fig/coplanar_b_pcon_6.tex}} \\
+\end{tabular}
+}
+\only<2->{
+\begin{tabular}{cc}
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{fast_coplanar_b_pcon_1}\input{fig/fast_coplanar_b_pcon_1.tex}} & 
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{fast_coplanar_b_pcon_6}\input{fig/fast_coplanar_b_pcon_6.tex}} \\
+\end{tabular}
+}
+
+\only<1->{
+\bei
+\item Near-coplanar case, compound waves present at lower resolutions.
+\item Psuedo-convergence: increasing resolution produces convergence to regular wave solution \citep{Torrilhon:2003b}.
+\item The compound waves begin to break apart between $1024$ and $2048$ grid points.
+\item As $\pi - \alpha$  decreases, a finer resolution is required to recover the regular wave solution.
+\item When $\pi = \alpha$, compound wave at all resolutions.
+\ebi
+}
+\end{frame}
+
+%----------------------------------------------------------------------------------------
+% CWM
+%----------------------------------------------------------------------------------------
+\begin{frame}[fragile]
+\frametitle{Compound Wave modification}
+\only<1-3>{
+\begin{tabular}{cc}
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{coplanar_a_cwaves_1}\input{fig/coplanar_a_cwaves_1.tex}} &
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{coplanar_a_cwaves_6}\input{fig/coplanar_a_cwaves_6.tex}} \\
+\end{tabular}
+}
+\only<4->{
+\begin{tabular}{cc}
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{fast_coplanar_a_cwaves_1}\input{fig/fast_coplanar_a_cwaves_1.tex}} &
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{fast_coplanar_a_cwaves_6}\input{fig/fast_coplanar_a_cwaves_6.tex}} \\
+\end{tabular}
+}
+
+\only<1->{
+\bei
+\item Compound waves are product of numerical diffusion for near coplanar problems.
+\item Reduce diffusion to recover correct solution. How?
+\pause
+\item $\rho$ and $B_t$ should remain constant across the rotational discontinuity.
+\pause
+\item Limit flux associated with the compound wave.
+\ebi
+}
+\end{frame}
+
+%----------------------------------------------------------------------------------------
+% CWM
+%----------------------------------------------------------------------------------------
+\begin{frame}[fragile]
+\frametitle{Compound Wave modification}
+\begin{columns}
+\begin{column}{0.5\textwidth}
+
+\begin{figure}[htbp]
+\resizebox{\textwidth}{!}{\tikzsetnextfilename{hlld_rstates}\input{fig/hlld_rstates.tex}} 
+\end{figure}
+\only<1-4>{
+\begin{figure}[htbp]
+\resizebox{\linewidth}{!}{\tikzsetnextfilename{coplanar_a_cwaves_1}\input{fig/coplanar_a_cwaves_1.tex}} 
+\end{figure}
+}
+
+\only<5->{
+\begin{figure}[htbp]
+\resizebox{\linewidth}{!}{\tikzsetnextfilename{fast_coplanar_a_cwaves_1}\input{fig/fast_coplanar_a_cwaves_1.tex}} 
+\end{figure}
+}
+\end{column}
+\begin{column}{0.5\textwidth}
+\only<1->{
+\bei
+\item Use HLLD to approximate intermediate states upstream and downstream of rotational discontinuity, i.e., $\mbf{U^*_{l}}$ and $\mbf{U}^*_{2l}$.
+\pause
+\item Calculate flux $\mbf{F}^c$ between $\mbf{U^*_{l}}$ and $\mbf{U}^*_{2l}$.  This is the flux responsible for the formation of the compound wave.
+\pause 
+\item Reduce the contribution of $\mbf{F}^c = \mbf{F}(\mbf{U}^*_{l},\mbf{U}^*_{l2})$ to the total flux.
+\pause 
+\item $\mbf{F} = \mbf{F}(\mbf{U}_{l},\mbf{U}_{r}) - A\mbf{F}^c$, where $A < 0.5$. 
+
+\ebi
+}
+\end{column}
+\end{columns}
+\end{frame}
+
+%----------------------------------------------------------------------------------------
+% CWM
+%----------------------------------------------------------------------------------------
+\begin{frame}[fragile]
+\frametitle{CWM Results}
+\only<1-2>{
+\begin{tabular}{cc}
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{coplanar_b_rsol_init_1}\input{fig/coplanar_b_rsol_init_1.tex}}
+& 
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{coplanar_b_rsol_init_6} \input{fig/coplanar_b_rsol_init_6.tex}}
+\end{tabular}
+}
+\only<3-3>{
+\begin{tabular}{cc}
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{fast_coplanar_b_rsol_init_1}\input{fig/fast_coplanar_b_rsol_init_1.tex}}
+& 
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{fast_coplanar_b_rsol_init_6} \input{fig/fast_coplanar_b_rsol_init_6.tex}}
+\end{tabular}
+}
+\only<4->{
+\begin{tabular}{cc}
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{AK7_rsol_init_1}\input{fig/AK7_rsol_init_1.tex}}
+& 
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{AK7_rsol_init_6} \input{fig/AK7_rsol_init_6.tex}}
+\end{tabular}
+}
+
+\only<1->{
+\bei
+\item CWM recovers the correct solution upstream and downstream of rotational discontinuity.  
+\item Transition across rotational discontinuity is unresolved.
+\item Resolve it?  
+\pause
+\item Simple but non-conservative.
+\ebi
+}
+
+\end{frame}
+
+%----------------------------------------------------------------------------------------
+% CWM
+%----------------------------------------------------------------------------------------
+\begin{frame}[fragile]
+\frametitle{CWM Resolving the transition}
+\only<1-1>{
+\begin{tabular}{cc}
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{coplanar_b_crsol_1}\input{fig/coplanar_b_crsol_1.tex}}
+& 
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{coplanar_b_crsol_6} \input{fig/coplanar_b_crsol_6.tex}} \\
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{coplanar_b_crsol_1}\input{fig/coplanar_a_crsol_1.tex}}
+& 
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{coplanar_b_crsol_6} \input{fig/coplanar_a_crsol_6.tex}}
+\end{tabular}
+}
+\only<2-2>{
+\begin{tabular}{cc}
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{fast_coplanar_b_crsol_1}\input{fig/fast_coplanar_b_crsol_1.tex}}
+& 
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{fast_coplanar_b_crsol_6} \input{fig/fast_coplanar_b_crsol_6.tex}} \\
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{fast_coplanar_b_crsol_1}\input{fig/fast_coplanar_a_crsol_1.tex}}
+& 
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{fast_coplanar_b_crsol_6} \input{fig/fast_coplanar_a_crsol_6.tex}}
+\end{tabular}
+}
+\only<3->{
+\begin{tabular}{cc}
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{AK7_crsol_1}\input{fig/AK7_crsol_1.tex}}
+& 
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{AK7_crsol_6} \input{fig/AK7_crsol_6.tex}}
+\end{tabular}
+}
+
+\only<3->{
+\bei
+\item In the case of weaker intermediate shocks, there is very little deviation at the rotational discontinuity.
+\ebi
+}
+\end{frame}
+
+%----------------------------------------------------------------------------------------
+% Conclusion
+%----------------------------------------------------------------------------------------
+\begin{frame}[fragile]
+\frametitle{Conclusion}
+\bei
+\item FAST! HLLD intermediate states are already calculated, flux evaluation nearly free.
+\ebi
+\end{frame}
+
+%%------------------------------------------------------------
+%%  bibliography
+%%------------------------------------------------------------
+\begin{frame}[allowframebreaks]
+\frametitle{Bibliography}
+\printbibliography	% includes journal abbrevs.
+\end{frame}
+
+\end{document}
+%%***********************************************************************************************************
