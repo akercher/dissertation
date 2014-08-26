@@ -60,7 +60,7 @@ The flux can be evaluated in a variety of ways.  The Rusanov flux, given as
 where $\lambda_{max}$ is the maximum wave speed, is a stable and efficient method for flux evaluation.  It simplifies Roe's method by substituting $|\lambda_{max}| = \max\{|\lambda_k|\}$, where $k$ corresponds to the characteristics of the solution, because the wave speed can then be factored out the last term on the right hand side of \eqref{eqn:roe_flux}.  The summation reduces to $\mbf{U}_{i+1} - \mbf{U}_{i}$, since $\mbf{l}_k\cdot\mbf{r}^l = \delta_{k,l}$ where $\delta_{k,l}$ is the Kronecker delta.  The Rusanov flux produces a more diffuse solution than Roe's flux, especially at linear discontinuities where the maximum wave speed is greater than the characteristic speed of the wave.  As discussed in Section~\ref{sec:higher_order}, the properties of the Rusanov flux are desirable for a low-order scheme when used in conjunction with FCT.  
 
 %-----------------------------------------------------------------
-% Riemann IVP states
+% Interface states
 %-----------------------------------------------------------------
 \begin{figure}[htbp]
 \begin{center}
