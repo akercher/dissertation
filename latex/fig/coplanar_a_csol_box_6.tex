@@ -1,0 +1,7 @@
+\begin{tikzpicture}
+  \node[anchor=south west,inner sep=0] (image) at (0,0) {\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{coplanar_a_csol_6}\input{fig/coplanar_a_csol_6.tex}}};
+
+  \begin{scope}[x={(image.south east)},y={(image.north west)}]
+    \draw[black!75!,thick,rounded corners] (0.33,0.35) rectangle (0.42,0.75);
+  \end{scope}
+\end{tikzpicture}
