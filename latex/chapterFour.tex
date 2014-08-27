@@ -27,6 +27,19 @@ In Chapter~\ref{chp:num_mhd}, it was shown that FV schemes exhibit pseudo-conver
 %% \subsection[Compound wave modification]{Compound wave modification}
 %% \label{sec:CWM}
 
+%----------------------------------------------------------------
+% Rotation
+%-----------------------------------------------------------------
+%% \begin{figure}[htbp] 
+%% \begin{tabular}{ccc}
+%% \resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{coplanar_a_rotation_00032_0001_1}\input{fig/coplanar_a_rotation_00032_0001_1.tex}} & 
+%% \resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{coplanar_a_rotation_00032_0001_5}\input{fig/coplanar_a_rotation_00032_0001_5.tex}} & 
+%% \resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{coplanar_a_rotation_00032_0001_6}\input{fig/coplanar_a_rotation_00032_0001_6.tex}} 
+%% \end{tabular}
+%% \caption{Increase in pressure after one iteration.}
+%% \label{fig:coplanar_a_rotation}
+%% \end{figure}
+
 The influence of a compound wave on the numerical solution can be minimized by limiting the artificial perturbation in pressure caused by numerical diffusion.  We do this by subtracting flux so that only the tangential components of momentum and the magnetic field are affected and thus the upstream and downstream states will still satisfy the jump conditions for a rotational discontinuity.  The subtracted flux is chosen to be proportional to the flux contribution of the compound wave.  We refer to this as compound wave modification (CWM) and its use in conjunction with HLLD as HLLD-CWM.  The flux responsible for the formation of the compound wave is calculated by solving a reduced Riemann problem with initial conditions set to the upstream and downstream states of the $180\dsym$ rotational discontinuity.  These intermediate states correspond to regions $\mbf{U}_{l}^*$ and $\mbf{U}_{2l}^*$ of Figure~\ref{fig:mhd_states} for the coplanar (near-coplanar) problem shown in Figure~\ref{fig:coplanar_a_csol} (\ref{fig:coplanar_b_pcon}).  For test 5a, the exact values in the intermediate region are given by rows 2 and 3 of Table~\ref{tab:AK5}.  The exact values are generally not known, so they are approximated with HLLD.  If the wave is traveling in the positive direction, i.e., the direction of the outward face normal, then intermediate states correspond to regions $\mbf{U}_{2r}^*$ and $\mbf{U}_{r}^*$ of Figure~\ref{fig:mhd_states}.  The direction of the wave is determined by the wave speeds, $S_m$ \eqref{eqn:hlld_sm}, and $S^*_r$ \eqref{eqn:hlld_rd_spd}.  The interface state are $\mbf{U}_{l}^*$ and $\mbf{U}_{2l}^*$, if $S_m > 0$, and $\mbf{U}_{2r}^*$ and $\mbf{U}_{r}^*$, if $S^*_r > 0$. 
 
 %----------------------------------------------------------------

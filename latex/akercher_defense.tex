@@ -45,6 +45,11 @@
 
 \graphicspath{{fig/}} % Location of the graphics files
 
+\usepackage[font=footnotesize,labelformat=empty,
+            justification=raggedright,
+%            singlelinecheck=false
+  ]{caption}
+
 %% \usepackage{afterpage}
 %% \usepackage{longtable}
 %% \usepackage[acronym]{glossaries} % create abbreviation and nomenclature lists
@@ -191,24 +196,28 @@
 %----------------------------------------------------------------------------------------
 \begin{frame}[fragile]
 \frametitle{Space Weather}
+%% \fontsize{8pt}{7.2}\selectfont
+%% * Image source \cite{SunEarth}. 
 \begin{figure}[htbp]
 \includegraphics[scale = 0.25]{sun-earth-640.jpg}
+\caption{Source \cite{SunEarth}}
 \end{figure}
 \bei
-\only<1-1>{
+\only<1-3>{
 \item Sun-earth interaction:
 \bei
-\pause
 \item Super-sonic plasma originating at sun travels toward earth.
 \pause
 \item  Slowed down by magnetic field of Earth.
 \pause
-\item Plasma flow becomes subsonic forming the bow sbock.
+\item Plasma flow becomes subsonic forming the bow shock.
 \ebi
 }
-\only<2->{
+\only<4->{
 \item 2D ideal MHD bow shock simulation. \citep{DeSterck:1998}
 \bei
+\pause
+\pause
 \pause
 \item Results contained intermediate shocks.
 \pause
@@ -446,15 +455,13 @@ where the energy density is defined as
 %% \end{gather*}
 %% }
 \only<2-2>{
-The Euler equations are strictly hyperbolic.
-
-1D conservative form
+\textbf{Strictly} hyperbolic.
 \begin{gather*}
 \label{eqn:euler_qlin}
 \pdbf{U}{t} + \pdbf{F}{x} = 0.
 \end{gather*}
 
-Jacobian $\mbf{J}(\mbf{U}) = \partial{\mbf{F}}/\partial{\mbf{U}}$ has three real and distinct eigenvalues:
+Real and \textbf{distinct} eigenvalues:
 }
 %% \only<3-3>{
 %% \begin{figure}[htbp]
@@ -531,7 +538,7 @@ where $a = \sqrt{\gamma p_g/\rho}$ is the speed of sound.
 %% \end{column}
 %% \begin{column}{0.5\textwidth}
 \bei
-\item The solver of Harden-Lax-van Leer-Einfeldt (HLLE) \citep{Einfeldt:1988} assumes a one state solution.
+\item The solver of Harten-Lax-van Leer-Einfeldt (HLLE) \citep{Einfeldt:1988} assumes a one state solution.
 \item The solution approximated as weighted average of the left and right states.
 \pause
 \item HLLC \citep{Toro:1994} (C for \emph{contact}) restores the contact discontinuity.
@@ -541,6 +548,79 @@ where $a = \sqrt{\gamma p_g/\rho}$ is the speed of sound.
 \ebi
 %% \end{column}
 %% \end{columns}
+\end{frame}
+
+%----------------------------------------------------------------------------------------
+% Higher Order Extensions
+%----------------------------------------------------------------------------------------
+\begin{frame}[fragile]
+\frametitle{Higher order extensions}
+%% \begin{columns}
+%% \begin{column}{0.5\textwidth}
+%% \only<1-1>{
+%% \begin{figure}[htbp]
+%% \resizebox{0.55\textwidth}{!}{\tikzsetnextfilename{interface_states}\input{fig/interface_states.tex}}
+%% \end{figure}
+%% }
+\only<1->{
+\bei
+\item \textbf{Total variation diminishing} (TVD): Limit slope \citep{Harten:1983}.
+%% \item Limit slope to ensure no new extrema are created.
+\ebi
+}
+\only<1-1>{
+%% \begin{figure}
+\begin{tabular}{ccc}
+%% \resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hlle_1_1}\input{fig/sod_hlle_1_1.tex}} &
+%% \resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hlle_1_2}\input{fig/sod_hlle_1_2.tex}} &
+%% \resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hlle_1_3}\input{fig/sod_hlle_1_3.tex}} \\
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hllc_1_1}\input{fig/sod_hllc_1_1.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hllc_1_2}\input{fig/sod_hllc_1_2.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hllc_1_3}\input{fig/sod_hllc_1_3.tex}} 
+\end{tabular}
+%% \end{figure}
+}
+\only<2->{
+\begin{tabular}{ccc}
+%% \resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hlle_3_1}\input{fig/sod_hlle_3_1.tex}} &
+%% \resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hlle_3_2}\input{fig/sod_hlle_3_2.tex}} &
+%% \resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hlle_3_3}\input{fig/sod_hlle_3_3.tex}} \\
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hllc_3_1}\input{fig/sod_hllc_3_1.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hllc_3_2}\input{fig/sod_hllc_3_2.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hllc_3_3}\input{fig/sod_hllc_3_3.tex}} 
+\end{tabular}
+}
+%% \only<4-4>{
+%% \begin{figure}[htbp]
+%% \resizebox{0.55\textwidth}{!}{\tikzsetnextfilename{interface_states_fct}\input{fig/interface_states_fct.tex}}
+%% \end{figure}
+%% }
+
+%% \item {Increase accuracy and preserve monotonicity.}
+\only<1->{
+\bei
+\item \textbf{Flux corrected transport} (FCT): Limit flux \citep{Boris:1973}.
+%% \item Limit fluxes so that no new extrema are created.
+%% \item Higher resolution with FCT and TVD schemes. 
+\ebi
+}
+
+\only<1-1>{
+\begin{tabular}{ccc}
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_rusanov_3_1}\input{fig/sod_rusanov_3_1.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_rusanov_3_2}\input{fig/sod_rusanov_3_2.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_rusanov_3_3}\input{fig/sod_rusanov_3_3.tex}}  
+\end{tabular}
+}
+\only<2->{
+\begin{tabular}{ccc}
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_rusanov_fct_3_1}\input{fig/sod_rusanov_fct_3_1.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_rusanov_fct_3_2}\input{fig/sod_rusanov_fct_3_2.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_rusanov_fct_3_3}\input{fig/sod_rusanov_fct_3_3.tex}} 
+\end{tabular}
+}
+\fontsize{8pt}{7.2}\selectfont
+* TVD approximation computed with Athena \cite{AthenaSite}. 
 \end{frame}
 
 %----------------------------------------------------------------------------------------
@@ -563,15 +643,12 @@ where the energy density is defined as
 
 
 \only<2-2>{
-The ideal MHD equations are non-strictly hyperbolic.
-1D conservative form
+\textbf{Non-strictly} hyperbolic.
 \begin{gather*}
 \label{eqn:euler_qlin}
 \pdbf{U}{t} + \pdbf{F}{x} = 0.
 \end{gather*}
-
-
-Jacobian $\mbf{J}(\mbf{U}) = \partial{\mbf{F}}/\partial{\mbf{U}}$ has seven real, but not necessarily distinct eigenvalues:
+Real, but \textbf{not} necessarily distinct eigenvalues:
 }
 \only<2-2>{
 \begin{align*}
@@ -589,20 +666,20 @@ c^2_a = \frac{B_n^2}{\rho} \text{, and } c^2_t = \frac{B_t^2}{\rho}.
  
 }
 
-\only<3-3>{
-\begin{figure}[htbp]
-\resizebox{0.6\textwidth}{!}{\tikzsetnextfilename{mhd_rstates}\input{fig/euler_rstates.tex}}
-\end{figure}
+%% \only<3-3>{
+%% \begin{figure}[htbp]
+%% \resizebox{0.6\textwidth}{!}{\tikzsetnextfilename{mhd_rstates}\input{fig/mhd_rstates.tex}}
+%% \end{figure}
 
-}
-\only<3-3>{
-\begin{align*}
-v_n &: \text{contact or tangential discontinuity (entropy),} \\
-v_n \pm c_s &: \text{slow rarefaction or shock,} \\
-v_n \pm c_a &: \text{rotational discontinuity (Alfv{\'e}n), and} \\
-v_n \pm c_f &: \text{fast rarefaction or shock,} 
-\end{align*}
-}
+%% }
+%% \only<3-3>{
+%% \begin{align*}
+%% v_n &: \text{contact or tangential discontinuity (entropy),} \\
+%% v_n \pm c_s &: \text{slow rarefaction or shock,} \\
+%% v_n \pm c_a &: \text{rotational discontinuity (Alfv{\'e}n), and} \\
+%% v_n \pm c_f &: \text{fast rarefaction or shock,} 
+%% \end{align*}
+%% }
 
 \end{frame}
 
@@ -628,7 +705,7 @@ v_n \pm c_f &: \text{fast rarefaction or shock,}
 \bei
 \item HLLD \citep{Miyoshi:2005} (D for \emph{discontinuities}) extention of HLLC to MHD.
 \pause
-\item Captures all linear discontinuities, contact and rotational.
+\item Captures linear discontinuities: contact and rotational.
 
 %% }
 \ebi
@@ -672,74 +749,6 @@ v_n \pm c_f &: \text{fast rarefaction or shock,}
 %% \end{frame}
 
 %----------------------------------------------------------------------------------------
-% Higher Order Extensions
-%----------------------------------------------------------------------------------------
-\begin{frame}[fragile]
-\frametitle{Higher order extensions}
-%% \begin{columns}
-%% \begin{column}{0.5\textwidth}
-%% \only<1-1>{
-%% \begin{figure}[htbp]
-%% \resizebox{0.55\textwidth}{!}{\tikzsetnextfilename{interface_states}\input{fig/interface_states.tex}}
-%% \end{figure}
-%% }
-\only<1-1>{
-\begin{tabular}{ccc}
-\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hlle_1_1}\input{fig/sod_hlle_1_1.tex}} &
-\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hlle_1_2}\input{fig/sod_hlle_1_2.tex}} &
-\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hlle_1_3}\input{fig/sod_hlle_1_3.tex}} \\
-\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hllc_1_1}\input{fig/sod_hllc_1_1.tex}} &
-\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hllc_1_2}\input{fig/sod_hllc_1_2.tex}} &
-\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hllc_1_3}\input{fig/sod_hllc_1_3.tex}} \\
-\end{tabular}
-}
-\only<2-2>{
-\begin{tabular}{ccc}
-\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hlle_3_1}\input{fig/sod_hlle_3_1.tex}} &
-\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hlle_3_2}\input{fig/sod_hlle_3_2.tex}} &
-\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hlle_3_3}\input{fig/sod_hlle_3_3.tex}} \\
-\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hllc_3_1}\input{fig/sod_hllc_3_1.tex}} &
-\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hllc_3_2}\input{fig/sod_hllc_3_2.tex}} &
-\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hllc_3_3}\input{fig/sod_hllc_3_3.tex}} \\
-\end{tabular}
-}
-%% \only<4-4>{
-%% \begin{figure}[htbp]
-%% \resizebox{0.55\textwidth}{!}{\tikzsetnextfilename{interface_states_fct}\input{fig/interface_states_fct.tex}}
-%% \end{figure}
-%% }
-
-\only<3-3>{
-\begin{tabular}{ccc}
-\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_rusanov_3_1}\input{fig/sod_rusanov_3_1.tex}} &
-\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_rusanov_3_2}\input{fig/sod_rusanov_3_2.tex}} &
-\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_rusanov_3_3}\input{fig/sod_rusanov_3_3.tex}}  
-\end{tabular}
-}
-\only<4->{
-\begin{tabular}{ccc}
-\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_rusanov_fct_3_1}\input{fig/sod_rusanov_fct_3_1.tex}} &
-\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_rusanov_fct_3_2}\input{fig/sod_rusanov_fct_3_2.tex}} &
-\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_rusanov_fct_3_3}\input{fig/sod_rusanov_fct_3_3.tex}} 
-\end{tabular}
-}
-\bei
-\item {Increase accuracy and preserve monotonicity.}
-\only<1-2>{
-\item Total variation diminishing (TVD).
-\item Limit slope to ensure no new extrema are created.
-}
-
-\only<3->{
-\item Flux corrected transport (FCT).
-\item Limit fluxes so that no new extrema are created.
-%% \item Higher resolution with FCT and TVD schemes. 
-}
-
-\ebi
-\end{frame}
-
-%----------------------------------------------------------------------------------------
 % Riemann problems for ideal MHD
 %----------------------------------------------------------------------------------------
 \begin{frame}[fragile]
@@ -760,12 +769,12 @@ v_n \pm c_f &: \text{fast rarefaction or shock,}
 \only<3->{
 \begin{columns}
 \begin{column}{0.5\textwidth}
-\only<3-6>{
+\only<3-7>{
 \begin{figure}[htbp] 
 \resizebox{\linewidth}{!}{\tikzsetnextfilename{riemann_3d}\input{fig/riemann_3d.tex}} 
 \end{figure}
 }
-\only<7->{
+\only<8->{
 \begin{tabular}{c}
 \resizebox{0.4\textheight}{!}{\tikzsetnextfilename{AK2_csol_1}\input{fig/AK2_csol_1.tex}} \\
 \resizebox{0.4\textheight}{!}{\tikzsetnextfilename{AK2_csol_6}\input{fig/AK2_csol_6.tex}} \\
@@ -810,26 +819,28 @@ v_n \pm c_f &: \text{fast rarefaction or shock,}
 }
 \only<2-2>{
 \bei
-\item Seven waves propagate away from initial discontinuity creating eight distinct states.
+\item Seven waves, eight states.
 \ebi
 }
-\only<3-6>{
+\only<3-7>{
 \bei
-\item Regular waves only alter the magnitude or orientation of $B_t$.
+\item Regular waves alter magnitude or orientation of $B_t$.
 %% \only<4->{
 \pause
 \pause
 \pause
-\item $B_t$ increases across fast shock, decreases across fast rarefaction.
+\item Fast shock: $B_t\uparrow$, fast rarefaction: $B_t\downarrow$.
 %% }
 %% \only<5->{
 \pause
-\item $B_t$ changes orientation across a rotational discontinuity.
+\item  Rotational discontinuity: $\psi \pm \delta\psi$ .
 %% }
 %% \only<6->{
 \pause
-\item $B_t$ decreases across slow shock, increases across slow rarefaction.
+\item Slow shock: $B_t\downarrow$, slow rarefaction: $B_t\uparrow$.
 %% }
+\pause
+\item Contact discontinuity: no change.
 \ebi
 }
 
@@ -962,10 +973,12 @@ v_n \pm c_f &: \text{fast rarefaction or shock,}
 %----------------------------------------------------------------------------------------
 \begin{frame}[fragile]
 \frametitle{Non-unique solutions}
+
+
 \only<1-2>{
 \begin{tabular}{cc}
-\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{coplanar_a_csol_1}\input{fig/coplanar_a_csol_1.tex}} &
-\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{coplanar_a_csol_6}\input{fig/coplanar_a_csol_6.tex}} \\
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{coplanar_a_csol_box_1}\input{fig/coplanar_a_csol_box_1.tex}} &
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{coplanar_a_csol_box_6}\input{fig/coplanar_a_csol_box_6.tex}} \\
 \end{tabular}
 }
 \only<3-3>{
@@ -994,7 +1007,7 @@ v_n \pm c_f &: \text{fast rarefaction or shock,}
 }
 \only<3-3>{
 \bei
-\item An intermediate shock is a non-regular, i.e., not a Lax shock, wave that changes the orientation of the magnetic field.
+\item Intermediate shock: alters magnitude and orientation of magnetic field.
 \item Slow compound wave: super-Alfv{\'e}nic $\rightarrow$ sub-slow. 
 \item In shock frame upstream: $c_a < v_n < c_f$
   $$v_n = 1.0174, c_a = 0.9661,c_f = 1.1295 $$
@@ -1013,6 +1026,44 @@ v_n \pm c_f &: \text{fast rarefaction or shock,}
 %%   $$v_n = 1.4638, c_s = 1.0766, c_a = 1.4698$$ 
 %% \ebi
 %% }
+\end{frame}
+
+%----------------------------------------------------------------------------------------
+% Numerical compound wave solution
+%----------------------------------------------------------------------------------------
+\begin{frame}[fragile]
+\frametitle{Compound wave formation}
+
+\only<1-1>{
+\begin{tabular}{ccc}
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{coplanar_a_rotation_00032_0000_1}\input{fig/coplanar_a_rotation_00032_0000_1}} & 
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{coplanar_a_rotation_00032_0000_5}\input{fig/coplanar_a_rotation_00032_0000_5}} & 
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{coplanar_a_rotation_00032_0000_6}\input{fig/coplanar_a_rotation_00032_0000_6}} 
+\end{tabular}
+}
+\only<2-2>{
+\begin{tabular}{ccc}
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{coplanar_a_rotation_00032_0001_1}\input{fig/coplanar_a_rotation_00032_0001_1}} & 
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{coplanar_a_rotation_00032_0001_5}\input{fig/coplanar_a_rotation_00032_0001_5}} & 
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{coplanar_a_rotation_00032_0001_6}\input{fig/coplanar_a_rotation_00032_0001_6}} 
+\end{tabular}
+}
+\only<3->{
+\begin{tabular}{ccc}
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{coplanar_a_rotation_00032_0002_1}\input{fig/coplanar_a_rotation_00032_0002_1}} & 
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{coplanar_a_rotation_00032_0002_5}\input{fig/coplanar_a_rotation_00032_0002_5}} & 
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{coplanar_a_rotation_00032_0002_6}\input{fig/coplanar_a_rotation_00032_0002_6}} 
+\end{tabular}
+}
+
+\bei
+\item Compound waves are a product of numerical diffusion.
+\pause
+\item Decrease $B_t$ $\rightarrow$ increase $p_g$
+$$ p_g = (\gamma - 1)\left( E - \frac{\rho v^2}{2} - \frac{B^2}{2}\right)$$
+\pause
+\item Increase $p_g$ $\rightarrow$ compound wave.
+\ebi
 \end{frame}
 
 %----------------------------------------------------------------------------------------
@@ -1035,11 +1086,11 @@ v_n \pm c_f &: \text{fast rarefaction or shock,}
 
 \only<1->{
 \bei
-\item Near-coplanar case, compound waves present at lower resolutions.
-\item Psuedo-convergence: increasing resolution produces convergence to regular wave solution \citep{Torrilhon:2003b}.
-\item The compound waves begin to break apart between $1024$ and $2048$ grid points.
-\item As $\alpha \rightarrow \pi$, grid resolution increases. 
-\item When $\pi = \alpha$, compound wave at all resolutions.
+\item $\alpha < \pi$, compound waves at lower resolutions.
+\item Psuedo-convergence: rotational discontinuity at higher resolutions \citep{Torrilhon:2003b}.
+\item Transition between $1024$ and $2048$ grid points.
+\item $\alpha \rightarrow \pi$, grid resolution increases. 
+\item $\pi = \alpha$, compound wave at all resolutions.
 \ebi
 }
 \end{frame}
@@ -1088,9 +1139,21 @@ v_n \pm c_f &: \text{fast rarefaction or shock,}
 \begin{columns}
 \begin{column}{0.5\textwidth}
 
+\only<1-1>{
 \begin{figure}[htbp]
 \resizebox{\textwidth}{!}{\tikzsetnextfilename{hlld_rstates}\input{fig/hlld_rstates.tex}} 
 \end{figure}
+}
+\only<2-3>{
+\begin{figure}[htbp]
+\resizebox{\textwidth}{!}{\tikzsetnextfilename{hlld_rstates_1}\input{fig/hlld_rstates_1.tex}} 
+\end{figure}
+}
+\only<4-4>{
+\begin{figure}[htbp]
+\resizebox{\textwidth}{!}{\tikzsetnextfilename{hlld_rstates_2}\input{fig/hlld_rstates_2.tex}} 
+\end{figure}
+}
 \only<1-4>{
 \begin{figure}[htbp]
 \resizebox{\linewidth}{!}{\tikzsetnextfilename{coplanar_a_cwaves_1}\input{fig/coplanar_a_cwaves_1.tex}} 
@@ -1170,9 +1233,9 @@ v_n \pm c_f &: \text{fast rarefaction or shock,}
 \resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{coplanar_b_crsol_1}\input{fig/coplanar_b_crsol_1.tex}}
 & 
 \resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{coplanar_b_crsol_6} \input{fig/coplanar_b_crsol_6.tex}} \\
-\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{coplanar_b_crsol_1}\input{fig/coplanar_a_crsol_1.tex}}
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{coplanar_a_crsol_1}\input{fig/coplanar_a_crsol_1.tex}}
 & 
-\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{coplanar_b_crsol_6} \input{fig/coplanar_a_crsol_6.tex}}
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{coplanar_a_crsol_6} \input{fig/coplanar_a_crsol_6.tex}}
 \end{tabular}
 %% \only<3->{
 %% \begin{tabular}{cc}
@@ -1324,7 +1387,6 @@ W[\mbf{v}_{t}] &= -B_n[\mbf{B}_{t}], \\
 \end{column}
 \end{columns}
 
-
 \bei
 \item Error calculation without applying the correction at the rotational discontinuity.
 \item Without CWM, the compoiund wave starts to break apart between $2^{10}$ and $2^{11}$.
@@ -1417,29 +1479,6 @@ Due to perfect cancellation, the numerical divergence in the cell remains zero t
 \bei
 \item Function composition \citep{Thrust}.
 \item $3n$ floats, $2n$ reads, $2n$ writes, and uses $n$ temporary floats.
-\ebi
-\end{frame}
-
-%----------------------------------------------------------------------------------------
-% Efficient algorithms
-%----------------------------------------------------------------------------------------
-\begin{frame}[fragile]
-\frametitle{Efficient algorithms}
-
-\begin{lstlisting}
-  thrust::device_vector<float> x(n);  // independent variable
-  thrust::device_vector<float> z(n);  // z = g(y) = g(f(x))
-
-  // compute z = g(f(x))
-  thrust::transform(make_transform_iterator(x.begin(),f()),
-                    make_transform_iterator(x.end(),f()),
-                    z.begin(),
-                    g());
-\end{lstlisting} 
-
-\bei
-\item Function composition \citep{Thrust}.
-\item $2n$ floats, $n$ reads, $n$ writes, and no temporary storage.
 \ebi
 \end{frame}
 
@@ -1594,18 +1633,20 @@ $1024\times1024$ & $7.2134\times10^7$ & $8.3354\times10^5$ & 86 \\
 \begin{frame}[fragile]
 \frametitle{Conclusion}
 \bei
-\item Provided new benchmarks for MHD model development.
-\item Released* a nonlinear solver for ideal MHD.
-\item Developed the compound wave modification:
+%% \item Provided new benchmarks for MHD model development.
+%% \item Released* a nonlinear solver for ideal MHD.
+\item Compound wave modification:
 \bei
-\item First method able to produce the rotational discontinuity for coplanar Riemann problems of ideal MHD without using a nonlinear solver.
-\item First method to avoid pseudo-convergence for near coplanar problems of ideal MHD.
-\item FAST! HLLD intermediate states are already calculated, modification for little cost.
+\item Produces rotational discontinuity for coplanar problems.
+\item Removes pseudo-convergence for near coplanar problems.
+\item Does not require exact solver.
+\item FAST! HLLD intermediate states are already calculated.
 \item Produces the correct result when other numerical inaccuracies are present.
 \ebi
+\item Released* a nonlinear solver for ideal MHD.  
 \item Released* a high-order multi-dimensional fluid solver.  
 \bei 
-\item Algorithms implemented for general geometry on unstructured grids. 
+\item General geometry on unstructured grids. 
 \item Capable of shared memory parallelism on GPU and CPU.
 \item Can be used as blueprint or benchmark by anyone in computational physics and space weather communities wishing to increase performance. 
 \ebi

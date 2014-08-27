@@ -320,7 +320,7 @@ Convergence to the exact solution is not guaranteed since obtaining it requires 
 \subsubsection[HLLE solver]{HLLE solver}
 \label{sec:hlle}
 
-The Harden-Lax-van Leer-Einfeldt (HLLE) \citep{Einfeldt:1988} solver assumes a two wave solution with a single intermediate state, see Figure~\ref{fig:inter_rstates}.  The intermediate state is approximated as the integral average over the Riemann fan: $[x_l,x_r] \times [0,t]$, i.e. the region between the left and right wave in Figure~\ref{fig:inter_rstates}.   The integral form of the conservation laws are
+The Harten-Lax-van Leer-Einfeldt (HLLE) \citep{Einfeldt:1988} solver assumes a two wave solution with a single intermediate state, see Figure~\ref{fig:inter_rstates}.  The intermediate state is approximated as the integral average over the Riemann fan: $[x_l,x_r] \times [0,t]$, i.e. the region between the left and right wave in Figure~\ref{fig:inter_rstates}.   The integral form of the conservation laws are
 \begin{gather}
 \label{eqn:int_cons}
 \int_{x_l}^{x_r} \mbf{U}(x,t_f) dx - \int_{x_l}^{x_r} \mbf{U}(x,0) dx + \int_{0}^{t} \mbf{F}(\mbf{U}(x_r,t')) dt'

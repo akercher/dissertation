@@ -87,8 +87,13 @@ This is a test file to preview figures.
 
 
 \begin{figure}[htbp] 
-\tikzsetnextfilename{hlld_rstates_1}
-\input{fig/hlld_rstates_1.tex}
+\begin{tabular}{ccc}
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{coplanar_a_rotation_00032_0002_1}\input{fig/coplanar_a_rotation_00032_0002_1}} & 
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{coplanar_a_rotation_00032_0002_5}\input{fig/coplanar_a_rotation_00032_0002_5}} & 
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{coplanar_a_rotation_00032_0002_6}\input{fig/coplanar_a_rotation_00032_0002_6}} 
+%% \tikzsetnextfilename{coplanar_a_rotation_00032_0000_1}
+%% \input{fig/coplanar_a_rotation_00032_0000_1.tex}
+\end{tabular}
 \end{figure}
 
 
