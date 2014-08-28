@@ -54,18 +54,18 @@
   \pgfmathsetmacro{\psil}{55};
   \pgfmathsetmacro{\psir}{-45};
 
-  \draw[->,darkred, line width=2pt] (O) -- (btl) node[black,right] {$\mbf{B}_{tl}$};
-  \draw[->,darkblue, line width=2pt] (O) -- (btr) node[black,left] {$\mbf{B}_{tr}$};
+  \draw[->,darkred, line width=2pt] (O) -- (btl) node[black,right] {$\mbf{B}_{tr}$};
+  \draw[->,darkblue, line width=2pt] (O) -- (btr) node[black,left] {$\mbf{B}_{tl}$};
 
   %define the rotated coordinate frame to lie in the "theta plane"
   \tdplotsetthetaplanecoords{90};
 
   % angles
   \tdplotdrawarc[->,line width=1pt,tdplot_rotated_coords,left]{(0.0,0.0,0.0)}{0.55}{90}{\psil}
-                {anchor=east}{\small$\psi_l$};
+                {anchor=east}{\small$\psi_r$};
 
   \tdplotdrawarc[line width=1pt,tdplot_rotated_coords,left]{(0.0,0.0,0.0)}{0.35}{90}{\psil}
-                {anchor=east}{\small$\psi_r$};
+                {anchor=east}{\small$\psi_l$};
 
   \tdplotdrawarc[->,line width=1pt,tdplot_rotated_coords,left]{(0.0,0.0,0.0)}{0.35}{\psil}{\psir}
                 {anchor=north west}{};
@@ -74,8 +74,8 @@
                 {anchor=north }{};
   \node[draw=white,below] at (0,0.20521,0.56382) {\small $\alpha$};
 
-  \draw[->,darkred, line width=2pt] (bnl) -- (O); 
-  \draw[->,darkblue, line width=2pt] (O) -- (bnr);
+  \draw[->,darkblue, line width=2pt] (bnl) -- (O); 
+  \draw[->,darkred, line width=2pt] (O) -- (bnr);
 
   \node[draw = white,above] at (0.95,-0.1,0) {$\mbf{B}_{nr}$};
   \node[draw = white,below] at (-0.25,0.1,0) {$\mbf{B}_{nl}$};

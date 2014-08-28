@@ -27,13 +27,13 @@
   %---------------------------------------------
   % place node corresponding to shapes
   %---------------------------------------------
-  \node[base node,draw,shape=circle,fill=gray!30] (R8) at (114.592:1.0) {\tiny $\mbf{U}_{r}$};
-  \node[base node,draw,shape=circle,fill=gray!30] (R7) at (114.592:1.15621) {\tiny $\mbf{U}^*_{r}$};
+  \node[base node,draw,shape=circle,fill=gray!30] (R8) at (114.592:1.0) {\tiny $\mbf{U}_{l}$};
+  \node[base node,draw,shape=circle,fill=gray!30] (R7) at (114.592:1.15621) {\tiny $\mbf{U}^*_{l}$};
   %% \node[base node,draw,shape=circle,fill=gray!30] (R6) at (90.232:1.15621) {\tiny $\mbf{U}^*_{2r}$};
   %% \node[base node,draw,shape=circle,fill=gray!30] (CD) at (90.232:0.84200) {\tiny CD};
   %% \node[base node,draw,shape=circle,fill=gray!30] (R3) at (90.232:0.66359) {\tiny $\mbf{U}^*_{2l}$};
-  \node[base node,draw,shape=circle,fill=gray!30] (R2) at (42.972:0.66359) {\tiny $\mbf{U}^*_{l}$};
-  \node[base node,draw,shape=circle,fill=gray!30] (R1) at (42.972:1.0) {\tiny $\mbf{U}_{l}$};
+  \node[base node,draw,shape=circle,fill=gray!30] (R2) at (42.972:0.66359) {\tiny $\mbf{U}^*_{r}$};
+  \node[base node,draw,shape=circle,fill=gray!30] (R1) at (42.972:1.0) {\tiny $\mbf{U}_{r}$};
 
   %---------------------------------------------
   % connect nodes
@@ -48,11 +48,11 @@
   %---------------------------------------------
   % place node corresponding to shapes
   %---------------------------------------------
-  \path (0,0)++(70:0.2)node{$\psi_r$};
+  \path (0,0)++(70:0.2)node{$\psi_l$};
   \draw[->](0:0.25)arc(0:114.592:0.25);
 
   \draw[->](0:0.2)arc(0:42.972:0.2);
-  \path (0,0)++(20:0.15)node{$\psi_l$};
+  \path (0,0)++(20:0.15)node{$\psi_r$};
   
   \draw[-latex,thick](122.5:1.12)node[left]{\small FS}
   to[out=0,in=180] (114.592:1.07);
