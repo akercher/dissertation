@@ -1099,10 +1099,10 @@ $$ p_g = (\gamma - 1)\left( E - \frac{\rho v^2}{2} - \frac{B^2}{2}\right)$$
 \end{frame}
 
 %----------------------------------------------------------------------------------------
-% Psuedo-convergence
+% Pseudo-convergence
 %----------------------------------------------------------------------------------------
 \begin{frame}[fragile]
-\frametitle{Psuedo-convergence}
+\frametitle{Pseudo-convergence}
 \only<1-1>{
 \begin{figure}[htbp]
 \resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{bfield_init_coplanar_b}\input{fig/bfield_init_coplanar_b.tex}}
@@ -1430,7 +1430,7 @@ W[\mbf{v}_{t}] &= -B_n[\mbf{B}_{t}], \\
 
 \bei
 \item Error calculation without applying the correction at the rotational discontinuity.
-\item Without CWM, the compoiund wave starts to break apart between $2^{10}$ and $2^{11}$.
+\item Without CWM, the compound wave starts to break apart between $2^{10}$ and $2^{11}$.
 \item CWM produces convergence at low grid resolutions.
 \ebi
 
@@ -1623,12 +1623,12 @@ thrust::transform_n(primitive_state.begin(),
 thrust::device_vector<float> d(n),vx(n),pg(n); 
 thrust::device_vector<float> mx(n),en(n); 
 thrust::transform_n(
-          thrust::make_zip_operator(
+          thrust::make_zip_iterator(
             make_tuple(d.begin(),
                        vx.begin(),
                        pg.begin())),
            n,
-           thrust::make_zip_operator(
+           thrust::make_zip_iterator(
              make_tuple(d.begin(),
                         mx.begin(),
                         en.begin())),
@@ -1636,7 +1636,7 @@ thrust::transform_n(
 \end{lstlisting} 
 \bei
 \item Converting from primitive variables $(\rho,v_x, p_g)$ to conservative variables $(\rho,\rho v_x, en)$.
-\item Arrays can be combined on the fly with a \verb+zip_operator+ to achieve coalescing.
+\item Arrays can be combined on the fly with a \verb+zip_iterator+ to achieve coalescing.
 \ebi
 \end{frame}
 

@@ -354,11 +354,11 @@ struc convert_primitive_to_conservative
 }
 thrust::device_vector<float> d(n),vx(n),pg(n); 
 thrust::device_vector<float> mx(n),en(n); 
-thrust::transform_n(thrust::make_zip_operator(make_tuple(d.begin(),
+thrust::transform_n(thrust::make_zip_iterator(make_tuple(d.begin(),
                                                         vx.begin(),
                                                         pg.begin())),
                     n,
-                    thrust::make_zip_operator(make_tuple(d.begin(),
+                    thrust::make_zip_iterator(make_tuple(d.begin(),
                                                         mx.begin(),
                                                         en.begin())),
                     convert_primitive_to_conservative(gamma));

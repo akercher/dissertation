@@ -146,7 +146,19 @@ where the sums include waves that propagate towards the face.  The HLL solvers u
 
 The Sod shock tube test of Section~\ref{sec:hydro_approx_rsolvers} using higher order reconstruction is shown in Figure~\ref{fig:euler_sod_3}.  The higher order extension is less diffuse than the low order counterparts shown in Figure~\ref{fig:euler_sod_1}.  The contact discontinuity and shock are much better resolved.
 
-The TVD scheme presented above preserves monotonicity by limiting the slope used for interface reconstruction.  With FCT, the high order fluxes are limited in order to preserve monotonicity.  Advancing the state variables in time with a low order scheme that preserves monotonicity is the first step in applying FCT.  The time-advanced low order solution is denoted as $\mbf{U}^{td}$, where $td$ stands for transport and diffused.  The antidiffusive flux is defined as the difference between the high and low order fluxes, $\mbf{A}_{i+1/2} = \mbf{F}^{h}_{i+1/2} - \mbf{F^{l}}_{i+1/2}$.  For the Rusanov flux, the antidiffusive flux is the second term on the right hand side of \eqref{eqn:rusanov}, $\mbf{A}_{i+1/2} = \half|\lambda_{\max}|\left(\mbf{U}_{i+1} - \mbf{U}_{i} \right)$.  Upper and lower limiting bounds are chosen at each interface such that $\mbf{U}^{td}$ lies between them.  In this work, at the interface between $i$ and $i+1$, the limiter is chosen as
+%-----------------------------------------------------------------
+% Interface states FCT
+%-----------------------------------------------------------------
+\begin{figure}[htbp]
+\begin{center}
+\tikzsetnextfilename{interface_states_fct}
+\input{fig/interface_states_fct.tex}
+\end{center}
+\caption{The allowable range for the high order solution is defined such that monotonicity is preserved.}
+\label{fig:interface_fct}
+\end{figure}
+
+The TVD scheme presented above preserves monotonicity by limiting the slope used for interface reconstruction.  With FCT, the high order fluxes are limited in order to preserve monotonicity.  Advancing the state variables in time with a low order scheme that preserves monotonicity is the first step in applying FCT.  The time-advanced low order solution is denoted as $\mbf{U}^{td}$, where $td$ stands for transported and diffused.  The antidiffusive flux is defined as the difference between the high and low order fluxes, $\mbf{A}_{i+1/2} = \mbf{F}^{h}_{i+1/2} - \mbf{F^{l}}_{i+1/2}$.  For the Rusanov flux, the antidiffusive flux is the second term on the right hand side of \eqref{eqn:rusanov}, $\mbf{A}_{i+1/2} = \half|\lambda_{\max}|\left(\mbf{U}_{i+1} - \mbf{U}_{i} \right)$.  Upper and lower limiting bounds are chosen at each interface such that $\mbf{U}^{td}$ lies between them.  The allowable range of the high-order solution is shown in Figure~\ref{fig:interface_fct}.  In this work, at the interface between $i$ and $i+1$, the limiter is chosen as
 \begin{gather}
 \label{eqn:fct_limit_max}
 \mbf{U}^{\max}_{i+1/2} = \max(\mbf{U}_{i+1},\mbf{U}_{i},\mbf{U}^{td}_{i+1},\mbf{U}^{td}_{i}) , \\
@@ -789,6 +801,19 @@ Tests 5a and 6a are examples of Riemann problems with non-unique solutions.  Bot
 
 Unique solutions to Riemann problems of ideal MHD are not guaranteed.  For certain initial conditions, the Riemann problem will have non-unique solutions.  Non-unique solutions will occur for problems with coplanar (anti-parallel) magnetic fields \citep{Barmin:1996}.  One solution has a $180\dsym$ rotational discontinuity and slow shock and the other solution has a compound wave.  A method for constructing Riemann problems with non-unique solutions and non-planar initial conditions is given by \citet{Torrilhon:2003a}.  As with the coplanar case, one solution consists of a $180\dsym$ rotational discontinuity and a slow shock and the other solution has a compound wave.  As discussed in this section, for cases with a $180\dsym$ rotation in the solution (either a compound wave or rotational discontinuity), convergence to the solution containing only a rotational discontinuity is impossible with numerical approximations based on the finite volume method.
 
+%-----------------------------------------------------------------
+% Init B field
+%-----------------------------------------------------------------
+\begin{figure}[htbp] 
+\begin{center}
+\tikzsetnextfilename{bfield_init_coplanar}
+\input{fig/bfield_init_coplanar.tex}
+\end{center}
+\caption{Initial configuration for a coplanar magnetic field on both sides of the discontinuity.}
+\label{fig:bfield_init_coplanar}
+\end{figure}
+
+
 Using the same terminology and notation as \citet{Torrilhon:2003b}, intermediate shocks and compound waves are referred to as non-regular structures.  Regular structures include rarefactions, linear discontinuities, and Lax shocks.  The solution of the ideal MHD Riemann problem that includes only regular structures is referred to as the r-solution.  The solution that contains a compound wave is referred to as the c-solution.
 
 %-----------------------------------------------------------------
@@ -825,13 +850,56 @@ The coplanar case of Test~6 is was considered in \citep{Ryu:1995a}, except we ha
 
 \citet{Falle:2001} described the appearance of compound waves in numerical simulations in terms of the properties of the planar ideal MHD equations.  In this case, the system of equations is reduced from seven to five by removing the equations for the $z$-component of the velocity and magnetic field.  In the reduced system, the Alfv{\'e}n waves are lost but the other characteristic fields are unchanged.  The Alfv{\'e}n velocity is no longer a characteristic speed of the system but rotational discontinuities still satisfy the jump conditions and propagate at that velocity. In planar ideal MHD, a rotational discontinuity can only rotate the perpendicular magnetic field by $180\dsym$ because it is restricted to a single plane.     
 
-Finite volume methods have no way of compensating for the reduction in dimension in the planar case.  If one of the perpendicular components of velocity and magnetic field vanish, there is no mechanism to transfer energy between the perpendicular field components across the rotational discontinuity.  The field in a cell would need to undergo a full $180\dsym$ rotation in one time step in order for the magnitude of the perpendicular magnetic field to remain constant.  Numerical diffusion and stability constraints prohibit the full rotation from being realized in one time step.  In addition, any interpolation with order greater than piecewise constant will produce a magnetic field at the cell interface (where the flux is calculated) with a magnitude that is less than that in the center of the adjoining cells.  From \eqref{eqn:energy}, any change in kinetic or magnetic energy will result in an increase in gas pressure that is connected to the upstream state through a shock and the downstream state through a rarefaction wave (i.e., a compound wave).  Thus, conservative finite volume schemes cannot converge to the r-solution for cases involving a $180\dsym$, or near $180\dsym$ rotation.  This is especially problematic for low-resolution grids because a greater amount of numerical diffusion is expected \citep{Barmin:1996,Torrilhon:2003b}.  
+\afterpage{
+%-----------------------------------------------------------------
+% Rotational Disc. 1
+%-----------------------------------------------------------------
+\begin{figure}[htbp] 
+\begin{tabular}{ccc}
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{coplanar_a_rotation_00032_0000_1}\input{fig/coplanar_a_rotation_00032_0000_1}} & 
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{coplanar_a_rotation_00032_0000_5}\input{fig/coplanar_a_rotation_00032_0000_5}} & 
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{coplanar_a_rotation_00032_0000_6}\input{fig/coplanar_a_rotation_00032_0000_6}} 
+\end{tabular}
+\caption{Initial state of left-going rotational discontinuity for the coplanar case of Test~5.}
+\label{fig:rotation_1}
+\end{figure}
+
+%-----------------------------------------------------------------
+% Rotational Disc. 2
+%-----------------------------------------------------------------
+\begin{figure}[htbp] 
+\begin{tabular}{ccc}
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{coplanar_a_rotation_00032_0001_1}\input{fig/coplanar_a_rotation_00032_0001_1}} & 
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{coplanar_a_rotation_00032_0001_5}\input{fig/coplanar_a_rotation_00032_0001_5}} & 
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{coplanar_a_rotation_00032_0001_6}\input{fig/coplanar_a_rotation_00032_0001_6}} 
+\end{tabular}
+\caption{The left-going rotational discontinuity for the coplanar case of Test~5 after onetime step.  The gas pressure is increased as a result of the decrease in $B_t$.}
+\label{fig:rotation_2}
+\end{figure}
+
+%-----------------------------------------------------------------
+% Rotational Disc. 3
+%-----------------------------------------------------------------
+\begin{figure}[htbp] 
+\begin{tabular}{ccc}
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{coplanar_a_rotation_00032_0002_1}\input{fig/coplanar_a_rotation_00032_0002_1}} & 
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{coplanar_a_rotation_00032_0002_5}\input{fig/coplanar_a_rotation_00032_0002_5}} & 
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{coplanar_a_rotation_00032_0002_6}\input{fig/coplanar_a_rotation_00032_0002_6}} 
+\end{tabular}
+\caption{The left-going rotational discontinuity for the coplanar case of Test~5 after two time steps.  The artificial increase in pressure creates the compound wave.}
+\label{fig:rotation_3}
+\end{figure}
+}
+
+Finite volume methods have no way of compensating for the reduction in dimension in the planar case.  If one of the perpendicular components of velocity and magnetic field vanish, there is no mechanism to transfer energy between the perpendicular field components across the rotational discontinuity.  The field in a cell would need to undergo a full $180\dsym$ rotation in one time step in order for the magnitude of the perpendicular magnetic field to remain constant.  Numerical diffusion and stability constraints prohibit the full rotation from being realized in one time step.  In addition, any interpolation with order greater than piecewise constant will produce a magnetic field at the cell interface (where the flux is calculated) with a magnitude that is less than that in the center of the adjoining cells.  From \eqref{eqn:energy}, any change in kinetic or magnetic energy will result in an increase in gas pressure that is connected to the upstream state through a shock and the downstream state through a rarefaction wave (i.e., a compound wave).  The formation of the compound wave is shown in Figures~\ref{fig:rotation_1}-\ref{fig:rotation_3}.  Thus, conservative finite volume schemes cannot converge to the r-solution for cases involving a $180\dsym$, or near $180\dsym$ rotation.  This is especially problematic for low-resolution grids because a greater amount of numerical diffusion is expected \citep{Barmin:1996,Torrilhon:2003b}.  
 
 %-----------------------------------------------------------------
 % Nonuniform convergence
 %-----------------------------------------------------------------
 \section[Nonuniform convergence]{Nonuniform convergence}
 \label{sec:nonuniform_converge}
+
+Numerical diffusion also produces compound waves in Riemann problems with initial conditions near a critical state with a non-unique solution \citep{Torrilhon:2003b}.  For these problems, the angle between the perpendicular magnetic fields separated by the initial discontinuity, called the twist angle $\alpha$, determines uniqueness.  Solutions for $\alpha \ne n\pi$, with $n \in \mathbb{Z}$ are unique.  Compound waves appear in numerical solutions on coarse grids as $\alpha$ approaches $n\pi$ \citep{Torrilhon:2003b}.  A compound wave connecting non-planar states, i.e. $\alpha \ne n\pi$, does not satisfy the Rankine-Hugoniot equations~(\ref{eqn:jump1})-(\ref{eqn:jump7}) and a numerical solution containing one is therefore not correct.  As numerical diffusion is decreased through grid refinement, the compound wave loses its structure and the regular waves emerge.  \citet{Torrilhon:2003b} called this property pseudo-convergence because convergence is initially towards the c-solution; divergence from the c-solution only occurs when enough diffusion is eliminated through grid refinement.  The solution for various levels of grid refinement are shown for a near-coplanar cases of Test~5 and Test~6 in Figure~\ref{fig:coplanar_b_pcon} and Figure~\ref{fig:fast_coplanar_b_pcon} respectively.  \citet{Torrilhon:2003b} reported that a simulation using 20,000 grid points had not completely converged to the r-solution.  Pseudo-convergence also occurs in non-planar MHD Riemann problems with initial conditions near a critical state with a non-unique solution.  The new CWM technique for removing pseudo-convergence is described in the following chapter.  The technique is demonstrated on coplanar, near coplanar, and non-planar cases.
 
 %-----------------------------------------------------------------
 % Pseudo-convergence slow compound wave
@@ -856,6 +924,4 @@ Finite volume methods have no way of compensating for the reduction in dimension
 \caption{Pseudo-convergence for a near-coplanar case.  As the grid is refined from 1024 and 2048 points, the solution begins to diverge from the c-solution.}
 \label{fig:fast_coplanar_b_pcon}
 \end{figure}
-
-Numerical diffusion also produces compound waves in Riemann problems with initial conditions near a critical state with a non-unique solution \citep{Torrilhon:2003b}.  For these problems, the angle between the perpendicular magnetic fields separated by the initial discontinuity, called the twist angle $\alpha$, determines uniqueness.  Solutions for $\alpha \ne n\pi$, with $n \in \mathbb{Z}$ are unique.  Compound waves appear in numerical solutions on coarse grids as $\alpha$ approaches $n\pi$ \citep{Torrilhon:2003b}.  A compound wave connecting non-planar states, i.e. $\alpha \ne n\pi$, does not satisfy the Rankine-Hugoniot equations~(\ref{eqn:jump1})-(\ref{eqn:jump7}) and a numerical solution containing one is therefore not correct.  As numerical diffusion is decreased through grid refinement, the compound wave loses its structure and the regular waves emerge.  \citet{Torrilhon:2003b} called this property pseudo-convergence because convergence is initially towards the c-solution; divergence from the c-solution only occurs when enough diffusion is eliminated through grid refinement.  The solution for various levels of grid refinement are shown for a near-coplanar case in Figure~\ref{fig:coplanar_b_pcon}.  \citet{Torrilhon:2003b} reported that a simulation using 20,000 grid points had not completely converged to the r-solution.  Pseudo-convergence also occurs in non-planar MHD Riemann problems with initial conditions near a critical state with a non-unique solution.  The new CWM technique for removing pseudo-convergence is described in the following chapter.  The technique is demonstrated on coplanar, near coplanar, and non-planar cases.
 
