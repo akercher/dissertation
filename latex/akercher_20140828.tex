@@ -1099,10 +1099,10 @@ $$ p_g = (\gamma - 1)\left( E - \frac{\rho v^2}{2} - \frac{B^2}{2}\right)$$
 \end{frame}
 
 %----------------------------------------------------------------------------------------
-% Psuedo-convergence
+% Pseudo-convergence
 %----------------------------------------------------------------------------------------
 \begin{frame}[fragile]
-\frametitle{Psuedo-convergence}
+\frametitle{Pseudo-convergence}
 \only<1-1>{
 \begin{figure}[htbp]
 \resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{bfield_init_coplanar_b}\input{fig/bfield_init_coplanar_b.tex}}
@@ -1126,7 +1126,7 @@ $$ p_g = (\gamma - 1)\left( E - \frac{\rho v^2}{2} - \frac{B^2}{2}\right)$$
 \bei
 \item $\alpha < \pi$, compound waves at lower resolutions.
 \pause
-\item Psuedo-convergence: rotational discontinuity at higher resolutions \citep{Torrilhon:2003b}.
+\item Pseudo-convergence: rotational discontinuity at higher resolutions \citep{Torrilhon:2003b}.
 \item Transition between $1024$ and $2048$ grid points.
 \item $\alpha \rightarrow \pi$, grid resolution increases. 
 \item $\pi = \alpha$, compound wave at all resolutions.
@@ -1623,12 +1623,12 @@ thrust::transform_n(primitive_state.begin(),
 thrust::device_vector<float> d(n),vx(n),pg(n); 
 thrust::device_vector<float> mx(n),en(n); 
 thrust::transform_n(
-          thrust::make_zip_operator(
+          thrust::make_zip_iterator(
             make_tuple(d.begin(),
                        vx.begin(),
                        pg.begin())),
            n,
-           thrust::make_zip_operator(
+           thrust::make_zip_iterator(
              make_tuple(d.begin(),
                         mx.begin(),
                         en.begin())),
@@ -1636,7 +1636,7 @@ thrust::transform_n(
 \end{lstlisting} 
 \bei
 \item Converting from primitive variables $(\rho,v_x, p_g)$ to conservative variables $(\rho,\rho v_x, en)$.
-\item Arrays can be combined on the fly with a \verb+zip_operator+ to achieve coalescing.
+\item Arrays can be combined on the fly with a \verb+zip_iterator+ to achieve coalescing.
 \ebi
 \end{frame}
 
