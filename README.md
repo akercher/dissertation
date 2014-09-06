@@ -1,7 +1,9 @@
 dissertation
 ============
 
-Source code written for dissertation.
+* This dissertation includes extensions to version 4.2 of Athena, a code for astrophysical NHD.  
+  The official version of Athena can be downloaded from
+  https://trac.princeton.edu/Athena/wiki/AthenaDocsDownLd. 
 
 athena4.2
   - exact_mhd.c : exact_solver for ideal MHD.
