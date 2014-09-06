@@ -667,7 +667,7 @@ Cons1DS nonlinear_solver(const Real Bxi, Prim1DS *W, Cons1DS *U, int *exact_erro
   int istate;
   int dir;
   int kiter;
-  Real pbl,pbr,ptl,ptr,pt;
+  Real pt;
   int maxit = 20;
   Real tol = 1.0e-6;
   Real relax_fac; /* relaxation factor */
@@ -754,7 +754,6 @@ Cons1DS nonlinear_solver(const Real Bxi, Prim1DS *W, Cons1DS *U, int *exact_erro
     f_cd[3] = W[4].P - W[3].P 
       + 0.5*(W[4].By*W[4].By + W[4].Bz*W[4].Bz - (W[3].By*W[3].By + W[3].Bz*W[3].Bz));
     
-
 /*--- Step 3. ------------------------------------------------------------------
 * Compute Jacobian and solve Jacobian*dvars = f_cd using LU factorization
 */
@@ -764,9 +763,9 @@ Cons1DS nonlinear_solver(const Real Bxi, Prim1DS *W, Cons1DS *U, int *exact_erro
     bvec = gsl_vector_view_array(f_cd,4);
     xvec  = gsl_vector_view_array(dvars_new,4);
     
-    gsl_linalg_LU_decomp (&Amat.matrix, pmat, &s);
+    gsl_linalg_LU_decomp(&Amat.matrix, pmat, &s);
     
-    gsl_linalg_LU_solve (&Amat.matrix, pmat, &bvec.vector, &xvec.vector);
+    gsl_linalg_LU_solve(&Amat.matrix, pmat, &bvec.vector, &xvec.vector);
 
     /* calculate maximum */
     dvars_max = fabs(dvars[0]);
@@ -788,7 +787,6 @@ Cons1DS nonlinear_solver(const Real Bxi, Prim1DS *W, Cons1DS *U, int *exact_erro
       /* ath_error("[exact MHD flux]: damping too strong\n"); */
       *exact_error = 1;
 
-      free(W);
       return Fex;
     }
 
@@ -814,9 +812,6 @@ Cons1DS nonlinear_solver(const Real Bxi, Prim1DS *W, Cons1DS *U, int *exact_erro
 
     /* update intermediate states */
     intermediate_states(Bxi, Bt2_Bt4_Bt7_psi3, wspd, W);
-
-    /* printf("\n"); */
-    /* print_states(W); */
     
   }
   
@@ -837,7 +832,7 @@ Cons1DS nonlinear_solver(const Real Bxi, Prim1DS *W, Cons1DS *U, int *exact_erro
   vspd[6] = W[7].Vx + wspd[5]/W[7].d;
 
   if(vspd[0] >= 0.0){
-    istate = 1;
+    istate = 0;
     pt = W[istate].P + 0.5*(Bxi*Bxi + W[istate].By*W[istate].By + W[istate].Bz*W[istate].Bz);
 
     Fex.d = U[istate].Mx;
@@ -940,9 +935,6 @@ Cons1DS nonlinear_solver(const Real Bxi, Prim1DS *W, Cons1DS *U, int *exact_erro
     Fex.By = U[istate].By*W[istate].Vx - Bxi*W[istate].Vy;
     Fex.Bz = U[istate].Bz*W[istate].Vx - Bxi*W[istate].Vz;
   }
-
-
-  free(U);
 
   return Fex;
   
