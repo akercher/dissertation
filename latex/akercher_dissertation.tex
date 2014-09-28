@@ -64,12 +64,12 @@
 
 \usepackage{afterpage}
 \usepackage{longtable}
-\usepackage[acronym]{glossaries} % create abbreviation and nomenclature lists
+\usepackage[acronym,nonumberlist]{glossaries} % create abbreviation and nomenclature lists
 
 % decrease white space above and below caption
-%% \setlength{\abovecaptionskip}{-1ex}%{-11pt}
-%% \setlength{\belowcaptionskip}{-2ex}%{-8pt}
-
+%% \setlength{\abovecaptionskip}{1.5cm}%{-1ex}%{-11pt}
+%% \setlength{\belowcaptionskip}{1.5cm}%{-2ex}%{-8pt}
+%% \setlength{\intextsep}{3\baselineskip}
 
 \definecolor{darkorange}{rgb}{0.9,0.3,0.0}
 
@@ -199,6 +199,13 @@ My final thanks is to my friends and family for their love and support; to my da
 \listoffigures
 
 %%------------------------------------------------------------
+%% glossary
+%%------------------------------------------------------------
+%% \singlespacing
+\printglossary[type=\acronymtype,title=Abbreviations]
+%% \printglossary[title=Nomenclature]
+
+%%------------------------------------------------------------
 %% Abstract
 %%------------------------------------------------------------
 \abstractpage
@@ -262,11 +269,6 @@ A multidimensional ideal MHD code has implemented for simulations on \glspl{gpu}
 \bibliography{mn-jour,references}	% includes journal abbrevs.
 
 
-%%------------------------------------------------------------
-%% glossary
-%%------------------------------------------------------------
-\printglossary[type=\acronymtype,title=Abbreviations]
-%% \printglossary[title=Nomenclature]
 
 %%------------------------------------------------------------
 %% curriculum vitae

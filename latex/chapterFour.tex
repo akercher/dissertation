@@ -30,7 +30,7 @@ In Chapter~\ref{chp:num_mhd}, it was shown that FV schemes exhibit pseudo-conver
 %----------------------------------------------------------------
 % Rotation
 %-----------------------------------------------------------------
-%% \begin{figure}[htbp] 
+%% \begin{figure}[htbp]\figSpace 
 %% \begin{tabular}{ccc}
 %% \resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{coplanar_a_rotation_00032_0001_1}\input{fig/coplanar_a_rotation_00032_0001_1.tex}} & 
 %% \resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{coplanar_a_rotation_00032_0001_5}\input{fig/coplanar_a_rotation_00032_0001_5.tex}} & 
@@ -45,25 +45,27 @@ The influence of a compound wave on the numerical solution can be minimized by l
 %----------------------------------------------------------------
 % Coplanar waves
 %-----------------------------------------------------------------
-\begin{figure}[htbp] 
+\begin{figure}[htbp]\figSpace 
 \begin{tabular}{cc}
 \resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{coplanar_a_cwaves_1}\input{fig/coplanar_a_cwaves_1.tex}} & 
 \resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{coplanar_a_cwaves_6}\input{fig/coplanar_a_cwaves_6.tex}}
 \end{tabular}
 \caption{The slow compound wave of Test~5a, approximate non-converging c-solution, and exact r-solution for the coplanar case.}
 \label{fig:coplanar_a_cwaves}
+\figSpace
 \end{figure}
 
 %----------------------------------------------------------------
 % Coplanar waves
 %-----------------------------------------------------------------
-\begin{figure}[htbp] 
+\begin{figure}[htbp]\figSpace 
 \begin{tabular}{cc}
 \resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{fast_coplanar_a_cwaves_1}\input{fig/fast_coplanar_a_cwaves_1.tex}} & 
 \resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{fast_coplanar_a_cwaves_6}\input{fig/fast_coplanar_a_cwaves_6.tex}}
 \end{tabular}
 \caption{The fast compound wave of Test~6a, approximate non-converging c-solution, and exact r-solution for the coplanar case.}
 \label{fig:fast_coplanar_a_cwaves}
+\figSpace
 \end{figure}
 
 The solution to the reduced coplanar Riemann problem as well as the solution to the full coplanar Riemann problem are shown in Figure~\ref{fig:coplanar_a_cwaves}.  Three left-going structures are visible in the solution to the reduced Riemann problem.  The intermediate shock at $x\approx 0.3$ is directly followed by a slow rarefaction whose head is located at $x\approx 0.3$ and tail at $x\approx 0.32$.  The speed at the head of the slow rarefaction equals the speed of the intermediate wave, $v - c_a$, and the two structures move together forming a compound wave.  The third structure in the compound wave solution is a fast rarefaction that connects the upstream state of the intermediate shock to the initial conditions.  The speed at the head of the fast rarefaction (dotted black line in Figure \ref{fig:coplanar_a_cwaves}) is equal to the speed at the tail of the fast rarefaction in the solution to the full coplanar Riemann problem (solid black line in Figure \ref{fig:coplanar_a_cwaves}).  These two fast rarefactions, one in the regular solution to the full Riemann problem and one in the compound wave, form a single structure in the compound wave solution to the full coplanar Riemann problem.  The compound wave solution also produces a right-going slow rarefaction wave that connects the state downstream of the left-going slow rarefaction wave to the initial right-state.  The change in density through the right-going slow rarefaction is equal to the difference in density between the exact solution and compound wave solution downstream (left) of the contact discontinuity, at $x\approx 0.48$ in Figure~\ref{fig:coplanar_a_cwaves}.  The compound wave solution requires four structures, as opposed to one in the regular solution (i.e., the rotational discontinuity), to connect two intermediate states in full Riemann problem.  
@@ -75,7 +77,7 @@ It is important to limit the removal of the flux responsible for producing the c
 %-----------------------------------------------------------------
 % Near Coplanar waves initial r-solution
 %-----------------------------------------------------------------
-\begin{figure}[htbp] 
+\begin{figure}[htbp]\figSpace 
 \begin{tabular}{cc}
 \resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{coplanar_b_rsol_init_1}\input{fig/coplanar_b_rsol_init_1.tex}}
 & 
@@ -83,12 +85,13 @@ It is important to limit the removal of the flux responsible for producing the c
 \end{tabular}
 \caption{The approximate solution after the first flux correction of HLLD-CWM and exact r-solution to the full Riemann problem for the near-coplanar case with $4096$ grid points.  The compound wave is almost completely removed, except near $x=0.303$ where a weak intermediate shock remains.}
 \label{fig:coplanar_b_rsol_init}
+\figSpace
 \end{figure}
 
 %-----------------------------------------------------------------
 % Fast coplanar initial r-solution
 %-----------------------------------------------------------------
-\begin{figure}[htbp] 
+\begin{figure}[htbp]\figSpace 
 \begin{tabular}{cc}
 \resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{fast_coplanar_a_rsol_init_1}\input{fig/fast_coplanar_a_rsol_init_1.tex}}
 & 
@@ -96,12 +99,13 @@ It is important to limit the removal of the flux responsible for producing the c
 \end{tabular}
 \caption{The approximate solution after the first flux correction of HLLD-CWM and exact r-solution to the full Riemann problem for the near-coplanar case with $2048$ grid points.  The compound wave is almost completely removed, except near $x=0.365$ a weak intermediate shock remains.}
 \label{fig:fast_coplanar_a_rsol_init}
+\figSpace
 \end{figure}
 
 %-----------------------------------------------------------------
 % Fast coplanar initial r-solution
 %-----------------------------------------------------------------
-\begin{figure}[htbp] 
+\begin{figure}[htbp]\figSpace 
 \begin{tabular}{cc}
 \resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{fast_coplanar_b_rsol_init_1}\input{fig/fast_coplanar_b_rsol_init_1.tex}}
 & 
@@ -109,12 +113,13 @@ It is important to limit the removal of the flux responsible for producing the c
 \end{tabular}
 \caption{The approximate solution after the first flux correction of HLLD-CWM and exact r-solution to the full Riemann problem for the near-coplanar case with $2048$ grid points.  The compound wave is almost completely removed, except near $x=0.365$ where a weak intermediate shock remains.}
 \label{fig:fast_coplanar_b_rsol_init}
+\figSpace
 \end{figure}
 
 %-----------------------------------------------------------------
 % Two coplanar initial r-solution
 %-----------------------------------------------------------------
-\begin{figure}[htbp] 
+\begin{figure}[htbp]\figSpace 
 \begin{tabular}{cc}
 \resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{AK7_rsol_init_1}\input{fig/AK7_rsol_init_1.tex}}
 & 
@@ -122,6 +127,7 @@ It is important to limit the removal of the flux responsible for producing the c
 \end{tabular}
 \caption{The approximate solution after the first flux correction of HLLD-CWM and exact r-solution to the full Riemann problem for the near-coplanar case of Test~5 with $4096$ grid points.  The compound wave is almost completely removed, except near $x=0.366$ and $x = 0.691$ where weak intermediate shocks remain.}
 \label{fig:two_fast_coplanar_b_rsol_init}
+\figSpace
 \end{figure}
   
 As shown in Figure~\ref{fig:coplanar_b_rsol_init}, the transition across the rotational discontinuity is initially unresolved.  The CWM procedure removes the compound wave from the solution except in this layer and leaves a deviation from the exact solution as the rotational discontinuity is crossed.   Because the deviation occurs where there is a change in sign of the tangential magnetic field, it needs to be detected, unless an exact solver is used, in which case the location is determined from the wave speed.  
@@ -138,7 +144,7 @@ A point is considered to be within the transition region of a 180\degree\, rotat
 %-----------------------------------------------------------------
 % Coplanar flux zoomed (512)
 %-----------------------------------------------------------------
-\begin{figure}[htbp] 
+\begin{figure}[htbp]\figSpace 
 \begin{tabular}{cc}
 \resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{coplanar_b_crsol_00512_1}\input{fig/coplanar_b_crsol_00512_1.tex}} & 
 \resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{coplanar_b_crsol_00512_6}\input{fig/coplanar_b_crsol_00512_6.tex}} \\
@@ -147,12 +153,13 @@ A point is considered to be within the transition region of a 180\degree\, rotat
 \end{tabular}
 \caption{The rotational discontinuity and slow shock solution found using HLLD-CWM without the (optional) flux redistribution step, HLLD, and the exact solver using $512$ grid points for (top) a near-coplanar and pseudo-converging case and (bottom) the planar and non-converging (bottom) case.}
 \label{fig:coplanar_ab_crsol_512}
+\figSpace
 \end{figure}
         
 %-----------------------------------------------------------------
 % Coplanar flux zoomed
 %-----------------------------------------------------------------
-\begin{figure}[htbp] 
+\begin{figure}[htbp]\figSpace 
 \begin{tabular}{cc}
 \resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{coplanar_b_crsol_1}\input{fig/coplanar_b_crsol_1.tex}} & 
 \resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{coplanar_b_crsol_6}\input{fig/coplanar_b_crsol_6.tex}} \\
@@ -161,6 +168,7 @@ A point is considered to be within the transition region of a 180\degree\, rotat
 \end{tabular}
 \caption{The rotational discontinuity and slow shock solution found using HLLD-CWM after the (optional) flux redistribution step, HLLD, and the exact solver using $2048$ grid points for (top) a near-coplanar and pseudo-converging case and (bottom) the planar and non-converging (bottom) case.}
 \label{fig:coplanar_ab_crsol}
+\figSpace
 \end{figure}
 
 Solutions obtained using HLLD-CWM, without any additional artificial viscosity, and HLLD for a near-coplanar case and the coplanar case of Test~5 with $A = 0.1$ for 512 grid points are shown in Figure~\ref{fig:coplanar_ab_crsol_512}, and for 2048 grid points are shown in Figure~\ref{fig:coplanar_ab_crsol}.  The solutions now include a left-going rotational discontinuity and slow shock.  This is the correct solution for ideal MHD.  Pseudo-convergence does not occur in the coplanar case -- successive give refinement only reduces the error w.r.t. the r-solution.  For the near-coplanar case, pseudo-convergence occurs -- the compound wave structure is lost as the grid is refined from 1024 to 2048 points. 
@@ -170,7 +178,7 @@ In the unmodified solution for the near-coplanar case of Test~5, the state betwe
 %-----------------------------------------------------------------
 % Fast coplanar flux zoomed (512)
 %-----------------------------------------------------------------
-\begin{figure}[htbp] 
+\begin{figure}[htbp]\figSpace 
 \begin{tabular}{cc}
 \resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{fast_coplanar_b_crsol_00512_1}\input{fig/fast_coplanar_b_crsol_00512_1.tex}} & 
 \resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{fast_coplanar_b_crsol_00512_6}\input{fig/fast_coplanar_b_crsol_00512_6.tex}} \\
@@ -179,12 +187,13 @@ In the unmodified solution for the near-coplanar case of Test~5, the state betwe
 \end{tabular}
 \caption{The fast rarefaction and rotational discontinuity solution found using HLLD-CWM without the (optional) flux redistribution step, HLLD, and the exact solver using $512$ grid points for (top) a near-coplanar and pseudo-converging case and (bottom) the planar and non-converging (bottom) case.}
 \label{fig:fast_coplanar_ab_crsol_512}
+\figSpace
 \end{figure}
 
 %-----------------------------------------------------------------
 % Fast coplanar flux zoomed
 %-----------------------------------------------------------------
-\begin{figure}[htbp] 
+\begin{figure}[htbp]\figSpace 
 \begin{tabular}{cc}
 \resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{fast_coplanar_b_crsol_1}\input{fig/fast_coplanar_b_crsol_1.tex}} & 
 \resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{fast_coplanar_b_crsol_6}\input{fig/fast_coplanar_b_crsol_6.tex}} \\
@@ -193,6 +202,7 @@ In the unmodified solution for the near-coplanar case of Test~5, the state betwe
 \end{tabular}
 \caption{The fast rarefaction and rotational discontinuity solution found using HLLD-CWM without the (optional) flux redistribution step, HLLD, and the exact solver using $2048$ grid points for (top) a near-coplanar and pseudo-converging case and (bottom) the planar and non-converging (bottom) case.}
 \label{fig:fast_coplanar_ab_crsol}
+\figSpace
 \end{figure}
 
 For Test~6, the solutions of the coplanar and near coplanar cases obtained with  $A = 0.05$ using HLLD, and HLLD-CWM without any additional artificial viscosity for 512 grid points are shown in Figure~\ref{fig:fast_coplanar_ab_crsol_512}, and for 2048 grid points are shown in Figure~\ref{fig:fast_coplanar_ab_crsol}.  The approximate position of the left-going SS is improved with HLLD-CWM for both levels of grid refinement.  This test indicates HLLD-CWM performs extremely well for weak intermediate shocks, with minimal error through the transition.      
@@ -200,13 +210,14 @@ For Test~6, the solutions of the coplanar and near coplanar cases obtained with 
 %-----------------------------------------------------------------
 % Two fast compound 
 %-----------------------------------------------------------------
-\begin{figure}[htbp] 
+\begin{figure}[htbp]\figSpace 
 \begin{tabular}{cc}
 \resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{AK7_crsol_1}\input{fig/AK7_crsol_1.tex}} & 
 \resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{AK7_crsol_6}\input{fig/AK7_crsol_6.tex}}
 \end{tabular}
 \caption{Solution consisting of two fast rarefactions and two rotational discontinuities found using HLLD-CWM without the (optional) flux redistribution step, HLLD, and the exact solver using $2048$ grid points for the non-planar case.}
 \label{fig:AK7_crsol}
+\figSpace
 \end{figure}
 
 The solution of Test~7 with $A = -0.1$ and 4096 grid points using HLLD, and HLLD-CWM without any additional artificial viscosity is shown in Figure~\ref{fig:AK7_crsol}.  The right-going compound wave is no longer present in either the HLLD or HLLD-CWM solution.  A small deviation at $x\approx 0.691$ is present in the CWM solution.  This can be eliminated by increasing the threshold value $\beta_T$ for when CWM is applied.  However, if $\beta_T$ were increased so that CWM was not applied to the right-going compound wave, the error in the approximate solution at the tail of the right-going rarefaction located at $x \approx 0.732$ would increase.  This is a desirable property of the CWM method, the adjustment applied is reduced as the compound wave disappears.  The jump across the CD is still incorrect with and without CWM, however, the state downstream of the CD is better approximated with CWM because the jump across the left-going SS at $x\approx 0.47$ is more accurate.  The maximum value of $\rho$ approximated with CWM is $1.7657$ and $1.5596$ without it.  The percent difference form the exact solution downstream of the CD (row 4 of Table~\ref{tab:AK7}) is reduce from $12\%$ to $0.2\%$ when CWM is enabled.
@@ -236,13 +247,14 @@ where $M$ is the number of conservative state variables, $N$ is the number of gr
 %-----------------------------------------------------------------
 % RMS-error Slow
 %-----------------------------------------------------------------
-\begin{figure}[htbp] 
+\begin{figure}[htbp]\figSpace 
 \begin{tabular}{cc}
 \resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{coplanar_b_L1_err_1}\input{fig/coplanar_b_L1_err_1.tex}} &
 \resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{coplanar_a_L1_err_1}\input{fig/coplanar_a_L1_err_1.tex}} 
 \end{tabular}
 \caption{RMSE in $x=[0.254,0.481]$ using HLLD (blue) and HLLD-CWM (red) for Tests (left) 5a and (right) 5b.}
 \label{fig:coplanar_b_err_rms}
+\figSpace
 \end{figure}
 
 The RMSEs of the original HLLD scheme and the modified HLLD-CWM scheme for both the coplanar and near-coplanar cases of Test~5 are shown in Figure~\ref{fig:coplanar_b_err_rms}.  For the near-coplanar case, a reduction in RMSE through grid refinement occurs with both HLLD and HLLD-CWM.  Initially convergence is much quicker with HLLD-CWM.  As numerical diffusion is decreased through grid refinement, the compound wave breaks apart and the convergence rate using HLLD increases at about $2^{10}$ grid points.  For the coplanar case, the RMSE is reduced through grid refinement only when the HLLD-CWM flux is used.  Note that the domain used in this analysis differs slightly from $x = [0.2,0.4]$ used in \citep{Torrilhon:2003b}; the domain used here covers the largest differences between the exact and non-converging solution.
@@ -250,13 +262,14 @@ The RMSEs of the original HLLD scheme and the modified HLLD-CWM scheme for both 
 %-----------------------------------------------------------------
 % RMS-error Fast
 %-----------------------------------------------------------------
-\begin{figure}[htbp] 
+\begin{figure}[htbp]\figSpace 
 \begin{tabular}{cc}
 \resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{fast_coplanar_b_L1_err_1}\input{fig/fast_coplanar_b_L1_err_1.tex}} &
 \resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{fast_coplanar_a_L1_err_1}\input{fig/fast_coplanar_a_L1_err_1.tex}} 
 \end{tabular}
 \caption{RMSE in $x=[0.348,0.551]$ using HLLD (blue) and HLLD-CWM (red) for Tests (left) 6a and (right) 6b.}
 \label{fig:fast_coplanar_b_err_rms}
+\figSpace
 \end{figure}
 
 The RMSEs of the original HLLD scheme and the modified HLLD-CWM scheme for both the coplanar and near-coplanar cases of Test~6 are shown in Figure~\ref{fig:fast_coplanar_b_err_rms}.  Unlike Test~5, a regular slow shock is located in the domain in which the RMSEs were computed.  The presence of the regular shock is the reason for the initial reduction in error with HLLD for the coplanar case.  For the near-coplanar case, a reduction in RMSE through grid refinement occurs with both HLLD and HLLD-CWM.  As with Test~5, convergence is faster with HLLD-CWM until between $2^{10}$ and $2^{11}$ grid points at which point the rate using HLLD increases at about.  For the coplanar case, after the initial convergence, between $2^{8}$ and $2^{9}$ grid points, only HLLD-CWM is able to reduce the RMSE.  The CWM should be tested with high order WENO schemes.  This has the potential to reduce the need for artificial viscosity downstream of the rotational discontinuity at higher Courant numbers.

@@ -171,8 +171,11 @@
   %% \coordinate (xslh) at (0.70596, 0.0, 0.0);
 
   %% \draw[black!71!,opacity=.8, very thin] (xslh) -- (btl2b);
-  \shade[left color = black!79!, right color = black!73!, opacity=.8]
+  %% \shade[left color = black!79!, right color = black!73!, opacity=.8]
+  %% (xslh) -- (btl2b) -- (btl3a) -- (0.78,0,0);%(xslt);
+  \path[fill,color = black!76!, opacity=.8]
   (xslh) -- (btl2b) -- (btl3a) -- (0.78,0,0);%(xslt);
+
 
   %% \coordinate (xslt) at (0.76457, 0.0, 0.0);
 
@@ -192,7 +195,7 @@
   % --------------------------------------------------------------------------------------------
   %% \tdplotsetphiplanecoords{120};
 
-  \shade[top color = black!100!, bottom color = black!33!, opacity=.8,tdplot_screen_coords]
+  \shade[top color = black!100!,bottom color = black!33!,tdplot_screen_coords]
    (0.8,0.5,0.0) -- (0.8,1.25,0.0) -- (0.95,1.25,0.0) -- (0.95,0.5,0.0);
    
   \node[draw=white,right,,tdplot_screen_coords] (dmax) at (0.95,1.2,0.0) {\small $\rho_l$};

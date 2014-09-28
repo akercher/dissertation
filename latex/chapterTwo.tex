@@ -34,13 +34,14 @@ where $\mbf{U}_l$ is the initial left state, $\mbf{U}_r$ is the initial right st
 %-----------------------------------------------------------------
 % Riemann IVP states
 %-----------------------------------------------------------------
-\begin{figure}[htbp]
+\begin{figure}[htbp]\figSpace
 \begin{center}
 \tikzsetnextfilename{riemann_ivp}
 \input{fig/riemann_ivp.tex}
 \end{center}
 \caption{Initial conditions for a one-dimensional Riemann problem.  The initial discontinuity at, $x_d$, separates two constant states, $\mbf{U}_l$ and $\mbf{U}_r$.}
 \label{fig:ivp}
+\figSpace
 \end{figure}
 
 Conservation laws are a system of partial differential equations of the form   
@@ -74,13 +75,14 @@ u_r & \text{if}\;\;\; x > at. \\
 %-----------------------------------------------------------------
 % Linear advection Riemann states
 %-----------------------------------------------------------------
-\begin{figure}[htbp]
+\begin{figure}[htbp]\figSpace
 \begin{center}
 \tikzsetnextfilename{lin_ad_rstates}
 \input{fig/lin_ad_rstates.tex}
 \end{center}
 \caption{Solution to the Riemann problem for linear advection in the $x$-$t$ plane.  The position of the discontinuity is given by the dashed line.}
 \label{fig:lin_ad_rstates}
+\figSpace
 \end{figure}
 
 In the $x$-$t$ plane, the solution changes from the initial left state, $u_l$, to the initial right state, $u_r$, across the characteristic line $x - at = 0$.  Across the discontinuity the solution is given by the Rankine-Hugonoit jump conditions, which express the transition as conservation across the discontinuity:
@@ -119,13 +121,14 @@ where the eigenvalues are the characteristic speeds.  The system is assumed to b
 %-----------------------------------------------------------------
 % Linear system Riemann states
 %-----------------------------------------------------------------
-\begin{figure}[htbp]
+\begin{figure}[htbp]\figSpace
 \begin{center}
 \tikzsetnextfilename{lin_sys_rstates}
 \input{fig/lin_sys_rstates.tex}
 \end{center}
 \caption{Solution to the Riemann problem for a hyperbolic system of $n$ linear equations in the $x$-$t$ plane.}
 \label{fig:lin_sys_rstates}
+\figSpace
 \end{figure}
 
 The solution in the $x$-$t$ plane, for the linear system is shown in Figure~\ref{fig:lin_sys_rstates}.  It is composed of $n$ waves, each one corresponding to a characteristic speed, propagating away from the initial discontinuity.  Only the state on one side of the wave is needed to determine the change across it because the speed of a linear wave is independent of the discontinuous quantity.  The speed of the wave is calculated by the quantities in the known state.  A rotational discontinuity is an example of a linear wave in plasma physics.  It travels with a velocity equal to the Alf{\'e}n velocity, $B_n/\sqrt{4\pi\rho}$, where $B_n$ is the magnitude of the normal component of the magnetic field, and $\rho$ is the density.  Across a rotational discontinuity, $B_n$, and $\rho$ are unchanged, and determine the speed, and the jump conditions are then used to compute the connected state.  In this way, every state, connected through multiple waves can be determined.  The complete solution is then given by the superposition of the $n$ waves.  
@@ -152,7 +155,7 @@ where $\mbf{U}$ is a vector of conserved variables and $\mbf{F}(\mbf{U})$ is the
 %-----------------------------------------------------------------
 % Characteristics of shocks, linear waves, and rarefactions
 %-----------------------------------------------------------------
-\begin{figure}[htbp]
+\begin{figure}[htbp]\figSpace
 \begin{tabular}{ccc}
 \resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{shock_char}\input{fig/shock_char.tex}} &
 \resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{linear_char}\input{fig/linear_char.tex}} &
@@ -160,6 +163,7 @@ where $\mbf{U}$ is a vector of conserved variables and $\mbf{F}(\mbf{U})$ is the
 \end{tabular}
 \caption{(left) Characteristics on both sides of a shock, (center) linear discontinuity, and (right) rarefaction (right).}
 \label{fig:nonlinear_char}
+\figSpace
 \end{figure}
 
 The formation of compression and expansion waves is an distinguishing feature of nonlinear systems.  Shock waves are compressive discontinuities that connect two states.  The characteristics of the two states connected by shock wave converge in the $x$-$t$ planeas shown in the left panel of Figure~\ref{fig:nonlinear_char}..  The Rankine-Hugonoit jump conditions for a shock wave are given by Equation~\ref{eqn:rh_jump}.
@@ -173,13 +177,14 @@ We adopt the following conventions when discussing to the structure of the solut
 %-----------------------------------------------------------------
 % Intermediate Riemann state
 %-----------------------------------------------------------------
-\begin{figure}[htbp]
+\begin{figure}[htbp]\figSpace
 \begin{center}
 \tikzsetnextfilename{inter_rstates}
 \input{fig/inter_rstates.tex}
 \end{center}
 \caption{Solution to a Riemann with one intermediate state in the $x$-$t$ plane.}
 \label{fig:inter_rstates}
+\figSpace
 \end{figure}
 
 When the solution to a Riemann problem is composed of more than one wave, the state between two waves is called an intermediate state, and is denoted $\mbf{U}^*$.  If the solution includes more than two waves, then the intermediate states are referenced in relation to the left-most and right-most state.  If $n+1$ states compose the solution, the states downstream of $\mbf{U}_{j}$ are denoted $\mbf{U}_{ij}^*$, where $i=1,\hdots,m/2$, $j = l,r$, and
@@ -224,13 +229,14 @@ where $a = \sqrt{\gamma p_g/\rho}$ is the speed of sound.
 %-----------------------------------------------------------------
 % Euler Riemann states
 %-----------------------------------------------------------------
-\begin{figure}[htbp]
+\begin{figure}[htbp]\figSpace
 \begin{center}
 \tikzsetnextfilename{euler_rstates}
 \input{fig/euler_rstates.tex}
 \end{center}
 \caption{Possible structure of the solution to a Riemann problem for the Euler equations the $x$-$t$ plane.  The solution consists of a rarefaction wave to the left of contact discontinuity, and a shock wave to the right.}
 \label{fig:euler_rstates}
+\figSpace
 \end{figure}
 
 A possible structure of the self-similar solution $\mbf{U}(x,t)$ to the Euler equations is shown in Figure~\ref{fig:euler_rstates}.  Three waves: a fast shock, a contact discontinuity, and a slow rarefaction, separate the four constant states: the initial left, left intermediate, right intermediate, and initial right.  The state, $\mbf{U}^*_{lfan}$, inside the rarefaction wave is not constant.  It connects the states $\mbf{U}_l$ and $\mbf{U}^*_l$ through a smooth transition.  The characteristic speed at the head of a rarefaction wave is $v_{nu} \pm a_u$.  At the tail of a rarefaction wave, the characteristic speed is $v_{nd} \pm a_d$.  The plus (minus) sign refers to right-going (left-going) waves.  The speed of the contact discontinuity is given by the characteristic speed $\lambda_2$.  The shock speeds are derived from the Rankine-Hugonoit jump conditions, Equation~\ref{eqn:rh_jump}.  The speeds of a right-going shock, $S_r$, and left-going shock, $S_l$, are
@@ -290,7 +296,7 @@ for $j=l$ and $r$, and the plus (minus) sign corresponds to a left-going (right-
 %-----------------------------------------------------------------
 % Exact solution to Sod shock tube
 %-----------------------------------------------------------------
-\begin{figure}[htbp]
+\begin{figure}[htbp]\figSpace
 \begin{tabular}{ccc}
 \resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_1}\input{fig/sod_1.tex}} &
 \resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_2}\input{fig/sod_2.tex}} &
@@ -298,6 +304,7 @@ for $j=l$ and $r$, and the plus (minus) sign corresponds to a left-going (right-
 \end{tabular}
 \caption{Exact solution to Sod shock tube problem.  The head of the rarefaction is located at $x \approx 0.2$, and the tail is at $x \approx 0.45$.  The contact discontinuity is located at $x \approx 0.72$, and the shock is located $x \approx 0.95$.}
 \label{fig:euler_exact_sod}
+\figSpace
 \end{figure}
 
 Shock tube problems in Gas Dynamics are an example of a Riemann problem for the Euler equations.  They are typically used for validation and benchmarking.  The problem consists two fluids are separated by a thin film at $x = 0.5$.  At time $t=0$, the film is removed and the fluids interact.  The exact solution to the Sod shock tube problem at time $t=0.25$ (\citep{Sod:1978}, test 1 in \citep{Toro:1999}), is shown in Figure~\ref{fig:euler_exact_sod}.  The initial left state is $\mbf{U}_l = (1.0,0.0,1.0)$ and the initial right state is $\mbf{U}_r = (0.125,0.0,0.1)$.  The problem was solved using our own implementation of the routine \emph{exact.f} provided in \citep{Toro:1999}.  Convergence is established when 
@@ -368,13 +375,14 @@ The method is very robust because it is positivity preserving, $\rho > 0$, and $
 %-----------------------------------------------------------------
 % HLLC Riemann states
 %-----------------------------------------------------------------
-\begin{figure}[htbp]
+\begin{figure}[htbp]\figSpace
 \begin{center}
 \tikzsetnextfilename{hllc_rstates}
 \input{fig/hllc_rstates.tex}
 \end{center}
 \caption{Restoration of the contact discontinuity in the HLLC approximate Riemann solver.}
 \label{fig:hllc_rstates}
+\figSpace
 \end{figure}
 
 The approximate solution of the HLLC solver in the $x$-$t$ plane is shown in Figure \ref{fig:hllc_rstates}.  The intermediate states are calculated by approximating the integral over the appropriate Riemann fan and requiring that the Rankine-Hugoniot jump conditions, $v_{nr}^* = v_{nl}^*$, $\mbf{v}_{tr}^* = \mbf{v}_{tl}^*$, and $p_{gr}^* = p_{gl}^*$, are satisfied across the contact discontinuity.  The intermediate states are (Equation (10.33) of \citep{Toro:1999})
@@ -451,7 +459,7 @@ for $j=l$ and $j=r$.
 %-----------------------------------------------------------------
 % Isolated CD HLLE, HLLC, Roe
 %-----------------------------------------------------------------
-\begin{figure}[htbp]
+\begin{figure}[htbp]\figSpace
 \begin{tabular}{cc}
 \resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{toro7_hlle_1}\input{fig/toro7_hlle_1.tex}} &
 \resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{toro7_hllc_1}\input{fig/toro7_hllc_1.tex}} 
@@ -459,6 +467,7 @@ for $j=l$ and $j=r$.
 \end{tabular}
 \caption{HLLE (left), and HLLC (right) approximate solutions for a slow moving contact discontinuity.  Athena \citep{AthenaSite} was used to compute the approximate solutions.  The exact solution was computed with code written for this dissertation: \protect\gitrepo.}
 \label{fig:euler_toro7}
+\figSpace
 \end{figure}
 
 The two-state approximation of the HLLC method is able to resolve an isolated stationary CD exactly.  In the case of a slow moving CD, the HLLC method is less diffusive than the HLLE method.  This can be demonstrated by considering a Riemann problem for the Euler equations with initial conditions (test 7 of \citep{Toro:1999})
@@ -543,7 +552,7 @@ where $V^2 = v_n^2 + \mbf{v}_t^2$, and $\gamma_1 = \gamma - 1$.
 %-----------------------------------------------------------------
 % Sod shock tube HLLE, HLLC, Roe
 %-----------------------------------------------------------------
-\begin{figure}[htbp]
+\begin{figure}[htbp]\figSpace
 \begin{tabular}{ccc}
 \resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hlle_1_1}\input{fig/sod_hlle_1_1.tex}} &
 \resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hlle_1_2}\input{fig/sod_hlle_1_2.tex}} &
@@ -557,6 +566,7 @@ where $V^2 = v_n^2 + \mbf{v}_t^2$, and $\gamma_1 = \gamma - 1$.
 \end{tabular}
 \caption{HLLE (Top row), HLLC (middle row), and Roe (bottom row) approximate solution to Sod shock tube problem computed using first-order piece-wise constant interpolation.  Athena \citep{AthenaSite} was used to compute the approximate solutions.  The exact solution was computed with code written for this dissertation available at: \protect\gitrepo.}
 \label{fig:euler_sod_1}
+\figSpace
 \end{figure}
 
 A common test case for the Euler equations is the shock tube problem of \citet{Sod:1978}.  The exact solution at time $t=0.25$ is shown in Figure~\ref{fig:euler_exact_sod} for initial conditions
@@ -666,13 +676,14 @@ Analytic solutions to problems of ideal MHD are generally not known.  However, h
 %-----------------------------------------------------------------
 % Riemann states
 %-----------------------------------------------------------------
-\begin{figure}[htbp]
+\begin{figure}[htbp]\figSpace
 \begin{center}
 \tikzsetnextfilename{mhd_rstates}
 \input{fig/mhd_rstates.tex}
 \end{center}
 \caption{Seven possible waves and/or discontinuities separating the eight possible regions, or states of the ideal MHD Riemann problem.  The initial contact discontinuity, i.e., the entropy wave, separates regions $\mbf{U}^*_{3l}$ and $\mbf{U}^*_{3r}$.}
 \label{fig:mhd_states}
+\figSpace
 \end{figure}
 
 The exact solutions are composed of eight possible MHD states separated by seven wave fronts, as depicted in Figure \ref{fig:mhd_states}.  The transitions from one region to another through a discontinuity is controlled by the jump conditions associated with the discontinuity.  The Rankine-Hugoniot jump conditions for ideal MHD in Lagrangian mass coordinates, $dm = \rho dx$, are 
@@ -726,13 +737,14 @@ An initial guess for the solution in the six interior regions shown in Figure~\r
 %-----------------------------------------------------------------
 % HLLD Riemann states
 %-----------------------------------------------------------------
-\begin{figure}[htbp]
+\begin{figure}[htbp]\figSpace
 \begin{center}
 \tikzsetnextfilename{hlld_rstates}
 \input{fig/hlld_rstates.tex}
 \end{center}
 \caption{Intermediate states and waves used in the HLLD approximate Riemann solver.}
 \label{fig:hlld_rstates}
+\figSpace
 \end{figure}
 
 An MHD extension of the HLLC scheme for the Euler equations (see Section~\ref{sec:hllc}) capable of resolving all isolated linear discontinuities of ideal MHD, i.e. RDs and CDs was developed by \citet{Miyoshi:2005}.  They referred to the scheme as HLLD, where the D stands for \emph{discontinuities}.  The HLLD scheme assumes a six-state solution separated by five waves as depicted in Figure~\ref{fig:hlld_rstates}.  Two nonlinear waves, i.e., shocks and rarefactions, separate the left and right initial states from the intermediate states in the Riemann fan, i.e., $\mbf{U}_{l}^*$, $\mbf{U}_{2l}^*$, $\mbf{U}_{2r}^*$, and $\mbf{U}_{r}^*$.  The four intermediate states are separated by two RDs with velocities, $S^*_l$, $S^*_r$, and one CD with velocity, $S_m$.  The one-dimensional wave speeds and intermediate states of \citep{Miyoshi:2005} have been modified for general coordinates, with $v_n = \mbf{v}\cdot\mbf{n}$, and $B_n = \mbf{B}\cdot\mbf{n}$, where  \mbf{n} is a normal vector with unit length.  

@@ -49,13 +49,14 @@ In order for $\diverge{\mbf{B}^{n+1}} = 0$, the Laplacian of \eqref{eqn:projecti
 %-----------------------------------------------------------------
 % CT grid geometry
 %-----------------------------------------------------------------
-\begin{figure}[htbp]
+\begin{figure}[htbp]\figSpace
 \begin{center}
 \tikzsetnextfilename{ct_grid}
 \input{fig/ct_grid.tex}
 \end{center}
 \caption{Staggered field geometry of the constrained transport scheme.  The components of the magnetic field are located at the cell interfaces, $\xi_z$ is located at the cell corners.}
 \label{fig:ct_grid}
+\figSpace
 \end{figure}
 
 The final approach discussed here, and the one implemented for this dissertation, is the CT method of \citet{Evans:1988}.  For CT, the $\divergebf{B} = 0$ is maintained by staggering the grid with the magnetic field components placed at the cell interfaces.  The electromotive force $\mbf{E} = -\crossproductbf{v}{B}$ is defined along the edges in three-dimensions and at the cell corners in two-dimensions.  Following the notation of \citep{Stone:2008}, the z-component of the electromotive force is denoted $\xi_z$.  The placement of $\mbf{B}$ and $\xi_z$ in two-dimensions is shown in Figure~\ref{fig:ct_grid}, with $B_x$ place at $x_{i+1/2}, y_j$ and $B_y$ place at $x_i,y_{j+1/2}$.  The integration is done along cell edges in terms of finite areas instead of finite volumes.  The updated magnetic field components are
@@ -121,13 +122,14 @@ It is essential that there is no overlap of memory access of the different threa
 %-----------------------------------------------------------------
 % Face coloring 1
 %-----------------------------------------------------------------
-\begin{figure}[htbp]
+\begin{figure}[htbp]\figSpace
 \begin{center}
 \tikzsetnextfilename{face_color_1}
 \input{fig/face_color_1.tex}
 \end{center}
 \caption{Colored grouping of interior faces for avoiding memory contention with cell centered finite volume schemes.  Four groups, labeled 1-4, are required.}
 \label{fig:face_color_1}
+\figSpace
 \end{figure}
 
 A possible coloring, and the one implemented for this dissertation, of the interior faces for ell-centered FV schemes is shown in Figure~\ref{fig:face_color_1}.  For each loop, the flux at the face is calculated and the residual at the cells is built by adding the contribution of each face.  Coloring ensures two faces will not attempt to update the residual of a cell simultaneously.
@@ -135,13 +137,14 @@ A possible coloring, and the one implemented for this dissertation, of the inter
 %-----------------------------------------------------------------
 % Face coloring 2
 %-----------------------------------------------------------------
-\begin{figure}[htbp]
+\begin{figure}[htbp]\figSpace
 \begin{center}
 \tikzsetnextfilename{face_color_2}
 \input{fig/face_color_2.tex}
 \end{center}
 \caption{Colored grouping of interior faces for avoiding memory contention with cell centered finite volume schemes plus constrained transport.  Eight groups, labeled 1-8, are required.}
 \label{fig:face_color_2}
+\figSpace
 \end{figure}
 
 Coloring is more complicated when CT is used in conjunction with a cell-centered FV scheme.  In this case, each loop over the faces consists of a contribution to the residual at the cell center and a contribution to the emf at the cell corner.  Not only accessing the same cell, but also the same point must be avoided.  The coloring scheme shown in Figure~\ref{fig:face_color_1} only avoids one these potential pitfalls, because the faces/edges of each group can access the same point simultaneously.  An alternative coloring scheme is shown in Figure~\ref{fig:face_color_2} where eight colors are used instead of four.  In this case, the faces and the edges are colored,  this is equivalent to doubling the amount of colors for the faces since edges and faces are the same in two-dimensions.
@@ -157,7 +160,7 @@ The timing was done on a Dell Precision 7500 workstation with a (Dual CPU) Intel
 %-----------------------------------------------------------------
 % Timing Results Orszag-Tang
 %-----------------------------------------------------------------
-\begin{table}[htbp]%\footnotesize
+\begin{table}[htbp]\figSpace
 \caption{Performance comparison of GPU and CPU Orszag-Tang results.}
 \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}} cccc}
 \\ 
@@ -172,6 +175,7 @@ $512\times512$ & $6.3286\times10^7$ & $7.9437\times10^5$ & 79 \\
 $1024\times1024$ & $7.2134\times10^7$ & $8.3354\times10^5$ & 86 \\
 \hline
 \end{tabular*}
+\figSpace
 \end{table}
 
 
@@ -364,6 +368,4 @@ thrust::transform_n(thrust::make_zip_iterator(make_tuple(d.begin(),
                     convert_primitive_to_conservative(gamma));
 \end{lstlisting} 
 
- The results indicate that the cost to performance ratio for a  GPUs such as NVIDIAs GTX Titan, which retails for about \$1000.00, makes them ideal choices for shared memory processors, if the limited memory is managed properly.  The relatively large memory capacity of 6 GB on the GTX Titan is around $6.5\%$ of the 92 GB available on the Xeon E5.  For the equivalent memory of one, Xeon E5, fifteen GPUs are required, costing nearly three times that of one Xeon E5.  In order for GPUs to be worth the investment, computations on the fly must be maximized and data storage minimized.   
-
-
+ The results indicate that the cost to performance ratio for a  GPUs such as NVIDIAs GTX Titan, which retails for about \$1000.00, makes them ideal choices for shared memory processors, if the limited memory is managed properly.  The relatively large memory capacity of 6 GB on the GTX Titan is around $6.5\%$ of the 92 GB available on the Xeon E5.  For the equivalent memory of one, Xeon E5, fifteen GPUs are required, costing nearly three times that of one Xeon E5.  In order for GPUs to be worth the investment, computations on the fly must be maximized and data storage minimized.
