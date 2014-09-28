@@ -226,6 +226,35 @@ Test~7 differs from Tests 5 and 6 in that the base scheme does not approximate t
 
 The increase in accuracy obtained with CWM was demonstrated with three different test problems.  In each case, when CWM enabled, the jump across and position of each wave affected by pseudo-convergence was more accurately captured.  In the next section, the increase in accuracy provided by CWM is quantified with RMSE calculations where CWM is shown to reduce the RMSE for both coplanar and near coplanar cases.
 
+%-----------------------------------------------------------------
+% Fast coplanar initial r-solution
+%-----------------------------------------------------------------
+\begin{figure}[htbp]\figSpace 
+\begin{tabular}{cc}
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{fast_coplanar_a_rsol_init_1}\input{fig/fast_coplanar_a_rsol_init_1.tex}}
+& 
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{fast_coplanar_b_rsol_init_6} \input{fig/fast_coplanar_b_rsol_init_6.tex}}
+\end{tabular}
+\caption{The approximate solution after the first flux correction of HLLD-CWM and exact r-solution to the full Riemann problem for the near-coplanar case with $2048$ grid points.  The compound wave is almost completely removed, except near $x=0.365$ where a weak intermediate shock remains.}
+\label{fig:fast_coplanar_b_rsol_init}
+\figSpace
+\end{figure}
+
+%-----------------------------------------------------------------
+% coplanar initial r-solution (FCT)
+%-----------------------------------------------------------------
+\begin{figure}[htbp]\figSpace 
+\begin{tabular}{cc}
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{coplanar_a_rsol_init_fct_1}\input{fig/coplanar_a_rsol_init_fct_1.tex}}
+& 
+\resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{coplanar_a_rsol_init_fct_6} \input{fig/coplanar_a_rsol_init_fct_6.tex}}
+\end{tabular}
+\caption{The approximate solution after the first flux correction of HLLD-CWM-FCT and exact r-solution to the full Riemann problem for the near-coplanar case with $2048$ grid points.  The compound wave is almost completely removed, except near $x=0.365$ where a weak intermediate shock remains.}
+\label{fig:coplanar_a_rsol_init_fct}
+\figSpace
+\end{figure}
+
+
 %----------------------------------------------------------------------------------------
 % Error analysis
 %----------------------------------------------------------------------------------------

@@ -568,75 +568,75 @@
 %----------------------------------------------------------------------------------------
 % Higher Order Extensions
 %----------------------------------------------------------------------------------------
-%% \begin{frame}[fragile]
-%% \frametitle{Higher order extensions}
-%% %% \begin{columns}
-%% %% \begin{column}{0.5\textwidth}
-%% %% \only<1-1>{
-%% %% \begin{figure}[htbp]
-%% %% \resizebox{0.55\textwidth}{!}{\tikzsetnextfilename{interface_states}\input{fig/interface_states.tex}}
-%% %% \end{figure}
-%% %% }
-%% \only<1->{
-%% \bei
-%% \item \textbf{Total variation diminishing} (TVD): Limit slope \citep{Harten:1983}.
-%% %% \item Limit slope to ensure no new extrema are created.
-%% \ebi
-%% }
+\begin{frame}[fragile]
+\frametitle{Higher order Schemes}
+%% \begin{columns}
+%% \begin{column}{0.5\textwidth}
 %% \only<1-1>{
-%% %% \begin{figure}
-%% \begin{tabular}{ccc}
-%% %% \resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hlle_1_1}\input{fig/sod_hlle_1_1.tex}} &
-%% %% \resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hlle_1_2}\input{fig/sod_hlle_1_2.tex}} &
-%% %% \resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hlle_1_3}\input{fig/sod_hlle_1_3.tex}} \\
-%% \resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hllc_1_1}\input{fig/sod_hllc_1_1.tex}} &
-%% \resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hllc_1_2}\input{fig/sod_hllc_1_2.tex}} &
-%% \resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hllc_1_3}\input{fig/sod_hllc_1_3.tex}} 
-%% \end{tabular}
-%% %% \end{figure}
+%% \begin{figure}[htbp]
+%% \resizebox{0.55\textwidth}{!}{\tikzsetnextfilename{interface_states}\input{fig/interface_states.tex}}
+%% \end{figure}
 %% }
-%% \only<2->{
-%% \begin{tabular}{ccc}
-%% %% \resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hlle_3_1}\input{fig/sod_hlle_3_1.tex}} &
-%% %% \resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hlle_3_2}\input{fig/sod_hlle_3_2.tex}} &
-%% %% \resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hlle_3_3}\input{fig/sod_hlle_3_3.tex}} \\
-%% \resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hllc_3_1}\input{fig/sod_hllc_3_1.tex}} &
-%% \resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hllc_3_2}\input{fig/sod_hllc_3_2.tex}} &
-%% \resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hllc_3_3}\input{fig/sod_hllc_3_3.tex}} 
-%% \end{tabular}
-%% }
-%% %% \only<4-4>{
-%% %% \begin{figure}[htbp]
-%% %% \resizebox{0.55\textwidth}{!}{\tikzsetnextfilename{interface_states_fct}\input{fig/interface_states_fct.tex}}
-%% %% \end{figure}
-%% %% }
-
-%% %% \item {Increase accuracy and preserve monotonicity.}
-%% \only<1->{
-%% \bei
-%% \item \textbf{Flux corrected transport} (FCT): Limit flux \citep{Boris:1973}.
-%% %% \item Limit fluxes so that no new extrema are created.
-%% %% \item Higher resolution with FCT and TVD schemes. 
-%% \ebi
+\only<1->{
+\bei
+\item \textbf{Total variation diminishing} (TVD): Limit slope \citep{Harten:1983}.
+%% \item Limit slope to ensure no new extrema are created.
+\ebi
+}
+\only<1-1>{
+%% \begin{figure}
+\begin{tabular}{ccc}
+%% \resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hlle_1_1}\input{fig/sod_hlle_1_1.tex}} &
+%% \resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hlle_1_2}\input{fig/sod_hlle_1_2.tex}} &
+%% \resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hlle_1_3}\input{fig/sod_hlle_1_3.tex}} \\
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hllc_1_1}\input{fig/sod_hllc_1_1.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hllc_1_2}\input{fig/sod_hllc_1_2.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hllc_1_3}\input{fig/sod_hllc_1_3.tex}} 
+\end{tabular}
+%% \end{figure}
+}
+\only<2->{
+\begin{tabular}{ccc}
+%% \resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hlle_3_1}\input{fig/sod_hlle_3_1.tex}} &
+%% \resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hlle_3_2}\input{fig/sod_hlle_3_2.tex}} &
+%% \resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hlle_3_3}\input{fig/sod_hlle_3_3.tex}} \\
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hllc_3_1}\input{fig/sod_hllc_3_1.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hllc_3_2}\input{fig/sod_hllc_3_2.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_hllc_3_3}\input{fig/sod_hllc_3_3.tex}} 
+\end{tabular}
+}
+%% \only<4-4>{
+%% \begin{figure}[htbp]
+%% \resizebox{0.55\textwidth}{!}{\tikzsetnextfilename{interface_states_fct}\input{fig/interface_states_fct.tex}}
+%% \end{figure}
 %% }
 
-%% \only<1-1>{
-%% \begin{tabular}{ccc}
-%% \resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_rusanov_3_1}\input{fig/sod_rusanov_3_1.tex}} &
-%% \resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_rusanov_3_2}\input{fig/sod_rusanov_3_2.tex}} &
-%% \resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_rusanov_3_3}\input{fig/sod_rusanov_3_3.tex}}  
-%% \end{tabular}
-%% }
-%% \only<2->{
-%% \begin{tabular}{ccc}
-%% \resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_rusanov_fct_3_1}\input{fig/sod_rusanov_fct_3_1.tex}} &
-%% \resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_rusanov_fct_3_2}\input{fig/sod_rusanov_fct_3_2.tex}} &
-%% \resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_rusanov_fct_3_3}\input{fig/sod_rusanov_fct_3_3.tex}} 
-%% \end{tabular}
-%% }
-%% \fontsize{8pt}{7.2}\selectfont
-%% * TVD approximation computed with Athena \cite{AthenaSite}. 
-%% \end{frame}
+%% \item {Increase accuracy and preserve monotonicity.}
+\only<1->{
+\bei
+\item \textbf{Flux corrected transport} (FCT): Limit flux \citep{Boris:1973}.
+%% \item Limit fluxes so that no new extrema are created.
+%% \item Higher resolution with FCT and TVD schemes. 
+\ebi
+}
+
+\only<1-1>{
+\begin{tabular}{ccc}
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_rusanov_3_1}\input{fig/sod_rusanov_3_1.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_rusanov_3_2}\input{fig/sod_rusanov_3_2.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_rusanov_3_3}\input{fig/sod_rusanov_3_3.tex}}  
+\end{tabular}
+}
+\only<2->{
+\begin{tabular}{ccc}
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_rusanov_fct_3_1}\input{fig/sod_rusanov_fct_3_1.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_rusanov_fct_3_2}\input{fig/sod_rusanov_fct_3_2.tex}} &
+\resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_rusanov_fct_3_3}\input{fig/sod_rusanov_fct_3_3.tex}} 
+\end{tabular}
+}
+\fontsize{8pt}{7.2}\selectfont
+* TVD approximation computed with Athena \cite{AthenaSite}. 
+\end{frame}
 
 %----------------------------------------------------------------------------------------
 % Ideal MHD
