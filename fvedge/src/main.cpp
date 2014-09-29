@@ -70,6 +70,7 @@ int main(int argc, char* argv[]){
   InterfaceArray face;
   StateArray antidiffusion; //antidiffusion
 
+  Index nsteps_out = 100;
   Index output_count;
   char base_name[240];
   char file_name[240];
@@ -213,6 +214,7 @@ int main(int argc, char* argv[]){
   /*-----------------------------------------------------------------*/
   /* Initialize node centered consevative state variables            */
   /*-----------------------------------------------------------------*/  
+  sprintf(base_name,"bin/constant_output");
   thr::fill_n(state.begin(),state.size(),State(Real(1.0),
   					       Vector(Real(1.0),Real(1.0),Real(1.0)),
   					       Real(1.0),
@@ -220,7 +222,8 @@ int main(int argc, char* argv[]){
 
     if(prob == Index(3)){  
       gamma  = 1.4;
-      sprintf(base_name,"dat/kh_instability");
+      nsteps_out = 500;
+      sprintf(base_name,"bin/kh_instability");
       thr::transform_n(make_device_counting_iterator(),
 		       state.size(),
 		       state.begin(),
@@ -234,7 +237,8 @@ int main(int argc, char* argv[]){
 
     if(prob == Index(4)){  
       gamma = Real(5.0)/Real(3.0);
-      sprintf(base_name,"dat/blast_wave");
+      nsteps_out = 50;
+      sprintf(base_name,"bin/blast_wave");
       thr::transform_n(make_device_counting_iterator(),
 		       state.size(),
 		       state.begin(),
@@ -379,7 +383,7 @@ int main(int argc, char* argv[]){
       // }
 
 
-  if(1 == 1){/////////////////////////////////////////////////////////////////////////////////////////////      
+  if(1 == 1){///////////////////////////////////////////////////////////////////////////////////////////// 
 
       // interpolate to interface
       interp_states_iter = interp_states.begin();
@@ -511,7 +515,7 @@ int main(int argc, char* argv[]){
     faces_per_wall_sec = mesh.nface()/face_timer.elapsed_wall_time();
     cells_per_wall_sec = mesh.ncell()/cell_timer.elapsed_wall_time();
 
-    if((ksteps-Index(1)) % 50 == 0){
+    if((ksteps-Index(1)) % nsteps_out == 0){
 
       sprintf(file_name,"%s_%05d.vtk",base_name,output_count);
       output.open(file_name);

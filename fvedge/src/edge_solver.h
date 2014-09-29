@@ -352,6 +352,8 @@ struct residual_op : public thr::binary_function<Edge,InterpState,State>
     /* flux = hllc_n(this->_gamma,face_vec,prim_state_i,prim_state_j); */
     rhll(this->_gamma,Real(0.0),face_vec,prim_state_i,prim_state_j,normal_wave_speed,flux);
 
+    /* hllc_n(this->_gamma,Real(0.0),face_vec,prim_state_i,prim_state_j,normal_wave_speed,flux); */
+
     /* if(index_i == 3 || index_j == 3){ */
     /*   printf("[%d][%d] %f %f %f\n",index_i,index_j,normal_wave_speed,thr::get<0>(flux),face_vec_mag); */
     /* } */

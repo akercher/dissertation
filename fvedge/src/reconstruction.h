@@ -669,322 +669,322 @@ struct state_differences : public thr::unary_function<Interface,void>
 /*  Input : left/right states                        */
 /*  Output : interpolated left/right states          */
 /*****************************************************/
-struct interp_plm : public thr::unary_function<Interface,void>
-{
-  Index _neigen;
-  Real _gamma;
-  StateIterator _state_iter;
-  StateIterator _state_diff_iter;
-  InterpStateIterator _interp_states_iter;
+/* struct interp_plm : public thr::unary_function<Interface,void> */
+/* { */
+/*   Index _neigen; */
+/*   Real _gamma; */
+/*   StateIterator _state_iter; */
+/*   StateIterator _state_diff_iter; */
+/*   InterpStateIterator _interp_states_iter; */
 
- interp_plm(Index neigen,
-	    Real gamma,
-	    StateIterator state_iter,
-	    StateIterator state_diff_iter,
-	    InterpStateIterator interp_states_iter)
+/*  interp_plm(Index neigen, */
+/* 	    Real gamma, */
+/* 	    StateIterator state_iter, */
+/* 	    StateIterator state_diff_iter, */
+/* 	    InterpStateIterator interp_states_iter) */
 
-   : _neigen(neigen) 
-    ,_gamma(gamma)
-    ,_state_iter(state_iter)
-    ,_state_diff_iter(state_diff_iter)
-    ,_interp_states_iter(interp_states_iter) {}
+/*    : _neigen(neigen)  */
+/*     ,_gamma(gamma) */
+/*     ,_state_iter(state_iter) */
+/*     ,_state_diff_iter(state_diff_iter) */
+/*     ,_interp_states_iter(interp_states_iter) {} */
 
-  __host__ __device__
-    void operator()(const Interface& interface) const
-  {
+/*   __host__ __device__ */
+/*     void operator()(const Interface& interface) const */
+/*   { */
 
-    Index i,j;
-    Real a, a_sq;
-    Real ev[this->_neigen],rem[this->_neigen][this->_neigen],lem[this->_neigen][this->_neigen];
-    Real dwc[this->_neigen],dwl[this->_neigen];
-    Real dwr[this->_neigen],dwg[this->_neigen];
-    Real dac[this->_neigen],dal[this->_neigen];  
-    Real dar[this->_neigen],dag[this->_neigen],da[this->_neigen];
-    Real wlv[this->_neigen],wrv[this->_neigen];
-    Real dw[this->_neigen],dwm[this->_neigen];
+/*     Index i,j; */
+/*     Real a, a_sq; */
+/*     Real ev[this->_neigen],rem[this->_neigen][this->_neigen],lem[this->_neigen][this->_neigen]; */
+/*     Real dwc[this->_neigen],dwl[this->_neigen]; */
+/*     Real dwr[this->_neigen],dwg[this->_neigen]; */
+/*     Real dac[this->_neigen],dal[this->_neigen];   */
+/*     Real dar[this->_neigen],dag[this->_neigen],da[this->_neigen]; */
+/*     Real wlv[this->_neigen],wrv[this->_neigen]; */
+/*     Real dw[this->_neigen],dwm[this->_neigen]; */
 
-    // calculate left, right, and center differences
-    Index index_i = thr::get<0>(thr::get<0>(Interface(interface)));
-    Index index_j = thr::get<1>(thr::get<0>(Interface(interface)));
+/*     // calculate left, right, and center differences */
+/*     Index index_i = thr::get<0>(thr::get<0>(Interface(interface))); */
+/*     Index index_j = thr::get<1>(thr::get<0>(Interface(interface))); */
 
-    // modify for outflow conditions
-    if (index_i < 0) index_i = index_j;
-    if (index_j < 0) index_j = index_i;    
+/*     // modify for outflow conditions */
+/*     if (index_i < 0) index_i = index_j; */
+/*     if (index_j < 0) index_j = index_i;     */
 
-    State state_i = State(this->_state_diff_iter[index_i]);
-    State state_j = State(this->_state_diff_iter[index_j]);
+/*     State state_i = State(this->_state_diff_iter[index_i]); */
+/*     State state_j = State(this->_state_diff_iter[index_j]); */
 
-    // left difference for state_i is stored at index_i
-    dwl[0] = density_i;
-    dwl[1] = get_x(velocity_i);
-    dwl[2] = get_y(velocity_i);
-    dwl[3] = get_z(velocity_i);
-    dwl[4] = pressure_i;
-    /* dwl[5] = get_x(bfield_i); */
-    /* dwl[6] = get_y(bfield_i); */
-    /* dwl[7] = get_z(bfield_i); */
+/*     // left difference for state_i is stored at index_i */
+/*     dwl[0] = density_i; */
+/*     dwl[1] = get_x(velocity_i); */
+/*     dwl[2] = get_y(velocity_i); */
+/*     dwl[3] = get_z(velocity_i); */
+/*     dwl[4] = pressure_i; */
+/*     /\* dwl[5] = get_x(bfield_i); *\/ */
+/*     /\* dwl[6] = get_y(bfield_i); *\/ */
+/*     /\* dwl[7] = get_z(bfield_i); *\/ */
 
-    // right difference for state_i is stored at index_j
-    dwr[0] = density_j;
-    dwr[1] = get_x(velocity_j);
-    dwr[2] = get_y(velocity_j);
-    dwr[3] = get_z(velocity_j);
-    dwr[4] = pressure_j;
-    /* dwr[5] = get_x(bfield_j); */
-    /* dwr[6] = get_y(bfield_j); */
-    /* dwr[7] = get_z(bfield_j); */
+/*     // right difference for state_i is stored at index_j */
+/*     dwr[0] = density_j; */
+/*     dwr[1] = get_x(velocity_j); */
+/*     dwr[2] = get_y(velocity_j); */
+/*     dwr[3] = get_z(velocity_j); */
+/*     dwr[4] = pressure_j; */
+/*     /\* dwr[5] = get_x(bfield_j); *\/ */
+/*     /\* dwr[6] = get_y(bfield_j); *\/ */
+/*     /\* dwr[7] = get_z(bfield_j); *\/ */
 
 
-    state_i = State(this->_state_iter[index_i]);
-    state_j = State(this->_state_iter[index_j]);
+/*     state_i = State(this->_state_iter[index_i]); */
+/*     state_j = State(this->_state_iter[index_j]); */
 
-    Real di = density_i;
-    Real vxi = get_x(velocity_i);
-    Real vyi = get_y(velocity_i);
-    Real vzi = get_z(velocity_i);
-    Real pgi = pressure_i;
-    Real bxi = get_x(bfield_i);
-    Real byi = get_y(bfield_i);
-    Real bzi = get_z(bfield_i);
+/*     Real di = density_i; */
+/*     Real vxi = get_x(velocity_i); */
+/*     Real vyi = get_y(velocity_i); */
+/*     Real vzi = get_z(velocity_i); */
+/*     Real pgi = pressure_i; */
+/*     Real bxi = get_x(bfield_i); */
+/*     Real byi = get_y(bfield_i); */
+/*     Real bzi = get_z(bfield_i); */
 
-    Real dj = density_j;
-    Real vxj = get_x(velocity_j);
-    Real vyj = get_y(velocity_j);
-    Real vzj = get_z(velocity_j);
-    Real pgj = pressure_j;
-    Real bxj = get_x(bfield_j);
-    Real byj = get_y(bfield_j);
-    Real bzj = get_z(bfield_j);
+/*     Real dj = density_j; */
+/*     Real vxj = get_x(velocity_j); */
+/*     Real vyj = get_y(velocity_j); */
+/*     Real vzj = get_z(velocity_j); */
+/*     Real pgj = pressure_j; */
+/*     Real bxj = get_x(bfield_j); */
+/*     Real byj = get_y(bfield_j); */
+/*     Real bzj = get_z(bfield_j); */
 
-    // center difference calculated from left and right differences
-    dwc[0] = dwr[0] - dwl[0] + Real(2.0)*di;
-    dwc[1] = dwr[1] - dwl[1] + Real(2.0)*vxi;
-    dwc[2] = dwr[2] - dwl[2] + Real(2.0)*vyi;
-    dwc[3] = dwr[3] - dwl[3] + Real(2.0)*vzi;
-    dwc[4] = dwr[4] - dwl[4] + Real(2.0)*pgi;
-    /* dwc[5] = dwr[5] - dwl[5] + Real(2.0)*bxi; */
-    /* dwc[6] = dwr[6] - dwl[6] + Real(2.0)*byi; */
-    /* dwc[7] = dwr[7] - dwl[7] + Real(2.0)*bzi; */
+/*     // center difference calculated from left and right differences */
+/*     dwc[0] = dwr[0] - dwl[0] + Real(2.0)*di; */
+/*     dwc[1] = dwr[1] - dwl[1] + Real(2.0)*vxi; */
+/*     dwc[2] = dwr[2] - dwl[2] + Real(2.0)*vyi; */
+/*     dwc[3] = dwr[3] - dwl[3] + Real(2.0)*vzi; */
+/*     dwc[4] = dwr[4] - dwl[4] + Real(2.0)*pgi; */
+/*     /\* dwc[5] = dwr[5] - dwl[5] + Real(2.0)*bxi; *\/ */
+/*     /\* dwc[6] = dwr[6] - dwl[6] + Real(2.0)*byi; *\/ */
+/*     /\* dwc[7] = dwr[7] - dwl[7] + Real(2.0)*bzi; *\/ */
 
-    for(i=0; i<this->_neigen; i++){
-      dwg[i] = 0.0;
-      if (dwl[i]*dwr[i] > Real(0.0)) {
-        dwg[i] = Real(2.0)*dwl[i]*dwr[i]/(dwl[i]+dwr[i]);
-      } 
-    }
+/*     for(i=0; i<this->_neigen; i++){ */
+/*       dwg[i] = 0.0; */
+/*       if (dwl[i]*dwr[i] > Real(0.0)) { */
+/*         dwg[i] = Real(2.0)*dwl[i]*dwr[i]/(dwl[i]+dwr[i]); */
+/*       }  */
+/*     } */
 
-    // set left and right eigenmatrix to zero.
-    for (i=0; i<this->_neigen; i++) {
-      for (j=0; j<this->_neigen; j++) {
-	rem[i][j] = Real(0.0);
-	lem[i][j] = Real(0.0);
-      }
-    }
+/*     // set left and right eigenmatrix to zero. */
+/*     for (i=0; i<this->_neigen; i++) { */
+/*       for (j=0; j<this->_neigen; j++) { */
+/* 	rem[i][j] = Real(0.0); */
+/* 	lem[i][j] = Real(0.0); */
+/*       } */
+/*     } */
 
-    a_sq = this->_gamma*pgi/di;
-    a = std::sqrt(a);
+/*     a_sq = this->_gamma*pgi/di; */
+/*     a = std::sqrt(a); */
 
-    /* Compute eigenvalues (eq. A2) */
-    ev[0] = vxi - a;
-    ev[1] = vxi;
-    ev[2] = vxi;
-    ev[3] = vxi;
-    ev[4] = vxi + a;
+/*     /\* Compute eigenvalues (eq. A2) *\/ */
+/*     ev[0] = vxi - a; */
+/*     ev[1] = vxi; */
+/*     ev[2] = vxi; */
+/*     ev[3] = vxi; */
+/*     ev[4] = vxi + a; */
     
-    /* Right-eigenvectors, stored as COLUMNS (eq. A3) */    
-    rem[0][0] = Real(1.0);
-    rem[1][0] = -a/di;
-    /*rem[2][0] = 0.0; */
-    /*rem[3][0] = 0.0; */
-    rem[4][0] = a_sq;
+/*     /\* Right-eigenvectors, stored as COLUMNS (eq. A3) *\/     */
+/*     rem[0][0] = Real(1.0); */
+/*     rem[1][0] = -a/di; */
+/*     /\*rem[2][0] = 0.0; *\/ */
+/*     /\*rem[3][0] = 0.0; *\/ */
+/*     rem[4][0] = a_sq; */
     
-    rem[0][1] = Real(1.0);
-    /*rem[1][1] = 0.0; */
-    /*rem[2][1] = 0.0; */
-    /*rem[3][1] = 0.0; */
-    /*rem[4][1] = 0.0; */
+/*     rem[0][1] = Real(1.0); */
+/*     /\*rem[1][1] = 0.0; *\/ */
+/*     /\*rem[2][1] = 0.0; *\/ */
+/*     /\*rem[3][1] = 0.0; *\/ */
+/*     /\*rem[4][1] = 0.0; *\/ */
     
-    /*rem[0][2] = 0.0; */
-    /*rem[1][2] = 0.0; */
-    rem[2][2] = Real(1.0);
-    /*rem[3][2] = 0.0; */
-    /*rem[4][2] = 0.0; */
+/*     /\*rem[0][2] = 0.0; *\/ */
+/*     /\*rem[1][2] = 0.0; *\/ */
+/*     rem[2][2] = Real(1.0); */
+/*     /\*rem[3][2] = 0.0; *\/ */
+/*     /\*rem[4][2] = 0.0; *\/ */
     
-    /*rem[0][3] = 0.0; */
-    /*rem[1][3] = 0.0; */
-    /*rem[2][3] = 0.0; */
-    rem[3][3] = Real(1.0);
-    /*rem[4][3] = 0.0; */
+/*     /\*rem[0][3] = 0.0; *\/ */
+/*     /\*rem[1][3] = 0.0; *\/ */
+/*     /\*rem[2][3] = 0.0; *\/ */
+/*     rem[3][3] = Real(1.0); */
+/*     /\*rem[4][3] = 0.0; *\/ */
     
-    rem[0][4] = Real(1.0);
-    rem[1][4] = -rem[1][0];
-    /*rem[2][4] = 0.0; */
-    /*rem[3][4] = 0.0; */
-    rem[4][4] = a_sq;
+/*     rem[0][4] = Real(1.0); */
+/*     rem[1][4] = -rem[1][0]; */
+/*     /\*rem[2][4] = 0.0; *\/ */
+/*     /\*rem[3][4] = 0.0; *\/ */
+/*     rem[4][4] = a_sq; */
     
-    /* Left-eigenvectors, stored as ROWS (eq. A4) */    
-    /*lem[0][0] = 0.0; */
-    lem[0][1] = -half*di/a;
-    /*lem[0][2] = 0.0; */
-    /*lem[0][3] = 0.0; */
-    lem[0][4] = half/a_sq;
+/*     /\* Left-eigenvectors, stored as ROWS (eq. A4) *\/     */
+/*     /\*lem[0][0] = 0.0; *\/ */
+/*     lem[0][1] = -half*di/a; */
+/*     /\*lem[0][2] = 0.0; *\/ */
+/*     /\*lem[0][3] = 0.0; *\/ */
+/*     lem[0][4] = half/a_sq; */
     
-    lem[1][0] = Real(1.0);
-    /*lem[1][1] = 0.0; */
-    /*lem[1][2] = 0.0; */
-    /*lem[1][3] = 0.0; */
-    lem[1][4] = -Real(1.0)/a_sq;
+/*     lem[1][0] = Real(1.0); */
+/*     /\*lem[1][1] = 0.0; *\/ */
+/*     /\*lem[1][2] = 0.0; *\/ */
+/*     /\*lem[1][3] = 0.0; *\/ */
+/*     lem[1][4] = -Real(1.0)/a_sq; */
     
-    /*lem[2][0] = 0.0; */
-    /*lem[2][1] = 0.0; */
-    lem[2][2] = Real(1.0);
-    /*lem[2][3] = 0.0; */
-    /*lem[2][4] = 0.0; */
+/*     /\*lem[2][0] = 0.0; *\/ */
+/*     /\*lem[2][1] = 0.0; *\/ */
+/*     lem[2][2] = Real(1.0); */
+/*     /\*lem[2][3] = 0.0; *\/ */
+/*     /\*lem[2][4] = 0.0; *\/ */
     
-    /*lem[3][0] = 0.0; */
-    /*lem[3][1] = 0.0; */
-    /*lem[3][2] = 0.0; */
-    lem[3][3] = Real(1.0);
-    /*lem[3][4] = 0.0; */
+/*     /\*lem[3][0] = 0.0; *\/ */
+/*     /\*lem[3][1] = 0.0; *\/ */
+/*     /\*lem[3][2] = 0.0; *\/ */
+/*     lem[3][3] = Real(1.0); */
+/*     /\*lem[3][4] = 0.0; *\/ */
     
-    /*lem[4][0] = 0.0; */
-    lem[4][1] = -lem[0][1];
-    /*lem[4][2] = 0.0; */
-    /*lem[4][3] = 0.0; */
-    lem[4][4] = lem[0][4];
+/*     /\*lem[4][0] = 0.0; *\/ */
+/*     lem[4][1] = -lem[0][1]; */
+/*     /\*lem[4][2] = 0.0; *\/ */
+/*     /\*lem[4][3] = 0.0; *\/ */
+/*     lem[4][4] = lem[0][4]; */
     
-    // differences in terms of characteristic variables
-    for (i=0; i<this->_neigen; i++) {
-      dac[i] = lem[i][0]*dwc[0];
-      dal[i] = lem[i][0]*dwl[0];
-      dar[i] = lem[i][0]*dwr[0];
-      dag[i] = lem[i][0]*dwg[0];
-      for (j=1; j<this->_neigen; j++) {
-	dac[i] += lem[i][j]*dwc[j];
-	dal[i] += lem[i][j]*dwl[j];
-	dar[i] += lem[i][j]*dwr[j];
-	dag[i] += lem[i][j]*dwg[j];
-      }
-    }
+/*     // differences in terms of characteristic variables */
+/*     for (i=0; i<this->_neigen; i++) { */
+/*       dac[i] = lem[i][0]*dwc[0]; */
+/*       dal[i] = lem[i][0]*dwl[0]; */
+/*       dar[i] = lem[i][0]*dwr[0]; */
+/*       dag[i] = lem[i][0]*dwg[0]; */
+/*       for (j=1; j<this->_neigen; j++) { */
+/* 	dac[i] += lem[i][j]*dwc[j]; */
+/* 	dal[i] += lem[i][j]*dwl[j]; */
+/* 	dar[i] += lem[i][j]*dwr[j]; */
+/* 	dag[i] += lem[i][j]*dwg[j]; */
+/*       } */
+/*     } */
     
-    /* Apply monotonicity constraints to characteristic differences */
-    Real lim_slope1, lim_slope2, sgn_dac;
-    for (i=0; i<this->_neigen; i++) {
-      da[i] = Real(0.0);
-      if (dal[i]*dar[i] > Real(0.0)){
-	sgn_dac = dac[i]/std::abs(dac[i]);
-        lim_slope1 = std::min(    std::fabs(dal[i]),std::fabs(dar[i]));
-        lim_slope2 = std::min(half*std::fabs(dac[i]),std::fabs(dag[i]));
-        da[i] = sgn_dac*std::min(Real(2.0)*lim_slope1,lim_slope2);
-      }
-    }
+/*     /\* Apply monotonicity constraints to characteristic differences *\/ */
+/*     Real lim_slope1, lim_slope2, sgn_dac; */
+/*     for (i=0; i<this->_neigen; i++) { */
+/*       da[i] = Real(0.0); */
+/*       if (dal[i]*dar[i] > Real(0.0)){ */
+/* 	sgn_dac = dac[i]/std::abs(dac[i]); */
+/*         lim_slope1 = fmin(    std::fabs(dal[i]),std::fabs(dar[i])); */
+/*         lim_slope2 = fmin(half*std::fabs(dac[i]),std::fabs(dag[i])); */
+/*         da[i] = sgn_dac*fmin(Real(2.0)*lim_slope1,lim_slope2); */
+/*       } */
+/*     } */
 
-    // Project monotonic slopes in characteristic back to primitive variables 
-    for (i=0; i<this->_neigen; i++){
-      dwm[i] = da[0]*rem[i][0];
-      for (j=1; j<this->_neigen; j++){
-        dwm[i] += da[j]*rem[i][j];
-      }
-    }
+/*     // Project monotonic slopes in characteristic back to primitive variables  */
+/*     for (i=0; i<this->_neigen; i++){ */
+/*       dwm[i] = da[0]*rem[i][0]; */
+/*       for (j=1; j<this->_neigen; j++){ */
+/*         dwm[i] += da[j]*rem[i][j]; */
+/*       } */
+/*     } */
 
-    // ensure interpolated values are bounded by neighboring cells
-    wlv[0] = di - half*dwm[0];
-    wlv[1] = vxi - half*dwm[1];
-    wlv[2] = vyi - half*dwm[2];
-    wlv[3] = vzi - half*dwm[3];
-    wlv[4] = pgi - half*dwm[4];
-    /* wlv[5] = bxi - half*dwm[5]; */
-    /* wlv[6] = byi - half*dwm[6]; */
-    /* wlv[7] = bzi - half*dwm[7]; */
+/*     // ensure interpolated values are bounded by neighboring cells */
+/*     wlv[0] = di - half*dwm[0]; */
+/*     wlv[1] = vxi - half*dwm[1]; */
+/*     wlv[2] = vyi - half*dwm[2]; */
+/*     wlv[3] = vzi - half*dwm[3]; */
+/*     wlv[4] = pgi - half*dwm[4]; */
+/*     /\* wlv[5] = bxi - half*dwm[5]; *\/ */
+/*     /\* wlv[6] = byi - half*dwm[6]; *\/ */
+/*     /\* wlv[7] = bzi - half*dwm[7]; *\/ */
 
-    wrv[0] = di + half*dwm[0];
-    wrv[1] = vxi + half*dwm[1];
-    wrv[2] = vyi + half*dwm[2];
-    wrv[3] = vzi + half*dwm[3];
-    wrv[4] = pgi + half*dwm[4];
-    /* wrv[5] = bxi + half*dwm[5]; */
-    /* wrv[6] = byi + half*dwm[6]; */
-    /* wrv[7] = bzi + half*dwm[7]; */
+/*     wrv[0] = di + half*dwm[0]; */
+/*     wrv[1] = vxi + half*dwm[1]; */
+/*     wrv[2] = vyi + half*dwm[2]; */
+/*     wrv[3] = vzi + half*dwm[3]; */
+/*     wrv[4] = pgi + half*dwm[4]; */
+/*     /\* wrv[5] = bxi + half*dwm[5]; *\/ */
+/*     /\* wrv[6] = byi + half*dwm[6]; *\/ */
+/*     /\* wrv[7] = bzi + half*dwm[7]; *\/ */
 
-    Real C;
+/*     Real C; */
 
-    C = wrv[0] + wlv[0];
-    wrv[0] = std::max(std::min(di,dj),wrv[0]);
-    wrv[0] = std::min(std::max(di,dj),wrv[0]);
-    wlv[0] = C - wrv[0];
+/*     C = wrv[0] + wlv[0]; */
+/*     wrv[0] = fmax(fmin(di,dj),wrv[0]); */
+/*     wrv[0] = fmin(fmax(di,dj),wrv[0]); */
+/*     wlv[0] = C - wrv[0]; */
 
-    C = wrv[1] + wlv[1];
-    wrv[1] = std::max(std::min(vxi,vxj),wrv[1]);
-    wrv[1] = std::min(std::max(vxi,vxj),wrv[1]);
-    wlv[1] = C - wrv[1];
+/*     C = wrv[1] + wlv[1]; */
+/*     wrv[1] = fmax(fmin(vxi,vxj),wrv[1]); */
+/*     wrv[1] = fmin(fmax(vxi,vxj),wrv[1]); */
+/*     wlv[1] = C - wrv[1]; */
 
-    C = wrv[2] + wlv[2];
-    wrv[2] = std::max(std::min(vyi,vyj),wrv[2]);
-    wrv[2] = std::min(std::max(vyi,vyj),wrv[2]);
-    wlv[2] = C - wrv[2];
+/*     C = wrv[2] + wlv[2]; */
+/*     wrv[2] = fmax(fmin(vyi,vyj),wrv[2]); */
+/*     wrv[2] = fmin(fmax(vyi,vyj),wrv[2]); */
+/*     wlv[2] = C - wrv[2]; */
 
-    C = wrv[3] + wlv[3];
-    wrv[3] = std::max(std::min(vzi,vzj),wrv[3]);
-    wrv[3] = std::min(std::max(vzi,vzj),wrv[3]);
-    wlv[3] = C - wrv[3];
+/*     C = wrv[3] + wlv[3]; */
+/*     wrv[3] = fmax(fmin(vzi,vzj),wrv[3]); */
+/*     wrv[3] = fmin(fmax(vzi,vzj),wrv[3]); */
+/*     wlv[3] = C - wrv[3]; */
 
-    C = wrv[4] + wlv[4];
-    wrv[4] = std::max(std::min(pgi,pgj),wrv[4]);
-    wrv[4] = std::min(std::max(pgi,pgj),wrv[4]);
-    wlv[4] = C - wrv[4];
+/*     C = wrv[4] + wlv[4]; */
+/*     wrv[4] = fmax(fmin(pgi,pgj),wrv[4]); */
+/*     wrv[4] = fmin(fmax(pgi,pgj),wrv[4]); */
+/*     wlv[4] = C - wrv[4]; */
 
-    C = wrv[5] + wlv[5];
-    wrv[5] = std::max(std::min(bxi,bxj),wrv[5]);
-    wrv[5] = std::min(std::max(bxi,bxj),wrv[5]);
-    wlv[5] = C - wrv[5];
+/*     C = wrv[5] + wlv[5]; */
+/*     wrv[5] = fmax(fmin(bxi,bxj),wrv[5]); */
+/*     wrv[5] = fmin(fmax(bxi,bxj),wrv[5]); */
+/*     wlv[5] = C - wrv[5]; */
 
-    C = wrv[6] + wlv[6];
-    wrv[6] = std::max(std::min(byi,byj),wrv[6]);
-    wrv[6] = std::min(std::max(byi,byj),wrv[6]);
-    wlv[6] = C - wrv[6];
+/*     C = wrv[6] + wlv[6]; */
+/*     wrv[6] = fmax(fmin(byi,byj),wrv[6]); */
+/*     wrv[6] = fmin(fmax(byi,byj),wrv[6]); */
+/*     wlv[6] = C - wrv[6]; */
 
-    C = wrv[7] + wlv[7];
-    wrv[7] = std::max(std::min(bzi,bzj),wrv[7]);
-    wrv[7] = std::min(std::max(bzi,bzj),wrv[7]);
-    wlv[7] = C - wrv[7];
+/*     C = wrv[7] + wlv[7]; */
+/*     wrv[7] = fmax(fmin(bzi,bzj),wrv[7]); */
+/*     wrv[7] = fmin(fmax(bzi,bzj),wrv[7]); */
+/*     wlv[7] = C - wrv[7]; */
 
 
 
-    wlv[0] = std::max(std::min(di,di),wlv[0]);
+/*     wlv[0] = fmax(fmin(di,di),wlv[0]); */
 
-    /* for (i=0; i<this->_neigen; i++){ */
-    /*   C = wrv[n] + wlv[n]; */
-    /*   wlv[n] = std::max(std::min(pW[i][n],pW[i-1][n]),wlv[i]); */
-    /*   wlv[n] = std::min(std::max(pW[i][n],pW[i-1][n]),wlv[i]); */
-    /*   wrv[n] = C - wlv[n]; */
+/*     /\* for (i=0; i<this->_neigen; i++){ *\/ */
+/*     /\*   C = wrv[n] + wlv[n]; *\/ */
+/*     /\*   wlv[n] = fmax(fmin(pW[i][n],pW[i-1][n]),wlv[i]); *\/ */
+/*     /\*   wlv[n] = fmin(fmax(pW[i][n],pW[i-1][n]),wlv[i]); *\/ */
+/*     /\*   wrv[n] = C - wlv[n]; *\/ */
 
-    /*   wrv[n] = std::max(std::min(pW[i][n],pW[i+1][n]),wrv[i]); */
-    /*   wrv[n] = std::min(std::max(pW[i][n],pW[i+1][n]),wrv[i]); */
-    /*   wlv[n] = C - wrv[i]; */
-    /* } */
+/*     /\*   wrv[n] = fmax(fmin(pW[i][n],pW[i+1][n]),wrv[i]); *\/ */
+/*     /\*   wrv[n] = fmin(fmax(pW[i][n],pW[i+1][n]),wrv[i]); *\/ */
+/*     /\*   wlv[n] = C - wrv[i]; *\/ */
+/*     /\* } *\/ */
 
-    /* for (i=0; i<this->_neigen; i++){ */
-    /*   dw[i] = wrv[i] - wlv[i]; */
-    /* }     */
+/*     /\* for (i=0; i<this->_neigen; i++){ *\/ */
+/*     /\*   dw[i] = wrv[i] - wlv[i]; *\/ */
+/*     /\* }     *\/ */
 
-    printf("wlv[0] = %f wrv[0] = %f\n",wlv[0],wrv[0]);
+/*     printf("wlv[0] = %f wrv[0] = %f\n",wlv[0],wrv[0]); */
 
-    State interp_state_i = State(wlv[0],
-				 Vector(wlv[1],wlv[2],wlv[3]),
-				 wlv[4],
-				 Vector(Real(0.0),Real(0.0),Real(0.0)));
-				 /* Vector(wlv[5],wlv[6],wlv[7])); */
+/*     State interp_state_i = State(wlv[0], */
+/* 				 Vector(wlv[1],wlv[2],wlv[3]), */
+/* 				 wlv[4], */
+/* 				 Vector(Real(0.0),Real(0.0),Real(0.0))); */
+/* 				 /\* Vector(wlv[5],wlv[6],wlv[7])); *\/ */
 
-    State interp_state_j = State(wrv[0],
-				 Vector(wrv[1],wrv[2],wrv[3]),
-				 wrv[4],
-				 Vector(Real(0.0),Real(0.0),Real(0.0)));
-				 /* Vector(wrv[5],wrv[6],wrv[7])); */
+/*     State interp_state_j = State(wrv[0], */
+/* 				 Vector(wrv[1],wrv[2],wrv[3]), */
+/* 				 wrv[4], */
+/* 				 Vector(Real(0.0),Real(0.0),Real(0.0))); */
+/* 				 /\* Vector(wrv[5],wrv[6],wrv[7])); *\/ */
 
-    this->_interp_states_iter[index_i] = InterpState(State(interp_state_j),State(interp_state_i));
+/*     this->_interp_states_iter[index_i] = InterpState(State(interp_state_j),State(interp_state_i)); */
     
-  }
-};
+/*   } */
+/* }; */
 
 /*****************************************************/
 /* Convert to primitive variables                    */

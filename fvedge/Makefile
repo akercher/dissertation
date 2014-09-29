@@ -48,7 +48,7 @@ test : $(TST)
 # Dependencies
 #---------------------------------------------
 $(EXE1): $(SRC1)
-	$(CMP1) $? -o $@ -DReal=$(REAL) -I$(LOC)
+	$(CMP1) $? -o $@ -O3 -DReal=$(REAL) -I$(LOC)
 
 $(EXE2): $(SRC2)
 	$(CMP2) $? -o $@ -O3 -fopenmp -DReal=$(REAL) -DTHRUST_DEVICE_SYSTEM=$(THR) -I$(LOC)
