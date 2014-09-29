@@ -9,7 +9,8 @@
 /* Prototypes */
 __host__ __device__ void rhll (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j,
 			       Real& normal_wave_speed,State& flux);
-__host__ __device__ State hlld_c (Real gamma, Real cwm, Coordinate sn, State state_i, State state_j);
+__host__ __device__ State hlld_c (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j,
+				  Real& normal_wave_speed,State& flux);
 
 /*****************************************************/
 /* Rotated HLL Approximate Riemann solver            */
@@ -153,11 +154,11 @@ void rhll (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j,
   if ( sj < fifth ) sj = half * (sj*sj/fifth + fifth);
   
   // HLL wave speeds
-  sj = std::max(vtj + csj, vtroe + csroe);
-  sj = std::max(Real(0.0),sj);
+  sj = fmax(vtj + csj, vtroe + csroe);
+  sj = fmax(Real(0.0),sj);
 
-  si = std::min(vti - csi, vtroe - csroe);
-  si = std::min(Real(0.0),si);
+  si = fmin(vti - csi, vtroe - csroe);
+  si = fmin(Real(0.0),si);
 
   // rotate modified wave speeds
   for (Index i=0; i<4; i++){
@@ -238,7 +239,7 @@ void rhll (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j,
 
   /* Real normal_wave_speed; */
 
-  normal_wave_speed = sn_mag*half*(std::abs(vnroe) + std::abs(vtroe) + csroe);
+  normal_wave_speed = sn_mag*half*(fabs(vnroe) + fabs(vtroe) + csroe);
 
   /* return flux; */
 
@@ -263,7 +264,8 @@ void rhll (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j,
 /*  Output :                                         */
 /*****************************************************/
 __host__ __device__
-State hllc_n (Real gamma, Coordinate sn, State state_i, State state_j)
+State hllc_n (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j,
+	      Real& normal_wave_speed, State& flux)
 {
     
   Real di = density_i;
@@ -287,7 +289,7 @@ State hllc_n (Real gamma, Coordinate sn, State state_i, State state_j)
   Real vzj = get_z(velocity_j);
   Real pgj = pressure_j;
   
-  State flux;
+  /* State flux; */
   /* State antidiffusion; */
 
   /*---------------------------------------------------*/
@@ -463,6 +465,8 @@ State hllc_n (Real gamma, Coordinate sn, State state_i, State state_j)
     get_y(thr::get<3>(flux)) *= sn_mag;
     get_z(thr::get<3>(flux)) *= sn_mag;
 
+    normal_wave_speed = sn_mag*half*(fabs(vnroe) + fabs(vtroe) + csroe);
+
     /* printf("sfi =%f sai = %f sm = %f saj = %f sfj = %f\n",sfi,sai,sm,saj,sfj); */
     /* if (sm >= Real(0.0))  */
     /*   { */
@@ -485,7 +489,7 @@ State hllc_n (Real gamma, Coordinate sn, State state_i, State state_j)
     /* 	printf("bzj = %f bzjs = %f bzjss = %f  f.bz = %f\n",bzj,bzjs,bzjss,get_z(thr::get<3>(flux))); */
     /*   } */
 
-    return flux;
+    /* return flux; */
 };
 
 
