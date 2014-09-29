@@ -152,7 +152,7 @@
 \author[A. Kercher]{Andrew Kercher}
 %% \institute[GMU]{A defense of the dissertation submitted in partial fulfillment of the requirements for the degree of  Doctor of Philosophy \\ George Mason University}
 \institute[GMU]{George Mason University}
-\date{28 August 2014}
+\date{29 September 2014}
 
 
 \AtBeginSection[]
@@ -570,7 +570,7 @@
 % Higher Order Extensions
 %----------------------------------------------------------------------------------------
 \begin{frame}[fragile]
-\frametitle{Higher order Schemes}
+\frametitle{Limiting numerical diffusion}
 %% \begin{columns}
 %% \begin{column}{0.5\textwidth}
 %% \only<1-1>{
@@ -704,32 +704,32 @@ c^2_a = \frac{B_n^2}{\rho} \text{, and } c^2_t = \frac{B_t^2}{\rho}.
 %----------------------------------------------------------------------------------------
 % HLLD
 %----------------------------------------------------------------------------------------
-\begin{frame}[fragile]
-\frametitle{HLLD approximate Riemann solver}
-%% \begin{columns}
-%% \begin{column}{0.5\textwidth}
-\only<1-1>{
-\begin{figure}[htbp]
-\resizebox{0.55\textwidth}{!}{\tikzsetnextfilename{hllc_rstates}\input{fig/hllc_rstates.tex}}
-\end{figure}
-}
-\only<2->{
-\begin{figure}[htbp]
-\resizebox{0.55\textwidth}{!}{\tikzsetnextfilename{hlld_rstates}\input{fig/hlld_rstates.tex}}
-\end{figure}
-}
-%% \end{column}
-%% \begin{column}{0.5\textwidth}
-\bei
-\item HLLD \citep{Miyoshi:2005} (D for \emph{discontinuities}) extention of HLLC to MHD.
-\pause
-\item Restores rotational discontinuity.
-
+%% \begin{frame}[fragile]
+%% \frametitle{HLLD approximate Riemann solver}
+%% %% \begin{columns}
+%% %% \begin{column}{0.5\textwidth}
+%% \only<1-1>{
+%% \begin{figure}[htbp]
+%% \resizebox{0.55\textwidth}{!}{\tikzsetnextfilename{hllc_rstates}\input{fig/hllc_rstates.tex}}
+%% \end{figure}
 %% }
-\ebi
-%% \end{column}
-%% \end{columns}
-\end{frame}
+%% \only<2->{
+%% \begin{figure}[htbp]
+%% \resizebox{0.55\textwidth}{!}{\tikzsetnextfilename{hlld_rstates}\input{fig/hlld_rstates.tex}}
+%% \end{figure}
+%% }
+%% %% \end{column}
+%% %% \begin{column}{0.5\textwidth}
+%% \bei
+%% \item HLLD \citep{Miyoshi:2005} (D for \emph{discontinuities}) extension of HLLC to MHD.
+%% \pause
+%% \item Restores rotational discontinuity.
+
+%% %% }
+%% \ebi
+%% %% \end{column}
+%% %% \end{columns}
+%% \end{frame}
 
 %----------------------------------------------------------------------------------------
 % Numerical methods
@@ -833,6 +833,7 @@ c^2_a = \frac{B_n^2}{\rho} \text{, and } c^2_t = \frac{B_t^2}{\rho}.
 \item Initial discontinuity separates two states.
 \item Rotation angle: $\psi = \arctan\left(B_z/B_y\right)$.
 \item Twist angle: $\alpha = \psi_r - \psi_l$.
+\item Solution: waves separating distinct states.
 \ebi
 }
 %% \only<2-2>{
@@ -1127,7 +1128,7 @@ $$ p_g = (\gamma - 1)\left( E - \frac{\rho v^2}{2} - \frac{B^2}{2}\right)$$
 \bei
 \item $\alpha < \pi$, compound waves at lower resolutions.
 \pause
-\item Psuedo-convergence: rotational discontinuity at higher resolutions \citep{Torrilhon:2003b}.
+\item Pseudo-convergence: rotational discontinuity at higher resolutions \citep{Torrilhon:2003b}.
 \item Transition between $1024$ and $2048$ grid points.
 \item $\alpha \rightarrow \pi$, grid resolution increases. 
 \item $\pi = \alpha$, compound wave at all resolutions.
@@ -1371,10 +1372,16 @@ W[\mbf{v}_{t}] &= -B_n[\mbf{B}_{t}], \\
 \resizebox{0.35\linewidth}{!}{\tikzsetnextfilename{AK7_csol_6}\input{fig/AK7_csol_6.tex}} 
 \end{tabular}
 }
-\only<4->{
+\only<4-4>{
 \begin{tabular}{cc}
 \resizebox{0.35\linewidth}{!}{\tikzsetnextfilename{AK7_crsol_1}\input{fig/AK7_crsol_1.tex}} & 
 \resizebox{0.35\linewidth}{!}{\tikzsetnextfilename{AK7_crsol_6} \input{fig/AK7_crsol_6.tex}}
+\end{tabular}
+}
+\only<5->{
+\begin{tabular}{cc}
+\resizebox{0.35\linewidth}{!}{\tikzsetnextfilename{coplanar_a_rsol_init_fct_1}\input{fig/coplanar_a_rsol_init_fct_1.tex}} & 
+\resizebox{0.35\linewidth}{!}{\tikzsetnextfilename{coplanar_a_rsol_init_fct_6} \input{fig/coplanar_a_rsol_init_fct_6.tex}}
 \end{tabular}
 }
 \end{center}
@@ -1388,7 +1395,7 @@ W[\mbf{v}_{t}] &= -B_n[\mbf{B}_{t}], \\
 }
 \ebi
 }
-\only<3->{
+\only<3-4>{
 \bei
 \item Non-planar initial conditions.
 \item Fast compound waves at $x=0.366$ and $x = 0.691$
@@ -1397,12 +1404,20 @@ W[\mbf{v}_{t}] &= -B_n[\mbf{B}_{t}], \\
 }
 \ebi
 }
+\only<5->{
+\bei
+\item Works with FCT!
+\item At rotation, set antidiffusion = CWM.
+\item Larger Cour. No. without additional diffusion downstream.
+\item Slow shock downstream poorly resolved, but weak.
+\ebi
+}
 \end{frame}
 
 %----------------------------------------------------------------------------------------
 % Error
 %----------------------------------------------------------------------------------------
-\section{Convergence results using new modifcation}
+\section{Convergence results using new modification}
 \begin{frame}[fragile]
 \frametitle{Error analysis}
 \begin{columns}
@@ -1433,6 +1448,7 @@ W[\mbf{v}_{t}] &= -B_n[\mbf{B}_{t}], \\
 \item Error calculation without applying the correction at the rotational discontinuity.
 \item Without CWM, the compound wave starts to break apart between $2^{10}$ and $2^{11}$.
 \item CWM produces convergence at low grid resolutions.
+\item $\approx 10$ times faster than exact Riemann solver.
 \ebi
 
 \end{frame}
@@ -1479,213 +1495,246 @@ Due to perfect cancellation, the numerical divergence in the cell remains zero t
 %----------------------------------------------------------------------------------------
 % Shared memory parallelism
 %----------------------------------------------------------------------------------------
+%% \begin{frame}[fragile]
+%% \frametitle{Shared memory parallelism}
+%% \begin{columns}
+%% \begin{column}{0.5\textwidth}
+%% \begin{figure}[htbp]
+%% \only<1-1>{
+%% \resizebox{\linewidth}{!}{\tikzsetnextfilename{face_color_1} \input{fig/face_color_1.tex}}
+%% }
+%% \only<2->{
+%% \resizebox{\linewidth}{!}{\tikzsetnextfilename{face_color_2} \input{fig/face_color_2.tex}}
+%% }
+%% \end{figure}
+%% \end{column}
+%% \begin{column}{0.5\textwidth}
+%% \bei
+%% \item Faces must be grouped by color to avoid memory contention.
+%% \item Loop over the faces becomes loop over the colors.
+%% \pause
+%% \item Constrained transport, faces and edges must be colored.
+%% \ebi
+%% \end{column}
+%% \end{columns}
+%% \end{frame}
+
+%----------------------------------------------------------------------------------------
+% Efficient algorithms
+%----------------------------------------------------------------------------------------
+%% \begin{frame}[fragile]
+%% \frametitle{Efficient algorithms}
+
+%% \begin{lstlisting}
+%%   thrust::device_vector<float> x(n);  // independent variable
+%%   thrust::device_vector<float> y(n);  // y = f(x)
+%%   thrust::device_vector<float> z(n);  // z = g(y)
+
+%%   // compute y = f(x)
+%%   thrust::transform(x.begin(),x.end(),y.begin(),f());
+
+%%   // compute z = g(y) 
+%%   thrust::transform(y.begin(),y.end(),z.begin(),g());
+%% \end{lstlisting} 
+%% \bei
+%% \item Function composition \citep{Thrust}.
+%% \item $3n$ floats, $2n$ reads, $2n$ writes, and uses $n$ temporary floats.
+%% \ebi
+%% \end{frame}
+
+%----------------------------------------------------------------------------------------
+% Efficient algorithms
+%----------------------------------------------------------------------------------------
+%% \begin{frame}[fragile]
+%% \frametitle{Efficient algorithms}
+
+%% \begin{lstlisting}
+%%   thrust::device_vector<float> x(n);  // independent variable
+%%   thrust::device_vector<float> z(n);  // z = g(y) = g(f(x))
+
+%%   // compute z = g(f(x))
+%%   thrust::transform(make_transform_iterator(x.begin(),f()),
+%%                     make_transform_iterator(x.end(),f()),
+%%                     z.begin(),
+%%                     g());
+%% \end{lstlisting} 
+
+%% \bei
+%% \item Function composition \citep{Thrust}.
+%% \item $2n$ floats, $n$ reads, $n$ writes, and no temporary storage.
+%% \ebi
+%% \end{frame}
+
+%----------------------------------------------------------------------------------------
+% Efficient algorithms
+%----------------------------------------------------------------------------------------
+%% \begin{frame}[fragile]
+%% \frametitle{Memory access}
+%% \begin{columns}
+%% \begin{column}{0.5\textwidth}
+%% \begin{lstlisting}
+%% struc conservative_variables{
+%%   float density;
+%%   float momentum_x;
+%%   float energy;
+%% }
+
+%% conservative_variables 
+%%   *state;  // AoS
+
+%% state[i].density = some_number;
+%% state[i].momentum_x = another_number;
+%% state[i].energy = one_more_number;
+%% \end{lstlisting} 
+%% \end{column}
+%% \begin{column}{0.5\textwidth}
+%% \begin{lstlisting}
+%% struc conservative_variables{
+%%   float *density;
+%%   float *momentum_x;
+%%   float *energy;
+%% }
+
+%% conservative_variables state; // SoA
+
+%% state.density[i] = some_number;
+%% state.momentum_x[i] = another_number;
+%% state.energy[i] = one_more_number;
+%% \end{lstlisting} 
+%% \end{column}
+%% \end{columns}
+%% \bei
+%% \item Memory coalescing occurs when multiple memory addresses are accessed with a single transaction.
+%% \item Memory does not coalesce with AoS (left).
+%% \item Memory does coalesce with SoA (right).
+%% \ebi
+%% \end{frame}
+
+%----------------------------------------------------------------------------------------
+% Efficient algorithms
+%----------------------------------------------------------------------------------------
+%% \begin{frame}[fragile]
+%% \frametitle{Memory access}
+%% \begin{lstlisting}
+%% thrust::device_vector<primitive_variables>    
+%%      primitive_state(n);  // AoS
+%% thrust::device_vector<conservative_variables> 
+%%      conservative_state(n);   // AoS
+%% thrust::transform_n(primitive_state.begin(),
+%%                     primitive_state.size(),
+%%                     conservative_state.begin(),
+%%                     convert_primitive_to_conservative(gamma));
+%% \end{lstlisting} 
+%% \bei
+%% \item Converting from primitive variables $(\rho,v_x, p_g)$ to conservative variables $(\rho,\rho v_x, en)$.
+%% \item No coalescing.
+%% \ebi
+%% \end{frame}
+
+%----------------------------------------------------------------------------------------
+% Efficient algorithms
+%----------------------------------------------------------------------------------------
+%% \begin{frame}[fragile]
+%% \frametitle{Memory access}
+%% \begin{lstlisting}
+%% thrust::device_vector<float> d(n),vx(n),pg(n); 
+%% thrust::device_vector<float> mx(n),en(n); 
+%% thrust::transform_n(
+%%           thrust::make_zip_iterator(
+%%             make_tuple(d.begin(),
+%%                        vx.begin(),
+%%                        pg.begin())),
+%%            n,
+%%            thrust::make_zip_iterator(
+%%              make_tuple(d.begin(),
+%%                         mx.begin(),
+%%                         en.begin())),
+%%            convert_primitive_to_conservative(gamma));
+%% \end{lstlisting} 
+%% \bei
+%% \item Converting from primitive variables $(\rho,v_x, p_g)$ to conservative variables $(\rho,\rho v_x, en)$.
+%% \item Arrays can be combined on the fly with a \verb+zip_iterator+ to achieve coalescing.
+%% \ebi
+%% \end{frame}
+
+%----------------------------------------------------------------------------------------
+% Kelven-Helmholtz Instability
+%----------------------------------------------------------------------------------------
 \begin{frame}[fragile]
-\frametitle{Shared memory parallelism}
+\frametitle{Performance Comparison}
 \begin{columns}
 \begin{column}{0.5\textwidth}
-\begin{figure}[htbp]
 \only<1-1>{
-\resizebox{\linewidth}{!}{\tikzsetnextfilename{face_color_1} \input{fig/face_color_1.tex}}
-}
-\only<2->{
-\resizebox{\linewidth}{!}{\tikzsetnextfilename{face_color_2} \input{fig/face_color_2.tex}}
-}
-\end{figure}
-\end{column}
-\begin{column}{0.5\textwidth}
-\bei
-\item Faces must be grouped by color to avoid memory contention.
-\item Loop over the faces becomes loop over the colors.
-\pause
-\item Constrained transport, faces and edges must be colored.
-\ebi
-\end{column}
-\end{columns}
-\end{frame}
-
-%----------------------------------------------------------------------------------------
-% Efficient algorithms
-%----------------------------------------------------------------------------------------
-\begin{frame}[fragile]
-\frametitle{Efficient algorithms}
-
-\begin{lstlisting}
-  thrust::device_vector<float> x(n);  // independent variable
-  thrust::device_vector<float> y(n);  // y = f(x)
-  thrust::device_vector<float> z(n);  // z = g(y)
-
-  // compute y = f(x)
-  thrust::transform(x.begin(),x.end(),y.begin(),f());
-
-  // compute z = g(y) 
-  thrust::transform(y.begin(),y.end(),z.begin(),g());
-\end{lstlisting} 
-\bei
-\item Function composition \citep{Thrust}.
-\item $3n$ floats, $2n$ reads, $2n$ writes, and uses $n$ temporary floats.
-\ebi
-\end{frame}
-
-%----------------------------------------------------------------------------------------
-% Efficient algorithms
-%----------------------------------------------------------------------------------------
-\begin{frame}[fragile]
-\frametitle{Efficient algorithms}
-
-\begin{lstlisting}
-  thrust::device_vector<float> x(n);  // independent variable
-  thrust::device_vector<float> z(n);  // z = g(y) = g(f(x))
-
-  // compute z = g(f(x))
-  thrust::transform(make_transform_iterator(x.begin(),f()),
-                    make_transform_iterator(x.end(),f()),
-                    z.begin(),
-                    g());
-\end{lstlisting} 
-
-\bei
-\item Function composition \citep{Thrust}.
-\item $2n$ floats, $n$ reads, $n$ writes, and no temporary storage.
-\ebi
-\end{frame}
-
-%----------------------------------------------------------------------------------------
-% Efficient algorithms
-%----------------------------------------------------------------------------------------
-\begin{frame}[fragile]
-\frametitle{Memory access}
-\begin{columns}
-\begin{column}{0.5\textwidth}
-\begin{lstlisting}
-struc conservative_variables{
-  float density;
-  float momentum_x;
-  float energy;
-}
-
-conservative_variables 
-  *state;  // AoS
-
-state[i].density = some_number;
-state[i].momentum_x = another_number;
-state[i].energy = one_more_number;
-\end{lstlisting} 
-\end{column}
-\begin{column}{0.5\textwidth}
-\begin{lstlisting}
-struc conservative_variables{
-  float *density;
-  float *momentum_x;
-  float *energy;
-}
-
-conservative_variables state; // SoA
-
-state.density[i] = some_number;
-state.momentum_x[i] = another_number;
-state.energy[i] = one_more_number;
-\end{lstlisting} 
-\end{column}
-\end{columns}
-\bei
-\item Memory coalescing occurs when multiple memory addresses are accessed with a single transaction.
-\item Memory does not coalesce with AoS (left).
-\item Memory does coalesce with SoA (right).
-\ebi
-\end{frame}
-
-%----------------------------------------------------------------------------------------
-% Efficient algorithms
-%----------------------------------------------------------------------------------------
-\begin{frame}[fragile]
-\frametitle{Memory access}
-\begin{lstlisting}
-thrust::device_vector<primitive_variables>    
-     primitive_state(n);  // AoS
-thrust::device_vector<conservative_variables> 
-     conservative_state(n);   // AoS
-thrust::transform_n(primitive_state.begin(),
-                    primitive_state.size(),
-                    conservative_state.begin(),
-                    convert_primitive_to_conservative(gamma));
-\end{lstlisting} 
-\bei
-\item Converting from primitive variables $(\rho,v_x, p_g)$ to conservative variables $(\rho,\rho v_x, en)$.
-\item No coalescing.
-\ebi
-\end{frame}
-
-%----------------------------------------------------------------------------------------
-% Efficient algorithms
-%----------------------------------------------------------------------------------------
-\begin{frame}[fragile]
-\frametitle{Memory access}
-\begin{lstlisting}
-thrust::device_vector<float> d(n),vx(n),pg(n); 
-thrust::device_vector<float> mx(n),en(n); 
-thrust::transform_n(
-          thrust::make_zip_iterator(
-            make_tuple(d.begin(),
-                       vx.begin(),
-                       pg.begin())),
-           n,
-           thrust::make_zip_iterator(
-             make_tuple(d.begin(),
-                        mx.begin(),
-                        en.begin())),
-           convert_primitive_to_conservative(gamma));
-\end{lstlisting} 
-\bei
-\item Converting from primitive variables $(\rho,v_x, p_g)$ to conservative variables $(\rho,\rho v_x, en)$.
-\item Arrays can be combined on the fly with a \verb+zip_iterator+ to achieve coalescing.
-\ebi
-\end{frame}
-
-%----------------------------------------------------------------------------------------
-% Movie
-%----------------------------------------------------------------------------------------
-\begin{frame}[fragile]
-\frametitle{Movie}
-
 \includemovie[
   label=kh_instability
   activate=onclick,
-  controls=false,
-  %% width=0.75\textwidth
-%% text={\includegraphics[width=0.5\textwidth]{tikz/face_color_1.pdf}}]{0.5\textwidth}{}{kh_instability_10_fps.avi}
-text={\includegraphics[width=0.5\textwidth]{kh0.jpg}}]{0.5\textwidth}{}{kh_instability_10_fps.avi}
+  %% controls=false,
+text={\includegraphics[width=\textwidth]{kh0.jpg}}]{\textwidth}{}{kh_instability_10_fps.avi}
+}
+\only<2->{
+\includegraphics[width=\textwidth]{kh1.jpg}
+}
+\end{column}
+
+\begin{column}{0.5\textwidth}
+%% \only<2->{
+\begin{table}[htbp]%\footnotesize
+\caption{Performance comparison for Kelvin-Helmholtz Instability.} %\citep{Orszag:1979}.}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}} cc}
+\\ 
+\hline 
+\hline 
+grid size & GPU/CPU  \\
+\hline
+$64\times64$  & 5 \\
+$128\times128$  & 19 \\
+$256\times256$  & 58 \\
+$512\times512$  & 75 \\
+$1024\times1024$  & 81 \\
+\hline
+\end{tabular*}
+\end{table}
+%% }
+\end{column}
+\end{columns}
+\bei
+%% \item Dell Precision 7500 workstation with a (Dual CPU) 
+\item GPU GeFroce GTX TITAN and CPU Intel Xeon E5645 @ 2.40 Ghz.
+%% \item  with a memory bandwidth of 288.4 GB/sec and 2688 CUDA cores.
+\item Factor of three increase of speed ratio form $128\times128$ to $256\times256$.
+\ebi
 
 \end{frame}
 
 %----------------------------------------------------------------------------------------
 % Speed results
 %----------------------------------------------------------------------------------------
-\begin{frame}[fragile]
-\frametitle{Performance Comparison}
-\begin{table}[htbp]%\footnotesize
-\caption{Performance comparison for Orszag-Tang \citep{Orszag:1979} test.}
-\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}} cccc}
-\\ 
-\hline 
-\hline 
-grid size & cells/second (GPU) & cells/second (CPU) & ratio \\
-\hline
-$64\times64$ & $4.1894\times10^6$ & $7.3955\times10^5$ & 5 \\
-$128\times128$ & $1.6540\times10^7$ & $7.5060\times10^5$ & 22 \\
-$256\times256$ & $4.4497\times10^7$ & $7.3155\times10^5$ & 60 \\
-$512\times512$ & $6.3286\times10^7$ & $7.9437\times10^5$ & 79 \\
-$1024\times1024$ & $7.2134\times10^7$ & $8.3354\times10^5$ & 86 \\
-\hline
-\end{tabular*}
-\end{table}
+%% \begin{frame}[fragile]
+%% \frametitle{Performance Comparison}
+%% \begin{table}[htbp]%\footnotesize
+%% \caption{Performance comparison for Orszag-Tang \citep{Orszag:1979} test.}
+%% \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}} cccc}
+%% \\ 
+%% \hline 
+%% \hline 
+%% grid size & cells/second (GPU) & cells/second (CPU) & ratio \\
+%% \hline
+%% $64\times64$ & $4.1894\times10^6$ & $7.3955\times10^5$ & 5 \\
+%% $128\times128$ & $1.6540\times10^7$ & $7.5060\times10^5$ & 22 \\
+%% $256\times256$ & $4.4497\times10^7$ & $7.3155\times10^5$ & 60 \\
+%% $512\times512$ & $6.3286\times10^7$ & $7.9437\times10^5$ & 79 \\
+%% $1024\times1024$ & $7.2134\times10^7$ & $8.3354\times10^5$ & 86 \\
+%% \hline
+%% \end{tabular*}
+%% \end{table}
 
-\bei
-\item Dell Precision 7500 workstation with a (Dual CPU) 
-\item CPU Intel Xeon E5645 @ 2.40 Ghz.
-\item GPU GeFroce GTX TITAN with a memory bandwidth of 288.4 GB/sec and 2688 CUDA cores.
-\item Almost a factor of three increase of speed ratio form $128\times128$ to $256\times256$.
-\ebi
-\end{frame}
+%% \bei
+%% \item Dell Precision 7500 workstation with a (Dual CPU) 
+%% \item CPU Intel Xeon E5645 @ 2.40 Ghz.
+%% \item GPU GeFroce GTX TITAN with a memory bandwidth of 288.4 GB/sec and 2688 CUDA cores.
+%% \item Almost a factor of three increase of speed ratio form $128\times128$ to $256\times256$.
+%% \ebi
+%% \end{frame}
 
 %----------------------------------------------------------------------------------------
 % Conclusion
@@ -1703,8 +1752,8 @@ $1024\times1024$ & $7.2134\times10^7$ & $8.3354\times10^5$ & 86 \\
 \item FAST! HLLD intermediate states are already calculated.
 \item Produces the correct result when other numerical inaccuracies are present.
 \ebi
-\item Released* a nonlinear solver for ideal MHD.  
-\item Released* a high-order multi-dimensional fluid solver.  
+\item Released a nonlinear solver for ideal MHD.  
+\item Released a high-order multi-dimensional fluid solver.  
 \bei 
 \item General geometry on unstructured grids. 
 \item Capable of shared memory parallelism on GPU and CPU.
