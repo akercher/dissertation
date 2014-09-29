@@ -17,7 +17,8 @@
 %% \usepackage[numbers]{natbib} % format citations
 \usepackage{graphicx}                    %   for imported graphics
 \usepackage{epstopdf} %covert .eps files to .pdf
-\usepackage{multimedia}
+%% \usepackage{multimedia}
+\usepackage{movie15}
 \usepackage{amsmath,amssymb,amsthm} %math support
 \usepackage{amsfonts}                    %%  for AMS mathematics
 \usepackage[normalem]{ulem}              %   a nice standard underline package
@@ -1638,6 +1639,21 @@ thrust::transform_n(
 \item Converting from primitive variables $(\rho,v_x, p_g)$ to conservative variables $(\rho,\rho v_x, en)$.
 \item Arrays can be combined on the fly with a \verb+zip_iterator+ to achieve coalescing.
 \ebi
+\end{frame}
+
+%----------------------------------------------------------------------------------------
+% Movie
+%----------------------------------------------------------------------------------------
+\begin{frame}[fragile]
+\frametitle{Movie}
+
+\includemovie[
+  label=kh_instability
+  activate=onclick,
+  controls=false,
+  %% width=0.75\textwidth
+text={\includegraphics[width=0.5\textwidth]{fig/kh0.jpg}}]{0.5\textwidth}{kh_instability_10_fps.avi}
+
 \end{frame}
 
 %----------------------------------------------------------------------------------------
