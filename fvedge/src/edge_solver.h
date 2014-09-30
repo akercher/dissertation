@@ -1,8 +1,24 @@
-/*******************************************************************/
-/* File   : fv_mhd.h                                               */
-/* Author : A. Kercher                                             */
-/*-----------------------------------------------------------------*/
-/*******************************************************************/
+/*************************************************************************/
+/* File   : edge_solver.h                                                */
+/* Author : A. Kercher                                                   */
+/*-----------------------------------------------------------------------*/
+/* Copyright:                                                            */
+/*                                                                       */
+/*   This file is part of fvsmp.                                         */
+/*                                                                       */
+/*     fvedge is free software: you can redistribute it and/or modify    */
+/*     it under the terms of the GNU General Public License version 3    */
+/*     as published by the Free Software Foundation.                     */
+/*                                                                       */
+/*     fvedge is distributed in the hope that it will be useful,         */
+/*     but WITHOUT ANY WARRANTY; without even the implied warranty of    */
+/*     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the     */
+/*     GNU General Public License for more details.                      */
+/*                                                                       */
+/*     You should have received a copy of the GNU General Public License */
+/*     along with fvsmp.  If not, see <http://www.gnu.org/licenses/>.    */
+/*                                                                       */
+/*************************************************************************/
 
 #include "rsolvers.h"
 #include "fct.h"
@@ -27,6 +43,7 @@ class Mesh
   Index ndim;
   Index nx,ny;
   Index ncell_x,ncell_y;
+  Index iface_d;
   Real Lx,Ly;
   Real dx,dy;
   Real vol;
@@ -117,7 +134,7 @@ Index Mesh::nface_y()
 
 Index Mesh::nface_d()
 {
-  return (ncell_y)*(ncell_x);
+  return iface_d*(ncell_y)*(ncell_x);
 };
 
 Index Mesh::nboun_x()
@@ -349,14 +366,24 @@ struct residual_op : public thr::binary_function<Edge,InterpState,State>
     /* Compute flux using HLLD approximations            */
     /*---------------------------------------------------*/
 
-    /* flux = hllc_n(this->_gamma,face_vec,prim_state_i,prim_state_j); */
-    rhll(this->_gamma,Real(0.0),face_vec,prim_state_i,prim_state_j,normal_wave_speed,flux);
 
+    hlld_n(this->_gamma,Real(0.0),face_vec,state_i,state_j,normal_wave_speed,flux);
+
+    /* printf("[%d][%d]\n",index_i,index_j); */
     /* hllc_n(this->_gamma,Real(0.0),face_vec,prim_state_i,prim_state_j,normal_wave_speed,flux); */
 
-    /* if(index_i == 3 || index_j == 3){ */
-    /*   printf("[%d][%d] %f %f %f\n",index_i,index_j,normal_wave_speed,thr::get<0>(flux),face_vec_mag); */
-    /* } */
+    /* printf("\n"); */
+    /* printf("[%d][%d] %f %f\n",index_i,index_j, */
+    /* 	   thr::get<0>(prim_state_i),thr::get<0>(prim_state_j), */
+    /* 	   thr::get<2>(prim_state_i),thr::get<2>(prim_state_j)); */
+    /* printf("[%d][%d] %f %f %f %f %f\n",index_i,index_j,normal_wave_speed,thr::get<0>(flux), */
+    /* 	   get_x(thr::get<1>(flux)),get_y(thr::get<1>(flux)),thr::get<2>(flux)); */
+
+    /* rhll(this->_gamma,Real(0.0),face_vec,prim_state_i,prim_state_j,normal_wave_speed,flux); */
+
+      /* printf("[%d][%d] %f %f %f %f %f\n",index_i,index_j,normal_wave_speed,thr::get<0>(flux), */
+      /* 	     get_x(thr::get<1>(flux)),get_y(thr::get<1>(flux)),thr::get<2>(flux)); */
+
 
     // update wave speeds
     Real wave_speed_i = Real(this->_wave_speed_iter[index_i]) + normal_wave_speed;
@@ -1216,8 +1243,8 @@ struct orszag_tang_init : public thr::unary_function<Index,State>
     Index i = index % this->_ncell_x;
     Index j = (index - i)/this->_ncell_x;
 
-    Real x = (Real(i) + Real(0.5))*this->_dx;
-    Real y = (Real(j) + Real(0.5))*this->_dy;
+    Real x = Real(i)*this->_dx;
+    Real y = Real(j)*this->_dy;
 
     Real d = Real(25.0)/(Real(36.0)*Real(M_PI));
     Real vz = Real(0.0);
@@ -1570,7 +1597,9 @@ void print_edges_host(Index iedge, Edge edge)
 	    << "edge[" << iedge << "].enx = " << get_x(thr::get<1>(Edge(edge))) << " , "
 	    << "edge[" << iedge << "].eny = " << get_y(thr::get<1>(Edge(edge))) << " , "
 	    << "edge[" << iedge << "].pi = " << get_x(thr::get<2>(Edge(edge))) << " , "
-	    << "edge[" << iedge << "].pj = " << get_y(thr::get<2>(Edge(edge))) << std::endl;//<< " , "
+	    << "edge[" << iedge << "].pj = " << get_y(thr::get<2>(Edge(edge))) << " , "
+	    << "edge[" << iedge << "].ci = " << get_x(thr::get<3>(Edge(edge))) << " , "
+	    << "edge[" << iedge << "].cj = " << get_y(thr::get<3>(Edge(edge))) << std::endl;//<< " , "
 
 };
 
@@ -1624,6 +1653,7 @@ void read_configuration(std::ifstream& input, Index& fct, Index& ct,Index& prob,
     if(line.compare("fct") == 0) fct = Index(value);
     else if(line.compare("ct") == 0) ct = Index(value);
     else if(line.compare("prob") == 0) prob = Index(value);
+    else if(line.compare("iface_d") == 0) mesh.iface_d = Index(value);
     else if(line.compare("Cour") == 0) Cour = Real(value);
     else if(line.compare("cdiss") == 0) cdiss = Real(value);
     else if(line.compare("cwm") == 0) cwm = Real(value);

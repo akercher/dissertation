@@ -181,6 +181,13 @@ struct gradiant_reconstruction : public thr::unary_function<Edge,InterpState>
 
     /* printf("[%d][%d] dwi[1] = % f da[1] = %f dm[1] = %f dp[1] = %f df[1] = %f eps2 = %f\n",index_i,index_j,dwi[1],da[1],dm[1],dp[1],df[1],eps2); */
 
+    // if negative pressure use constant interp.
+    if((pressure_i + da[4]) <= Real(0.0)){
+      for(i=0;i<Index(8);i++){
+	da[i] = Real(0.0);
+      }
+    }
+
     // value at state i
     thr::get<0>(interp_state_i) = density_i + da[0];
     get_x(thr::get<1>(interp_state_i)) = get_x(velocity_i) + da[1];
@@ -201,6 +208,12 @@ struct gradiant_reconstruction : public thr::unary_function<Edge,InterpState>
     				      /((dm[i]*dm[i] + dp[i]*dp[i] + Real(2.0)*eps2)));
     }
 
+    // if negative pressure use constant interp.
+    if((pressure_j + da[4]) <= Real(0.0)){
+      for(i=0;i<Index(8);i++){
+	da[i] = Real(0.0);
+      }
+    }
     // value at state j
     thr::get<0>(interp_state_j) = density_j + da[0];
     get_x(thr::get<1>(interp_state_j)) = get_x(velocity_j) + da[1];
@@ -210,6 +223,8 @@ struct gradiant_reconstruction : public thr::unary_function<Edge,InterpState>
     get_x(thr::get<3>(interp_state_j)) = get_x(bfield_j) + da[5];
     get_y(thr::get<3>(interp_state_j)) = get_y(bfield_j) + da[6];
     get_z(thr::get<3>(interp_state_j)) = get_z(bfield_j) + da[7];
+
+    
 
     /* printf("[%d][%d] intp_di = %f intp_dj = %f\n",index_i,index_j, */
     /* 	   thr::get<0>(interp_state_i),thr::get<0>(interp_state_j)); */

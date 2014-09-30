@@ -99,7 +99,7 @@ typedef thr::tuple<Index,Index,Index,Index> Quad;
 typedef thr::tuple<Real,Vector,Real,Vector> State;
 typedef thr::tuple<State,State> InterpState;
 typedef thr::tuple<State,State> StateGradiant;
-typedef thr::tuple<Coordinate,Coordinate,IndexPair> Edge;
+typedef thr::tuple<Coordinate,Coordinate,IndexPair,IndexPair> Edge;
 typedef thr::tuple<Coordinate,IndexPair,IndexPair,Index> BoundaryFace;
 typedef thr::tuple<Coordinate,Index,Index> BoundaryNode;
 typedef thr::tuple<IndexPair,Coordinate,IndexPair,Coordinate> Interface;

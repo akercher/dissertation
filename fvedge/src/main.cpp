@@ -15,11 +15,11 @@
 /*                                                                       */
 /*   This file is part of fvsmp.                                         */
 /*                                                                       */
-/*     fvsmp is free software: you can redistribute it and/or modify     */
+/*     fvedge is free software: you can redistribute it and/or modify    */
 /*     it under the terms of the GNU General Public License version 3    */
 /*     as published by the Free Software Foundation.                     */
 /*                                                                       */
-/*     fvsmp is distributed in the hope that it will be useful,          */
+/*     fvedge is distributed in the hope that it will be useful,         */
 /*     but WITHOUT ANY WARRANTY; without even the implied warranty of    */
 /*     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the     */
 /*     GNU General Public License for more details.                      */
@@ -29,8 +29,8 @@
 /*                                                                       */
 /*************************************************************************/
 
-// #include "constrained_transport.h"
-#include "edge_solver.h"
+#include "constrained_transport.h"
+// #include "edge_solver.h"
 #include "mesh_generate.h"
 #include "coloring.h"
 #include "data_io.h"
@@ -92,6 +92,7 @@ int main(int argc, char* argv[]){
 
   /* initialize mesh */
   mesh.init();
+  // mesh.iface_d = iface_; //1:tri, 0:quad
   if (mesh.ndim < 2) ct = Index(0);
 
   mesh.generate();
@@ -152,9 +153,34 @@ int main(int argc, char* argv[]){
   StateGradiantIterator lsq_grad_iter(lsq_grad.begin());
   RealIterator wave_speed_iter(wave_speed.begin());
 
+  RealArray emf_z; // electromotive force for CT 
+  RealArray emf_z_poin; // electromotive force at points
+  RealArray bn_edge; // normal B at interface
+  RealArray bn_edge_n; // normal B at interface at time n
+
+  if (ct > Index(0)){
+
+    emf_z.resize(mesh.ncell());
+    thr::fill_n(emf_z.begin(),emf_z.size(),Real(0.0));
+    
+    emf_z_poin.resize(mesh.npoin());
+    thr::fill_n(emf_z_poin.begin(),emf_z_poin.size(),Real(0.0));
+    
+    bn_edge.resize(mesh.nface());
+    thr::fill_n(bn_edge.begin(),bn_edge.size(),Real(0.0));
+    
+    bn_edge_n.resize(mesh.nface());
+    thr::fill_n(bn_edge_n.begin(),bn_edge_n.size(),Real(0.0));
+    
+  }
+
+  RealIterator emf_z_iter(emf_z.begin());
+  RealIterator emf_z_poin_iter(emf_z_poin.begin());
+  RealIterator bn_edge_iter(bn_edge.begin());    
+
   // create offset for coloring algorithm
   Offset offset;  
-
+  offset.iface_d = mesh.iface_d; //1:tri, 0:quad
   offset.ncolors_per_dim = Index(2)*mesh.ndim;
   offset.init(mesh.ndim, mesh.ncell_x, mesh.ncell_y, mesh.nboun_x(), mesh.nboun_y(),
   	      mesh.btype_x, mesh.btype_y);
@@ -174,6 +200,7 @@ int main(int argc, char* argv[]){
   				     mesh.ncell_y,
   				     mesh.btype_x,
   				     mesh.btype_y,
+				     offset.iface_d,
   				     mesh.dx,
   				     mesh.dy));
       
@@ -195,6 +222,7 @@ int main(int argc, char* argv[]){
 									   mesh.ncell_y,
 									   mesh.btype_x,
 									   mesh.btype_y,
+									   offset.iface_d,
 									   mesh.dx,
 									   mesh.dy,
 									   bnode_iter));
@@ -206,10 +234,10 @@ int main(int argc, char* argv[]){
   edge_iter = edge.begin();
   bface_iter = bface.begin();
 
-  // for (Index i=0; i<mesh.nface();i++){
-  // // for (Index i=0; i<12;i++){
-  //   print_edges_host(i,edge[i]);
-  // }
+  for (Index i=0; i<mesh.nface();i++){
+  // for (Index i=0; i<12;i++){
+    print_edges_host(i,edge[i]);
+  }
 
   /*-----------------------------------------------------------------*/
   /* Initialize node centered consevative state variables            */
@@ -220,45 +248,82 @@ int main(int argc, char* argv[]){
   					       Real(1.0),
   					       Vector(Real(0.0),Real(0.0),Real(0.0))));  
 
-    if(prob == Index(3)){  
-      gamma  = 1.4;
-      nsteps_out = 500;
-      sprintf(base_name,"bin/kh_instability");
-      thr::transform_n(make_device_counting_iterator(),
-		       state.size(),
-		       state.begin(),
-		       kh_instability_init(mesh.nx,
-					   mesh.dx,
-					   mesh.dy,
-					   mesh.Lx,
-					   mesh.Ly));
-      thr::transform_n(state.begin(),state.size(),state.begin(),prim2cons(gamma));
-    }
+  if (prob == Index(2)){
+    gamma = Real(5.0)/Real(3.0);
+    nsteps_out = 100;
+    sprintf(base_name,"bin/orzag_tang");
+    thr::transform_n(make_device_counting_iterator(),
+		     state.size(),
+		     state.begin(),
+		     orszag_tang_init(mesh.ncell_x,
+				      mesh.dx,
+				      mesh.dy));
+    thr::transform_n(state.begin(),state.size(),state.begin(),prim2cons(gamma));
+  }
 
-    if(prob == Index(4)){  
-      gamma = Real(5.0)/Real(3.0);
-      nsteps_out = 50;
-      sprintf(base_name,"bin/blast_wave");
-      thr::transform_n(make_device_counting_iterator(),
-		       state.size(),
-		       state.begin(),
-		       blast_wave_init(mesh.nx,
-				       mesh.dx,
-				       mesh.dy,
-				       mesh.Lx,
-				       mesh.Ly));
-      thr::transform_n(state.begin(),state.size(),state.begin(),prim2cons(gamma));
-    }
+  if(prob == Index(3)){  
+    gamma  = 1.4;
+    nsteps_out = 500;
+    sprintf(base_name,"bin/kh_instability");
+    thr::transform_n(make_device_counting_iterator(),
+		     state.size(),
+		     state.begin(),
+		     kh_instability_init(mesh.nx,
+					 mesh.dx,
+					 mesh.dy,
+					 mesh.Lx,
+					 mesh.Ly));
+    thr::transform_n(state.begin(),state.size(),state.begin(),prim2cons(gamma));
+  }
+  
+  if(prob == Index(4)){  
+    gamma = Real(5.0)/Real(3.0);
+    nsteps_out = 50;
+    sprintf(base_name,"bin/blast_wave");
+    thr::transform_n(make_device_counting_iterator(),
+		     state.size(),
+		     state.begin(),
+		     blast_wave_init(mesh.nx,
+				     mesh.dx,
+				     mesh.dy,
+				     mesh.Lx,
+				     mesh.Ly));
+    thr::transform_n(state.begin(),state.size(),state.begin(),prim2cons(gamma));
+  }
 
+  /*-----------------------------------------------------------------*/
+  /* Initialize CT variables                                         */
+  /*-----------------------------------------------------------------*/  
+  if(ct > Index(0)){
+    /* initialize emf */
+
+    for(Index i=0; i < offset.ncolors; i++){
+      thr::transform_n(edge_iter,
+		       offset.faces_per_color[i],	    
+		       bn_edge_iter,
+		       init_interface_bfield(state_iter));
+
+      edge_iter += offset.faces_per_color[i];
+      bn_edge_iter += offset.faces_per_color[i];
+    }
+    // reset iterator
+    edge_iter = edge.begin();
+    bn_edge_iter = bn_edge.begin();
+  }
+  // for(Index i = 0; i < mesh.nface(); i++){
+  //   printf("interface_bn[%d] = %f\n",i,Real(interface_bn[i]));
+  // }
+  
+  
   // calculate dual volume at nodes
   thr::transform_n(make_device_counting_iterator(),
-  		  dual_vol.size(),
-  		  dual_vol.begin(),
-  		  calc_dual_vol(mesh.nx,mesh.ny,mesh.dx,mesh.dy));
-
+		   dual_vol.size(),
+		   dual_vol.begin(),
+		   calc_dual_vol(offset.iface_d,mesh.nx,mesh.ny,mesh.dx,mesh.dy));
+  
   // calculate inverse least squares matrix
   thr::fill_n(lsq_inv.begin(),lsq_inv.size(),Vector4(Real(0.0),Real(0.0),Real(0.0),Real(0.0)));
-
+  
   // loop over edges
   for(Index i=0; i < offset.ncolors; i++){
     thr::for_each_n(edge_iter,
@@ -266,7 +331,7 @@ int main(int argc, char* argv[]){
   		    least_sq_inv_matrix(mesh.dx,
   					mesh.dy,
   					lsq_inv_iter));
-
+    
     edge_iter += offset.faces_per_color[i];
   }
   // reset iterator
@@ -320,6 +385,10 @@ int main(int argc, char* argv[]){
     
     // store state at begining of time step for two-step Runge-Kutta 
     thr::copy(state.begin(),state.end(),state_n.begin());
+
+    // store edge states at begining of time-step
+    thr::copy(bn_edge.begin(),bn_edge.end(),bn_edge_n.begin());
+
     
     thr::fill_n(wave_speed.begin(),wave_speed.size(),Real(0.0));
 

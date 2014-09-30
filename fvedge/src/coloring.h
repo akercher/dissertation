@@ -44,11 +44,14 @@ void Offset::init(Index ndim, Index ncell_x, Index ncell_y, Index nboun_x, Index
 
   Index nface_x = (ncell_x - Index(1))*ncell_y;
   Index nface_y = (ncell_y - Index(1))*ncell_x;
-  Index nface_d = ncell_x*ncell_y;
+  Index nface_d;// = ncell_x*ncell_y;
   /* Index iface_d; */
 
-  iface_d = 0;
-  if (nface_d > Index(0)) iface_d = 1;;
+  /* iface_d = 0; */
+  /* if (nface_d > Index(0)) iface_d = 1; */
+
+  nface_d = 0;
+  if (iface_d > Index(0)) nface_d = ncell_x*ncell_y;
 
   /* ncolors_per_dim = Index(4); */
   ncolors = ncolors_per_dim*ndim;
@@ -353,6 +356,7 @@ struct edges_init_2d : public thr::unary_function<Index,Edge>
   Index _ncolors_per_dim;
   Index _ncell_x,_ncell_y;
   Index _btype_x, _btype_y;
+  Index _iedge_d;
   Real _dx,_dy;
   
 
@@ -360,11 +364,13 @@ struct edges_init_2d : public thr::unary_function<Index,Edge>
 	       Index ncolors_per_dim,
 	       Index ncell_x, Index ncell_y,
 	       Index btype_x, Index btype_y, 
+	       Index iedge_d,
 	       Real dx, Real dy)
    : _color_index(color_index)
     ,_ncolors_per_dim(ncolors_per_dim)
     ,_ncell_x(ncell_x), _ncell_y(ncell_y)
     ,_btype_x(btype_x), _btype_y(btype_y)
+    ,_iedge_d(iedge_d)
     ,_dx(dx), _dy(dy) {}
 
   __host__ __device__
@@ -388,11 +394,19 @@ struct edges_init_2d : public thr::unary_function<Index,Edge>
     Real anx,any; // directed area vector
     Real enx,eny; // edge vector
     Real bface_i, bface_j;
+    Real area_1,area_2;
 
+    area_1 = Real(1.0);
+    area_2 = Real(0.0);
+    if(this->_iedge_d > Index(0)){
+      area_1 = third;
+      area_2 = Real(2.0)*third;
+    }
 
     bface_i = Real(0.0);
     bface_j = Real(0.0);
 
+    
 
     if(this->_ncolors_per_dim < 3){
 
@@ -503,8 +517,8 @@ struct edges_init_2d : public thr::unary_function<Index,Edge>
       }
       point_j = point_i + nx;		
       
-      anx = -this->_dx*third;
-      any = this->_dy*third*Real(2.0);
+      anx = -this->_dx*area_1;//third;
+      any = this->_dy*area_2;//third*Real(2.0);
       
       enx = Real(0.0);
       eny = this->_dy;
@@ -542,8 +556,8 @@ struct edges_init_2d : public thr::unary_function<Index,Edge>
       point_i = point_j;
       point_j = i;
 
-      anx = -this->_dy*third*Real(2.0);
-      any = this->_dx*third;
+      anx = -this->_dy*area_2;//third*Real(2.0);
+      any = this->_dx*area_1;//third;
 
       enx = -this->_dx;
       eny = Real(0.0);
@@ -616,7 +630,7 @@ struct edges_init_2d : public thr::unary_function<Index,Edge>
     }
     }// 4 colors
 
-    return Edge(Coordinate(anx,any),Coordinate(enx,eny),IndexPair(point_i,point_j));
+    return Edge(Coordinate(anx,any),Coordinate(enx,eny),IndexPair(point_i,point_j),IndexPair(index_i,index_j));
 
   }
 };
@@ -660,6 +674,7 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
   Index _iface_d;
   Index _ncell_x,_ncell_y;
   Index _btype_x, _btype_y;
+  Index _iedge_d;
   Real _dx,_dy;
   BoundaryNodeIterator _bnode_iter;
   
@@ -668,6 +683,7 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
 		     Index iface_d,
 		     Index ncell_x, Index ncell_y,
 		     Index btype_x, Index btype_y, 
+		     Index iedge_d,
 		     Real dx, Real dy,
 		     BoundaryNodeIterator bnode_iter)
    : _color_index(color_index)
@@ -676,6 +692,7 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
     ,_ncell_x(ncell_x), _ncell_y(ncell_y)
     ,_btype_x(btype_x), _btype_y(btype_y)
     ,_dx(dx), _dy(dy) 
+    ,_iedge_d(iedge_d)
     ,_bnode_iter(bnode_iter){}
 
   __host__ __device__
@@ -702,12 +719,20 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
     Real enx,eny; // edge vector
     Real snx,sny; // scaled face outward normal    
     Real bface_i, bface_j;
+    Real area_1, area_2;
     Index btype;
     Edge edge;
     BoundaryFace bface;
 
     colors_per_pass = Index(1);
     if (this->_ncolors_per_dim > Index(2)) colors_per_pass = Index(2);
+
+    area_1 = half;
+    area_2 = half;
+    if(this->_iedge_d > Index(0)){
+      area_1 = third;
+      area_2 = Real(2.0)*third;
+    }
 
     index_i = Index(-2);
     index_j = Index(-2);
@@ -722,8 +747,8 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
       /* if(this->_btype_x == 0){ // outflow x-faces first pass */
       if(index % Index(2) == 0){ // outflow left boundary first pass
 
-	anx = this->_dy*third;
-	any = -this->_dx*third*Real(2.0);
+	anx = this->_dy*area_1;//third;
+	any = -this->_dx*area_2;//*third*Real(2.0);
 	
 	enx = Real(0.0);
 	eny = -this->_dy;
@@ -745,6 +770,10 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
 	periodic_point_i = point_i + Index(this->_ncell_x);
 	periodic_point_j = point_j + Index(this->_ncell_x);
 
+	if(btype == Index(1)){
+	  index_i = index_j + this->_ncell_x - Index(1);
+	}
+
       }
       else{ // outflow right boundary first pass
 	
@@ -759,8 +788,8 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
 	point_i = index_i + j + Index(1);
 	point_j = point_i + nx;
 	
-	anx = -this->_dy*third;
-	any = this->_dx*third*Real(2.0);
+	anx = -this->_dy*area_1;//*third;
+	any = this->_dx*area_2;//*third*Real(2.0);
 	
 	enx = Real(0.0);
 	eny = this->_dy;
@@ -771,6 +800,10 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
 	periodic_point_i = -Index(1);
 	periodic_point_j = -Index(1);
 	
+	if(btype == Index(1)){
+	  index_j = index_i - this->_ncell_x + Index(1);
+	}
+
       }	
     }
     
@@ -794,8 +827,8 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
 	point_i = index_i + j + Index(1);
 	point_j = point_i + nx;
 	
-	anx = -this->_dy*third;
-	any = this->_dx*third*Real(2.0);
+	anx = -this->_dy*area_1;//*third;
+	any = this->_dx*area_2;//*third*Real(2.0);
 
 	enx = Real(0.0);
 	eny = this->_dy;
@@ -805,6 +838,10 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
 
 	periodic_point_i = -Index(1);
 	periodic_point_j = -Index(1);
+
+	if(btype == Index(1)){
+	  index_j = index_i - this->_ncell_x + Index(1);
+	}
 	
       }
       else{ // outflow LEFT boundary second pass
@@ -823,8 +860,8 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
 	anx = Real(0.0);
 	any = -half*this->_dy;
 	
-	anx = this->_dy*third;
-	any = -this->_dx*third*Real(2.0);
+	anx = this->_dy*area_1;//*third;
+	any = -this->_dx*area_2;//*third*Real(2.0);
 
 	enx = Real(0.0);
 	eny = -this->_dy;
@@ -834,6 +871,10 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
 
 	periodic_point_i = point_i + Index(this->_ncell_x);
 	periodic_point_j = point_j + Index(this->_ncell_x);
+
+	if(btype == Index(1)){
+	  index_i = index_j + this->_ncell_x - Index(1);
+	}
 	
       }
 	
@@ -859,8 +900,8 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
 	point_i = i;
 	point_j = point_i + Index(1);
 	
-	anx = this->_dy*third*Real(2.0);
-	any = -this->_dx*third;
+	anx = this->_dy*area_2;//*third*Real(2.0);
+	any = -this->_dx*area_1;//*third;
 	
 	enx = this->_dx;
 	eny = Real(0.0);
@@ -871,6 +912,10 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
 	periodic_point_i = point_i + Index(this->_ncell_y)*nx;
 	periodic_point_j = point_j + Index(this->_ncell_y)*nx;
 	
+	if(btype == Index(1)){
+	  index_i = index_j + (this->_ncell_y - Index(1))*this->_ncell_x;
+	}
+
       }
       else{ // outflow top boundary first pass
 	
@@ -885,8 +930,8 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
 	point_j = (j+Index(1))*nx + i;
 	point_i = point_j + Index(1);
 	
-	anx = -this->_dy*third*Real(2.0);
-	any = this->_dx*third;
+	anx = -this->_dy*area_2;//*third*Real(2.0);
+	any = this->_dx*area_1;//*third;
 	
 	enx = -this->_dx;
 	eny = Real(0.0);
@@ -896,6 +941,10 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
 	
 	periodic_point_i = -Index(1);
 	periodic_point_j = -Index(1);
+
+	if(btype == Index(1)){
+	  index_j = index_i - (this->_ncell_y - Index(1))*this->_ncell_x;
+	}
 
       }
     }
@@ -918,8 +967,8 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
 	  point_i = i;
 	  point_j = point_i + Index(1);
 	  
-	  anx = this->_dy*third*Real(2.0);
-	  any = -this->_dx*third;
+	  anx = this->_dy*area_2;//*third*Real(2.0);
+	  any = -this->_dx*area_1;//*third;
 	  
 	  enx = this->_dx;
 	  eny = Real(0.0);
@@ -930,6 +979,10 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
 	  periodic_point_i = point_i + Index(this->_ncell_y)*nx;
 	  periodic_point_j = point_j + Index(this->_ncell_y)*nx;
 	  
+	if(btype == Index(1)){
+	  index_i = index_j + (this->_ncell_y - Index(1))*this->_ncell_x;
+	}
+
 	}
       else{ // outflow top boundary second pass
 	
@@ -944,8 +997,8 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
 	point_j = (j+Index(1))*nx + i;
 	point_i = point_j + Index(1);
 	
-	anx = -this->_dy*third*Real(2.0);
-	any = this->_dx*third;
+	anx = -this->_dy*area_2;//*third*Real(2.0);
+	any = this->_dx*area_1;//*third;
 	
 	enx = -this->_dx;
 	eny = Real(0.0);
@@ -955,6 +1008,11 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
 
 	periodic_point_i = -Index(1);
 	periodic_point_j = -Index(1);
+
+	if(btype == Index(1)){
+	  index_j = index_i - (this->_ncell_y - Index(1))*this->_ncell_x;
+	}
+
 	
       }
     }
@@ -1019,7 +1077,8 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
     bface = BoundaryFace(Coordinate(snx,sny),IndexPair(bi,bj),
     			 IndexPair(periodic_point_i,periodic_point_j),
     			 Index(belem));
-    edge = Edge(Coordinate(half*anx,half*any),Coordinate(enx,eny),IndexPair(point_i,point_j));
+    edge = Edge(Coordinate(half*anx,half*any),Coordinate(enx,eny),
+		IndexPair(point_i,point_j),IndexPair(index_i,index_j));
     
     /* printf("[%d][%d] bnode[%d] = %d bnode[%d] = %d\n",point_i,point_j,bi, */
     /* 	   thr::get<1>(BoundaryNode(this->_bnode_iter[Index(bi)])), */
