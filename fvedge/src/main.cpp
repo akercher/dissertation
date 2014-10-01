@@ -242,16 +242,27 @@ int main(int argc, char* argv[]){
   /*-----------------------------------------------------------------*/
   /* Initialize node centered consevative state variables            */
   /*-----------------------------------------------------------------*/  
-  sprintf(base_name,"bin/constant_output");
-  thr::fill_n(state.begin(),state.size(),State(Real(1.0),
-  					       Vector(Real(1.0),Real(1.0),Real(1.0)),
-  					       Real(1.0),
-  					       Vector(Real(0.0),Real(0.0),Real(0.0))));  
 
-  if (prob == Index(2)){
+  if (prob == Index(0)){
+    sprintf(base_name,"bin/constant_output");
+    thr::fill_n(state.begin(),state.size(),State(Real(1.0),
+						 Vector(Real(1.0),Real(1.0),Real(1.0)),
+						 Real(1.0),
+						 Vector(Real(0.0),Real(0.0),Real(0.0))));  
+  }
+  else if (prob == Index(1)){
+    sprintf(base_name,"bin/constant_output");
+    thr::fill_n(state.begin(),state.size(),State(Real(1.0),
+						 Vector(Real(1.0),Real(1.0),Real(1.0)),
+						 Real(1.0),
+						 Vector(Real(1.0),Real(1.0),Real(1.0))));  
+  }
+  else if (prob == Index(2)){
     gamma = Real(5.0)/Real(3.0);
     nsteps_out = 100;
     sprintf(base_name,"bin/orzag_tang");
+    mesh.btype_x = Index(1);
+    mesh.btype_y = Index(1);
     thr::transform_n(make_device_counting_iterator(),
 		     state.size(),
 		     state.begin(),
@@ -261,10 +272,12 @@ int main(int argc, char* argv[]){
     thr::transform_n(state.begin(),state.size(),state.begin(),prim2cons(gamma));
   }
 
-  if(prob == Index(3)){  
+  else if(prob == Index(3)){  
     gamma  = 1.4;
     nsteps_out = 500;
     sprintf(base_name,"bin/kh_instability");
+    mesh.btype_x = Index(1);
+    mesh.btype_y = Index(1);
     thr::transform_n(make_device_counting_iterator(),
 		     state.size(),
 		     state.begin(),
@@ -276,10 +289,12 @@ int main(int argc, char* argv[]){
     thr::transform_n(state.begin(),state.size(),state.begin(),prim2cons(gamma));
   }
   
-  if(prob == Index(4)){  
+  else if(prob == Index(4)){  
     gamma = Real(5.0)/Real(3.0);
     nsteps_out = 50;
     sprintf(base_name,"bin/blast_wave");
+    mesh.btype_x = Index(1);
+    mesh.btype_y = Index(1);
     thr::transform_n(make_device_counting_iterator(),
 		     state.size(),
 		     state.begin(),
@@ -289,6 +304,37 @@ int main(int argc, char* argv[]){
 				     mesh.Lx,
 				     mesh.Ly));
     thr::transform_n(state.begin(),state.size(),state.begin(),prim2cons(gamma));
+  }
+  else{
+    mesh.btype_x = Index(0);
+    mesh.btype_y = Index(1);
+    sprintf(base_name,"bin/shock_tube");
+    nsteps_out = 100;
+
+    thr::transform_n(make_transform_iterator(
+					     make_transform_iterator(make_device_counting_iterator(),
+								     cells_init(mesh.ndim,
+										mesh.nx,
+										mesh.ny,
+										mesh.dx,
+										mesh.dy)),
+					     shock_tube_init(disc_x,
+							     state_l,
+							     state_r)),
+		     mesh.npoin(),
+		     state.begin(),
+		     prim2cons(gamma));
+
+    for(Index i = 0; i < mesh.npoin(); i++){
+      printf("[%d] %f\n",i,thr::get<0>(State(state_iter[i])));
+    }
+
+    // Real angle = Real(0.087266);
+    // Real angle = Real(0.0);
+    // thr::transform_n(state.begin(),
+    // 		     state.size(),
+    // 		     state.begin(),
+    // 		     rotate_field(angle));
   }
 
   /*-----------------------------------------------------------------*/
@@ -485,6 +531,7 @@ int main(int argc, char* argv[]){
 			 antidiffusion_iter,
 			 residual_op(gamma,
 				     wave_speed_iter,
+				     emf_z_iter,
 				     residual_iter));
 	
 	edge_iter += offset.faces_per_color[i];
@@ -495,22 +542,49 @@ int main(int argc, char* argv[]){
       edge_iter = edge.begin();
       interp_states_iter = interp_states.begin();
       antidiffusion_iter = antidiffusion.begin();      
-      
-      // apply boundary conditions
-      thr::for_each_n(make_device_counting_iterator(),
-		      mesh.nx,
-		      periodic_bcs(mesh.nx,
-				   mesh.ny,
-				   Index(1),
-				   wave_speed_iter,
-				   residual_iter));
 
+      //  for(Index i = 0; i < mesh.ncell(); i++){
+      // 	printf("[%d] %f\n",i,Real(emf_z_iter[i]));
+      // }
+
+      // apply boundary conditions
+      if (mesh.btype_x == Index(1)){
+	// periodic
+	thr::for_each_n(make_device_counting_iterator(),
+			mesh.nx,
+			periodic_bcs(mesh.nx,
+				     mesh.ny,
+				     Index(1),
+				     wave_speed_iter,
+				     emf_z_iter,				   
+				     residual_iter));
+      }
+      else{
+	// outflow
+	for(Index i = interior_ncolors; i < (offset.ncolors - Index(2)); i++){
+	  thr::for_each_n(bface_iter,
+	  		  offset.faces_per_color[i],
+	  		  outflow_bcs(mesh.iface_d,
+	  			      gamma,
+	  			      wave_speed_iter,
+	  			      bnode_iter,
+	  			      emf_z_iter,
+	  			      state_iter,
+	  			      residual_iter));
+	  
+	  bface_iter += offset.faces_per_color[i];
+	}
+	// reset iterators
+	bface_iter = bface.begin();
+
+      }
       thr::for_each_n(make_device_counting_iterator(),
       		      mesh.ny,
       		      periodic_bcs(mesh.nx,
       				   mesh.ny,
       				   mesh.nx,
 				   wave_speed_iter,
+				   emf_z_iter,
       				   residual_iter));
 
       /*-----------------------------------------------------------------*/
@@ -640,10 +714,10 @@ int main(int argc, char* argv[]){
 	    << std::endl;
   std::cout << " " << std::endl;
 
-  // for(Index i = 0; i < mesh.npoin(); i++){
-  //   print_states_host(i,State(state_iter[i]));
-  //   // print_states_host(i,get_x(InterpState(interp_states_iter[i])));
-  // }
+  for(Index i = 0; i < mesh.npoin(); i++){
+    print_states_host(i,State(state_iter[i]));
+    // print_states_host(i,get_x(InterpState(interp_states_iter[i])));
+  }
 
   // output.open("bin/output.dat");
   // output_states(output, mesh.ncell_x, mesh.ncell_y, state);
