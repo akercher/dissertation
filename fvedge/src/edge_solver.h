@@ -301,6 +301,9 @@ struct integrate_time : public thr::binary_function<Tuple,Real,State>
     by -= this->_dt*vol_inv*res_by;
     bz -= this->_dt*vol_inv*res_bz;
 
+    bx = Real(0.0);
+    by = Real(0.0);
+
     return State(d,
 		 Vector(mx,my,mz),
 		 en,
@@ -383,10 +386,12 @@ struct residual_op : public thr::binary_function<Edge,InterpState,State>
       /* rhll(this->_gamma,Real(0.0),area_vec,prim_state_i,prim_state_j,normal_wave_speed,flux); */
     }
     /* printf("\n"); */
-    /* printf("[%d][%d] %f %f\n",point_i,point_j, */
+    /* printf("[%d][%d] %f %f %f %f\n",point_i,point_j, */
     /* 	   thr::get<0>(prim_state_i),thr::get<0>(prim_state_j), */
-    /* 	   thr::get<2>(prim_state_i),thr::get<2>(prim_state_j)); */
-    /* printf("[%d][%d] %f %f %f %f %f\n",point_i,point_j,normal_wave_speed,thr::get<0>(flux), */
+    /*  	   /\* thr::get<2>(prim_state_i),thr::get<2>(prim_state_j), *\/ */
+    /* 	   area_vec_mag, */
+    /* 	   normal_wave_speed); */
+    /* printf("[%d][%d] %f %f %f %f\n",point_i,point_j,thr::get<0>(flux), */
     /* 	   get_x(thr::get<1>(flux)),get_y(thr::get<1>(flux)),thr::get<2>(flux)); */
     /* printf("[%d][%d] %f %f %f %f %f\n",point_i,point_j,normal_wave_speed,thr::get<0>(flux), */
     /* 	     get_x(thr::get<3>(flux)),get_y(thr::get<3>(flux)),thr::get<2>(flux)); */
@@ -688,7 +693,7 @@ struct periodic_bcs : public thr::unary_function<Index,void>
 };
 
 /*******************************************************************/
-/* Outflow boundary conditions                                     */
+/* Outflow and slip wall boundary conditions                       */
 /*-----------------------------------------------------------------*/
 /*******************************************************************/
 struct outflow_bcs : public thr::unary_function<BoundaryFace,void>
@@ -725,7 +730,7 @@ struct outflow_bcs : public thr::unary_function<BoundaryFace,void>
     /*---------------------------------------------------*/
     /* Apply boundary conditions                         */
     /*---------------------------------------------------*/
-    /* Outflow                                           */
+    /* Slip Wall or Super Sonic Outflow                  */
     /*---------------------------------------------------*/
 
     Index point_i,point_j;
@@ -765,7 +770,12 @@ struct outflow_bcs : public thr::unary_function<BoundaryFace,void>
     prim_state_i = cons2prim_func(this->_gamma,state_i);
     prim_state_j = cons2prim_func(this->_gamma,state_j);
 
-    printf("[%d][%d] d = %f\n",point_i,point_j,thr::get<0>(state_i));
+    /* printf("[%d][%d] di = %f dj = %f res.di = %f res.dj = %f anx = %f any = %f\n",point_i,point_j, */
+    /* 	   thr::get<0>(state_i), */
+    /* 	   thr::get<0>(state_j), */
+    /* 	   thr::get<0>(State(this->_residual_iter[Index(point_i)])), */
+    /* 	   thr::get<0>(State(this->_residual_iter[Index(point_j)])), */
+    /* 	   get_x(area_vec),get_y(area_vec)); */
 
     // node i
     if((fabs(get_x(thr::get<3>(State(state_i)))) + fabs(get_y(thr::get<3>(State(state_i))))) > Real(0.0)){
@@ -773,9 +783,8 @@ struct outflow_bcs : public thr::unary_function<BoundaryFace,void>
     }
     else{
       hllc_n(this->_gamma,Real(0.0),area_vec,prim_state_i,prim_state_i,normal_wave_speed,flux_i);
+      /* rhll(this->_gamma,Real(0.0),area_vec,prim_state_i,prim_state_i,normal_wave_speed,flux_i); */
     }
-
-    printf("[%d][%d] f.d = %f\n",point_i,point_j,thr::get<0>(flux_i));
 
     // update wave speeds
     Real wave_speed_i = Real(this->_wave_speed_iter[point_i]) + normal_wave_speed;
@@ -788,13 +797,20 @@ struct outflow_bcs : public thr::unary_function<BoundaryFace,void>
     }
     else{
       hllc_n(this->_gamma,Real(0.0),area_vec,prim_state_j,prim_state_j,normal_wave_speed,flux_j);
+      /* rhll(this->_gamma,Real(0.0),area_vec,prim_state_j,prim_state_j,normal_wave_speed,flux_j); */
     }
 
     Real wave_speed_j = Real(this->_wave_speed_iter[point_j]) + normal_wave_speed;
     this->_wave_speed_iter[point_j] = wave_speed_j;
 
-    Real face_emf_contribution;
-    Real emf_i, emf_j;
+    /* if(point_i == Index(4)){ */
+    /*   printf("[%d][%d] fi.d = %f fj.d = %f\n",point_i,point_j,thr::get<0>(flux_i),thr::get<0>(flux_j)); */
+    /* } */
+    /* if(point_j == Index(4)){ */
+    /*   printf("[%d][%d] fi.d = %f fj.d = %f\n",point_i,point_j,thr::get<0>(flux_i),thr::get<0>(flux_j)); */
+    /* } */
+    /* Real face_emf_contribution; */
+    /* Real emf_i, emf_j; */
 
     // Update residuals, add contributions to the two nodes (See Nishikawa AIAA2010-5093)
     if(this->_iedge_d > Index(0)){
@@ -845,6 +861,7 @@ struct outflow_bcs : public thr::unary_function<BoundaryFace,void>
 						   Vector(res_bx,res_by,res_bz));
     }
     else{
+
       res_d = thr::get<0>(State(this->_residual_iter[Index(point_i)]))
 	+ thr::get<0>(flux_i);
       res_mx = get_x(thr::get<1>(State(this->_residual_iter[Index(point_i)])))

@@ -396,19 +396,19 @@ struct edges_init_2d : public thr::unary_function<Index,Edge>
     Real bface_i, bface_j;
     Real area_1,area_2;
 
-    area_1 = Real(1.0);
-    area_2 = Real(0.0);
-    if(this->_iedge_d > Index(0)){
-      area_1 = third;
-      area_2 = Real(2.0)*third;
-    }
+    /* area_1 = Real(1.0); */
+    /* area_2 = Real(0.0); */
+    /* if(this->_iedge_d > Index(0)){ */
+
+    // area defined for triangles
+    area_1 = third;
+    area_2 = Real(2.0)*third;
+    /* } */
 
     bface_i = Real(0.0);
     bface_j = Real(0.0);
 
-    
-
-    if(this->_ncolors_per_dim < 3){
+     if(this->_ncolors_per_dim < 3){
 
       Index colors_per_dim = Index(2);
 
@@ -630,6 +630,12 @@ struct edges_init_2d : public thr::unary_function<Index,Edge>
     }
     }// 4 colors
 
+    // for quads
+    if(this->_iedge_d == Index(0)){
+      anx = enx;
+      any = eny;
+    }	  
+
     return Edge(Coordinate(anx,any),Coordinate(enx,eny),IndexPair(point_i,point_j),IndexPair(index_i,index_j));
 
   }
@@ -727,12 +733,12 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
     colors_per_pass = Index(1);
     if (this->_ncolors_per_dim > Index(2)) colors_per_pass = Index(2);
 
-    area_1 = half;
-    area_2 = half;
-    if(this->_iedge_d > Index(0)){
-      area_1 = third;
-      area_2 = Real(2.0)*third;
-    }
+    /* area_1 = Real(0.0);//half; */
+    /* area_2 = Real(1.0);//half; */
+    /* if(this->_iedge_d > Index(0)){ */
+    area_1 = third;
+    area_2 = Real(2.0)*third;
+    /* } */
 
     index_i = Index(-2);
     index_j = Index(-2);
@@ -1082,6 +1088,11 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
 
     /* printf("[%d][%d] bnode[%d] = %d bnode[%d] = %d\n",point_i,point_j,bi,thr::get<1>(BoundaryNode(this->_bnode_iter[bi])),bj,thr::get<1>(BoundaryNode(this->_bnode_iter[bj]))); */
 
+    // for quads
+    if(this->_iedge_d == Index(0)){
+      anx = enx;
+      any = eny;
+    }	  
 
     bface = BoundaryFace(Coordinate(snx,sny),IndexPair(bi,bj),
     			 IndexPair(periodic_point_i,periodic_point_j),
