@@ -158,7 +158,7 @@ int main(int argc, char* argv[]){
   RealArray bn_edge; // normal B at interface
   RealArray bn_edge_n; // normal B at interface at time n
 
-  if (ct > Index(0)){
+  // if (ct > Index(0)){
 
     emf_z.resize(mesh.ncell());
     thr::fill_n(emf_z.begin(),emf_z.size(),Real(0.0));
@@ -172,7 +172,7 @@ int main(int argc, char* argv[]){
     bn_edge_n.resize(mesh.nface());
     thr::fill_n(bn_edge_n.begin(),bn_edge_n.size(),Real(0.0));
     
-  }
+  // }
 
   RealIterator emf_z_iter(emf_z.begin());
   RealIterator emf_z_poin_iter(emf_z_poin.begin());
@@ -336,7 +336,7 @@ int main(int argc, char* argv[]){
   /*-----------------------------------------------------------------*/
   /* Initialize CT variables                                         */
   /*-----------------------------------------------------------------*/  
-  if(ct > Index(0)){
+  // if(ct > Index(0)){
     /* initialize emf */
 
     for(Index i=0; i < offset.ncolors; i++){
@@ -351,7 +351,7 @@ int main(int argc, char* argv[]){
     // reset iterator
     edge_iter = edge.begin();
     bn_edge_iter = bn_edge.begin();
-  }
+  // }
   // for(Index i = 0; i < mesh.nface(); i++){
   //   printf("interface_bn[%d] = %f\n",i,Real(interface_bn[i]));
   // }
@@ -629,9 +629,9 @@ int main(int argc, char* argv[]){
       edge_iter = edge.begin();
       antidiffusion_iter = antidiffusion.begin();      
 
-      for(Index i = 0; i < mesh.ncell(); i++){
-	printf("[%d] %f\n",i,Real(emf_z_iter[i]));
-      }      
+      // for(Index i = 0; i < mesh.ncell(); i++){
+      // 	printf("[%d] %f\n",i,Real(emf_z_iter[i]));
+      // }      
 
 
       /*-----------------------------------------------------------------*/
@@ -710,9 +710,9 @@ int main(int argc, char* argv[]){
       edge_iter = edge.begin();
       bn_edge_iter = bn_edge.begin();
       
-      for(Index i = 0; i < mesh.nface(); i++){
-	printf("[%d] %f\n",i,Real(bn_edge_iter[i]));
-      }
+      // for(Index i = 0; i < mesh.nface(); i++){
+      // 	printf("[%d] %f\n",i,Real(bn_edge_iter[i]));
+      // }
       // for(Index i = 0; i < mesh.nface(); i++){
       // 	print_states_host(i,State(residual_iter[i]));
       // 	// print_states_host(i,get_x(InterpState(interp_states_iter[i])));
@@ -782,10 +782,10 @@ int main(int argc, char* argv[]){
 	    << std::endl;
   std::cout << " " << std::endl;
 
-  for(Index i = 0; i < mesh.npoin(); i++){
-    print_states_host(i,State(state_iter[i]));
-    // print_states_host(i,get_x(InterpState(interp_states_iter[i])));
-  }
+  // for(Index i = 0; i < mesh.npoin(); i++){
+  //   print_states_host(i,State(state_iter[i]));
+  //   // print_states_host(i,get_x(InterpState(interp_states_iter[i])));
+  // }
 
   // output.open("bin/output.dat");
   // output_states(output, mesh.ncell_x, mesh.ncell_y, state);

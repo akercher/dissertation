@@ -12,7 +12,7 @@
 \chapter[Riemann problems and conservative systems]{Riemann problems and conservative systems}
 \label{chp:riemann}
 
-In this chapter we define a Riemann problem and show that the solution consists of one or more waves emanating from the initial discontinuity.  The structure, i.e., the different waves and their properties, of the solution is introduced via linear advection and is then more thoroughly developed by solving select Riemann problems for linear and nonlinear systems.  The first nonlinear system discussed is the one-dimensional Euler equations of hydrodynamics.  A method for obtaining the exact solution, as well as three methods of approximating the solution are given.  The classic shock tube problem of \citet{Sod:1978} is numerically approximated using routines implemented in \emph{Athena} MHD code \citep{Stone:2008,AthenaSite}.  The results are compared to the exact solution, obtained with a solver implemented for this dissertation.  The final system discussed in this chapter is ideal \gls{mhd}.  An exact nonlinear solver and an approximate solver for the equations of ideal MHD are described. 
+In this chapter we define a Riemann problem and show that the solution consists of one or more waves emanating from the initial discontinuity.  The structure, i.e., the different waves and their properties, of the solution is introduced via linear advection and is then more thoroughly developed by solving select Riemann problems for linear and nonlinear systems.  The first nonlinear system discussed is the one-dimensional Euler equations of hydrodynamics.  A method for obtaining the exact solution, as well as three methods of approximating the solution are given.  The classic shock tube problem of \citet{Sod:1978} is numerically approximated using routines implemented in \emph{Athena} MHD code \citep{Stone:2008,url:athena}.  The results are compared to the exact solution, obtained with a solver implemented for this dissertation.  The final system discussed in this chapter is ideal \gls{mhd}.  An exact nonlinear solver and an approximate solver for the equations of ideal MHD are described. 
 
 %-----------------------------------------------------------------
 % Formulation
@@ -465,7 +465,7 @@ for $j=l$ and $j=r$.
 \resizebox{0.5\linewidth}{!}{\tikzsetnextfilename{toro7_hllc_1}\input{fig/toro7_hllc_1.tex}} 
 %% \resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{toro7_roe_1}\input{fig/toro7_roe_1.tex}} 
 \end{tabular}
-\caption{HLLE (left), and HLLC (right) approximate solutions for a slow moving contact discontinuity.  Athena \citep{AthenaSite} was used to compute the approximate solutions.  The exact solution was computed with code written for this dissertation: \protect\gitrepo.}
+\caption{HLLE (left), and HLLC (right) approximate solutions for a slow moving contact discontinuity.  Athena \citep{url:athena} was used to compute the approximate solutions.  The exact solution was computed with code written for this dissertation: \protect\gitrepo.}
 \label{fig:euler_toro7}
 \figSpace
 \end{figure}
@@ -564,7 +564,7 @@ where $V^2 = v_n^2 + \mbf{v}_t^2$, and $\gamma_1 = \gamma - 1$.
 \resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_roe_1_2}\input{fig/sod_roe_1_2.tex}} &
 \resizebox{0.33\linewidth}{!}{\tikzsetnextfilename{sod_roe_1_3}\input{fig/sod_roe_1_3.tex}} 
 \end{tabular}
-\caption{HLLE (Top row), HLLC (middle row), and Roe (bottom row) approximate solution to Sod shock tube problem computed using first-order piece-wise constant interpolation.  Athena \citep{AthenaSite} was used to compute the approximate solutions.  The exact solution was computed with code written for this dissertation available at: \protect\gitrepo.}
+\caption{HLLE (Top row), HLLC (middle row), and Roe (bottom row) approximate solution to Sod shock tube problem computed using first-order piece-wise constant interpolation.  Athena \citep{url:athena} was used to compute the approximate solutions.  The exact solution was computed with code written for this dissertation available at: \protect\gitrepo.}
 \label{fig:euler_sod_1}
 \figSpace
 \end{figure}

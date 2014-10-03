@@ -382,8 +382,8 @@ struct residual_op : public thr::binary_function<Edge,InterpState,State>
       hlld_n(this->_gamma,Real(0.0),area_vec,state_i,state_j,normal_wave_speed,flux);
     }
     else{
-      hllc_n(this->_gamma,Real(0.0),area_vec,prim_state_i,prim_state_j,normal_wave_speed,flux);
-      /* rhll(this->_gamma,Real(0.0),area_vec,prim_state_i,prim_state_j,normal_wave_speed,flux); */
+      /* hllc_n(this->_gamma,Real(0.0),area_vec,prim_state_i,prim_state_j,normal_wave_speed,flux); */
+      rhll(this->_gamma,Real(0.0),area_vec,prim_state_i,prim_state_j,normal_wave_speed,flux);
     }
     /* printf("\n"); */
     /* printf("[%d][%d] %f %f %f %f\n",point_i,point_j, */

@@ -12,7 +12,7 @@
 \chapter[Parallel processing]{Parallel processing}
 \label{chp:gpu}
 
-Last Chapter completed the description of a new method for producing an approximate solution to Riemann problems of ideal MHD containing only regular waves without knowledge of the exact.  The final chapter of this dissertation describes the implementation of a multidimensional flow solver for HD and MHD capable of shared memory parallelism on both a CPU and GPU.  An overview of the multidimensional algorithms and grid structure is given.  Although the HD solver is relatively unchanged, CT \citep{Evans:1988} is incorporated into the MHD solver to ensure that $\divergebf{B} = 0$ throughout the simulation (assuming it was initially zero).  Important concepts for parallel programming on shared memory devices, e.g., avoiding memory contention, are described.   The results for multidimensional test problem of HD and MHD are solved in parallel on the CPU and GPU and the resulting times are compared.
+A description of a new method, known as CWM, which produces an approximate solution to Riemann problems of ideal MHD that contain only regular waves without knowledge of the exact was completed last chapter.  The final chapter of this dissertation describes the implementation of a multidimensional flow solver for HD and MHD capable of shared memory parallelism on both a CPU and GPU.  An overview of the multidimensional algorithms and grid structure is given.  Although the HD solver is relatively unchanged, CT \citep{Evans:1988} is incorporated into the MHD solver to ensure that $\divergebf{B} = 0$ throughout the simulation (assuming it was initially zero).  Important concepts for parallel programming on shared memory devices, e.g., avoiding memory contention, are described.  A performance comparison of parallel execution for three multidimensional test problems of HD and MHD is given.  We find a performance increase of  seven times for the GPU over the CPU.  
 
 %----------------------------------------------------------------------------------------
 %	2D Algorithms
@@ -20,7 +20,9 @@ Last Chapter completed the description of a new method for producing an approxim
 \section[Methods for ideal MHD in higher dimensions]{Methods for ideal MHD in higher dimensions}          
 \label{sec:2d_mhd}
 
-Care must be taken in multidimensional MHD simulations to ensure errors associated with \divergebf{B} do not be grow large enough to introduce numerical instabilities.  A number of different approaches have been devised to contain the growth of \divergebf{B}.  A brief description of a few of the more popular approaches is given below.  For a thorough review and a performance comparison of the schemes discussed below, see \citep{Toth:2000}.  \citet{Powell:1999} derived the following non-conservative set of form of \eqref{eqn:mhd1} - \eqref{eqn:mhd4} where source terms proportional to \divergebf{B} are added to the right-hand side
+Care must be taken in multidimensional MHD simulations to ensure errors associated with \divergebf{B} do not be grow large enough to introduce numerical instabilities.  A number of different approaches have been devised to contain the growth of \divergebf{B}.  A brief description of a few of the more popular approaches is given below.  For a thorough review and a performance comparison of the schemes discussed below, see \citep{Toth:2000}.  
+
+\citet{Powell:1999} derived the following non-conservative set of form of \eqref{eqn:mhd1} - \eqref{eqn:mhd4} where source terms proportional to \divergebf{B} are added to the right-hand side
 \begin{gather}
 \label{eqn:8wave1} \pd{\rho}{t} + \diverge{\left(\rho\mbf{v}\right)} = 0 \text{ ,} \\
 \label{eqn:8wave2} \pd{(\rho \mbf{v})}{t} + \diverge{\left[ \outerproduct{\rho\mbf{v}}{\mbf{v}} + \left( p_g + \frac{B^2}{2}\right)\underline{\mbf{I}} - \outerproductbf{B}{B}\right]}  = -\mathbf{B}(\divergebf{B}) \text{ ,}\\
@@ -95,7 +97,7 @@ where $\xi^r_{z,i,j}$ is a reference emf computed at the cell center, see Figure
 
 The steps of the two-dimensional algorithm are given as follows:
 \begin{enumerate}
-\item Calculate the fluxes at each interface replacing the normal component of the magnetic field at cell center equal with the value at the interface.
+\item Calculate the fluxes at each interface replacing the normal component of the magnetic field at cell center with the value at the interface.
 \item Calculate the emfs at the cell corners using the algorithm described above.
 \item Calculate the reference field $\xi^r_{i,j}$ at the cell centers.
 \item Update the hydrodynamical conserved variables and $B_z$ at the cell centers.
@@ -132,7 +134,7 @@ It is essential that there is no overlap of memory access of the different threa
 \figSpace
 \end{figure}
 
-A possible coloring, and the one implemented for this dissertation, of the interior faces for ell-centered FV schemes is shown in Figure~\ref{fig:face_color_1}.  For each loop, the flux at the face is calculated and the residual at the cells is built by adding the contribution of each face.  Coloring ensures two faces will not attempt to update the residual of a cell simultaneously.
+A possible coloring, and the one implemented for this dissertation, of the interior faces for cell-centered FV schemes is shown in Figure~\ref{fig:face_color_1}.  For each loop, the flux at the face is calculated and the residual at the cells is built by adding the contribution of each face.  Coloring ensures two faces will not attempt to update the residual of a cell simultaneously.
 
 %-----------------------------------------------------------------
 % Face coloring 2
@@ -150,42 +152,12 @@ A possible coloring, and the one implemented for this dissertation, of the inter
 Coloring is more complicated when CT is used in conjunction with a cell-centered FV scheme.  In this case, each loop over the faces consists of a contribution to the residual at the cell center and a contribution to the emf at the cell corner.  Not only accessing the same cell, but also the same point must be avoided.  The coloring scheme shown in Figure~\ref{fig:face_color_1} only avoids one these potential pitfalls, because the faces/edges of each group can access the same point simultaneously.  An alternative coloring scheme is shown in Figure~\ref{fig:face_color_2} where eight colors are used instead of four.  In this case, the faces and the edges are colored,  this is equivalent to doubling the amount of colors for the faces since edges and faces are the same in two-dimensions.
 
 %----------------------------------------------------------------------------------------
-%	GPU and CPU Results
-%----------------------------------------------------------------------------------------
-\section[GPU and CPU results]{GPU and CPU results}
-\label{sec:gpu_results}
-
-The timing was done on a Dell Precision 7500 workstation with a (Dual CPU) Intel Xeon E5645 @ 2.40 Ghz.  The graphics card is a GeFroce GTX TITAN with a memory bandwidth of 288.4 GB/sec and 2688 CUDA cores.  The Orszag-Tang vortex \citep{Orszag:1979} was chosen as the test problem for the timing results.  This problem has been extensively studied and used as a comparison.  Each CPU has six physical cores and two logical cores per physical, making 24 cores available with hyper-threading enabled.  Assuming near perfect scaling, running on the GPU is approximately three and a half times faster than running in parallel on the CPUs.
-
-%-----------------------------------------------------------------
-% Timing Results Orszag-Tang
-%-----------------------------------------------------------------
-\begin{table}[htbp]\figSpace
-\caption{Performance comparison of GPU and CPU Orszag-Tang results.}
-\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}} cccc}
-\\ 
-\hline 
-\hline 
-grid size & cells/second (GPU) & cells/second (CPU) & speed ratio \\
-\hline
-$64\times64$ & $4.1894\times10^6$ & $7.3955\times10^5$ & 5 \\
-$128\times128$ & $1.6540\times10^7$ & $7.5060\times10^5$ & 22 \\
-$256\times256$ & $4.4497\times10^7$ & $7.3155\times10^5$ & 60 \\
-$512\times512$ & $6.3286\times10^7$ & $7.9437\times10^5$ & 79 \\
-$1024\times1024$ & $7.2134\times10^7$ & $8.3354\times10^5$ & 86 \\
-\hline
-\end{tabular*}
-\figSpace
-\end{table}
-
-
-%----------------------------------------------------------------------------------------
 %	GPU efficient algorithms
 %----------------------------------------------------------------------------------------
 \section[Efficient algorithms]{Efficient algorithms}
 \label{sec:efficient_algo}
 
-This section discusses increasing parallel performance with efficient data storage and utilization computational power.  The two types of data storage are AoS and SoA.  With limited memory available on the GPU, it is important to limit data storage.  This is achieved through function composition, or operator fusion.
+This section discusses increasing parallel performance with efficient data storage and utilization computational power.  Two types of data storage are AoS and SoA.  With limited memory available on the GPU, it is important to limit data storage.  This is achieved through function composition, or operator fusion.
 
 The goal of operator fusion is to reduce storage of temporary data for similar operations.  As an example, consider the two transformations, $f(x)$ and $g(f(x))$ \citep{Thrust}.
 \begin{lstlisting}
@@ -368,4 +340,102 @@ thrust::transform_n(thrust::make_zip_iterator(make_tuple(d.begin(),
                     convert_primitive_to_conservative(gamma));
 \end{lstlisting} 
 
- The results indicate that the cost to performance ratio for a  GPUs such as NVIDIAs GTX Titan, which retails for about \$1000.00, makes them ideal choices for shared memory processors, if the limited memory is managed properly.  The relatively large memory capacity of 6 GB on the GTX Titan is around $6.5\%$ of the 92 GB available on the Xeon E5.  For the equivalent memory of one, Xeon E5, fifteen GPUs are required, costing nearly three times that of one Xeon E5.  In order for GPUs to be worth the investment, computations on the fly must be maximized and data storage minimized.
+The algorithms and techniques discussed above have been implemented in an multidimensional hydrodynamic and ideal magnetohydrodynamic solver capable of shared memory parallelism.  In the following section, the accuracy and performance of the code is demonstrated on some well known test problems, namely Kelvin-Helmholtz instability, spherical blast waves, and Orzag-Tang vortex.  
+
+%----------------------------------------------------------------------------------------
+%	Performance Results
+%----------------------------------------------------------------------------------------
+\section[Performance results]{Performance results}
+\label{sec:gpu_results}
+
+In Section~\ref{sec:shared_memory} performance enhancing techniques such as operator fusion and SoA data storage were described.  The algorithms described in Section~\ref{sec:2d_mhd} were implemented in an an edge-based finite-volume flow solver.  The performance results on a Dell Precision 7500 workstation with a (Dual CPU) Intel Xeon E5645 @ 2.40 Ghz and a GeFroce GTX TITAN GPU with a memory bandwidth of 288.4 GB/sec and 2688 CUDA cores are given for three test cases, the Kelvin-Helmholtz instability, spherical blast waves, and Orzag-Tang vortex.  In all three tests, we use the initial conditions of \citep{url:athena} for comparison purposes.
+
+%----------------------------------------------------------------
+% KH-instability
+%-----------------------------------------------------------------
+\begin{figure}[htbp]\figSpace
+\begin{center} 
+\begin{tabular}{c}
+%% \includegraphics[width=0.25\textheight]{fig/kh0.jpg} \\ 
+\includegraphics[width=0.4\textheight]{fig/kh1.jpg} \\ 
+\includegraphics[width=0.4\textheight]{fig/kh5.jpg} 
+\end{tabular}
+\caption{The Kelvin-Helmoltz instability, $\rho$ at times: $t=1$ (top) and $t=5$ (bottom).  Simulation performed on a $400 \times 400$ grid of triangular elements with code written for this dissertation available at: \protect\gitrepo.}
+\end{center} 
+\label{fig:kh_instability}
+\figSpace
+\end{figure}
+
+The Kelvin-Helmholtz instability \citep{hydro_stability} considers a slip surface, i.e., a discontinuity between oppositely directed flows.  The version of the test considered here is identical to the version given by \citet{url:athena}.  The simulation is performed on a square domain, $[0,1] \times [0,1]$, with periodic boundaries everywhere.  The flow speed is $0.5$; it is in the $-x$ direction for $ y < 0.25$ and $y > 0.75$, where $\rho = 1$, and in the $x$ direction for $0.25 \le y \le 0.75$, where $\rho = 2$.  The gas pressure is initially $2.5$ everywhere and the ratio of specific heats is $\gamma = 1.4$.  The instability is produced by adding random perturbations with a peak amplitude of $0.01$ to both the $x$ and $y$ velocities. 
+
+The density at times $t=1$ and $t=5$ is shown in the top and bottom panels of Figure~\ref{fig:kh_instability} respectively.  The initial conditions are shown in Figure~\ref{fig:kh_instability_ics} of Appendix~~\ref{app:kh_instability_ics}.  The boundary between the two fluids is well resolved at later times, this indicates numerical diffusion is not excessive.  If excessive numerical diffusion were present, the instability would be suppressed \citep{url:athena}. 
+
+%----------------------------------------------------------------
+% Spherical Blast waves
+%-----------------------------------------------------------------
+\begin{figure}[htbp]\figSpace 
+\begin{tabular}{cc}
+\includegraphics[width=0.5\textwidth]{fig/bw0020.jpg} & 
+\includegraphics[width=0.5\textwidth]{fig/bw0175.jpg} 
+\end{tabular}
+\caption{Spherical blast waves at times: $t=0.2$ (left) and $t=1.5$ (right).  Simulation performed on a $400 \times 600$ grid of triangular elements with code written for this dissertation available at: \protect\gitrepo.}
+\label{fig:blast_waves}
+\figSpace
+\end{figure}
+
+For second case, a spherical blast wave is simulated on a rectangular domain with $L_y = 3L_x/2$ and periodic boundary conditions \citep{Zachary:1994,Balsara:1999,Londrillo:2000}.  The problem is initialized with a high pressure region corresponding to $r < 0.1$ where the gas pressure is two orders of magnitude greater than the background pressure.  A uniform density of $\rho = 1$ is used throughout the domain; the background gas pressure is $0.1$; the ratio of specific heats is $\gamma = 5/3$.
+
+The density at times $t = 0.2$ and $t = 1.5$ is shown in the left and right panels of Figure~\ref{fig:blast_waves} respectively.  The blast wave is initially spherical as there are no effects due to grid alignment.  As the blast reaches the boundaries, complex interactions between linear and nonlinear waves are produced and solution remains symmetric across the $x$ and $y$ axis.  
+
+The Orszag-Tang vortex \citep{Orszag:1979} has been extensively studied and used for comparisons to previous results.  The simulation is performed on a square domain, $[0,1] \times [0,1]$, with periodic boundaries everywhere.  The density, $\rho = 25/(36\pi)$ and pressure, $5/(12\pi)$ are constant throughout the domain.  The initial velocities are $v_x = -\sin{(2\pi y)}$ and $v_y = \sin{(2\pi x)}$; the initial magnetic field is defined in terms of the magnetic vector potential, $A_z = B_0\left(\cos{(4\pi x)}/(4\pi) + \cos{(2\pi x)}/(2\pi)\right)$, where $B_0 = 1/\sqrt{4\pi}$; the ratio  of specific heats is $\gamma = 5/3$.
+
+
+%-----------------------------------------------------------------
+% Performance results 
+%-----------------------------------------------------------------
+\begin{table}[htbp]\figSpace
+\caption{Performance comparison of GPU and CPU.}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}} cccc}
+\\ 
+\hline 
+\hline 
+grid size & KH-Instability & Blast Waves & Orszag-Tang \\
+\hline
+$64\times64$ & 5 & 5 & 5 \\
+$128\times128$ & 19 & 19 & 22 \\
+$256\times256$ & 58 & 58 & 60 \\
+$512\times512$ & 75 & 75 & 79 \\
+$1024\times1024$ & 81 & 81 & 86 \\
+\hline
+\end{tabular*}
+\label{tab:performance}
+\figSpace
+\end{table}
+
+Performance comparisons between the GPU and CPU for the three test cases described above are listed in Table~\ref{tab:performance}.  The CPU has six physical cores and two logical cores per physical, making 12 cores available with hyper-threading enabled.  Assuming near perfect scaling, running on the GPU is approximately seven times faster than running in parallel on the CPU.  A larger increase in performance of the GPU over the CPU is observed in the MHD test as compared to the HD tests.  The MHD equations are more complex than the HD equations and more calculations are required per time step.  The performance increase demonstrates the superior ability of the GPU to process many operations simultaneously.  
+
+ The results indicate that the cost to performance ratio for a  GPUs such as NVIDIAs GTX Titan, which retails for about \$1000.00, is such that they are an ideal choice for shared memory processors, if the limited memory is managed properly.  The relatively large memory capacity of 6 GB on the GTX Titan is around $6.5\%$ of the 92 GB available on the Xeon E5.  For the equivalent memory of one, Xeon E5, fifteen GPUs are required, costing nearly three times that of one Xeon E5.  In order for GPUs to be worth the investment, computations on the fly must be maximized and data storage minimized.  
+
+
+%-----------------------------------------------------------------
+% Timing Results Orszag-Tang
+%-----------------------------------------------------------------
+%% \begin{table}[htbp]\figSpace
+%% \caption{Performance comparison of GPU and CPU Orszag-Tang results.}
+%% \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}} cccc}
+%% \\ 
+%% \hline 
+%% \hline 
+%% grid size & cells/second (GPU) & cells/second (CPU) & speed ratio \\
+%% \hline
+%% $64\times64$ & $4.1894\times10^6$ & $7.3955\times10^5$ & 5 \\
+%% $128\times128$ & $1.6540\times10^7$ & $7.5060\times10^5$ & 22 \\
+%% $256\times256$ & $4.4497\times10^7$ & $7.3155\times10^5$ & 60 \\
+%% $512\times512$ & $6.3286\times10^7$ & $7.9437\times10^5$ & 79 \\
+%% $1024\times1024$ & $7.2134\times10^7$ & $8.3354\times10^5$ & 86 \\
+%% \hline
+%% \end{tabular*}
+%% \figSpace
+%% \end{table}
+
+
