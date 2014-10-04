@@ -294,8 +294,10 @@ struct integrate_time : public thr::binary_function<Tuple,Real,State>
     by -= this->_dt*vol_inv*res_by;
     bz -= this->_dt*vol_inv*res_bz;
 
+#ifdef MHD
     bx = Real(0.0);
     by = Real(0.0);
+#endif
 
     return State(d,
 		 Vector(mx,my,mz),
@@ -367,8 +369,7 @@ struct residual_op : public thr::binary_function<Edge,InterpState,State>
     /* Compute flux using HLLD approximations            */
     /*---------------------------------------------------*/
 
-    /* hllc_n(this->_gamma,Real(0.0),area_vec,prim_state_i,prim_state_j,normal_wave_speed,flux); */
-    rhll(this->_gamma,Real(0.0),area_vec,prim_state_i,prim_state_j,normal_wave_speed,flux);
+    flux_hydro(this->_gamma,Real(0.0),area_vec,prim_state_i,prim_state_j,normal_wave_speed,flux);
 
     /* printf("\n"); */
     /* printf("[%d][%d] %f %f %f %f\n",point_i,point_j, */
@@ -516,26 +517,17 @@ struct periodic_bcs : public thr::unary_function<Index,void>
   Index _ny;
   Index _offset;
   RealIterator _wave_speed_iter;
-/* #ifdef MHD */
-/*   RealIterator _emf_z_iter; */
-/* #endif */
   StateIterator _residual_iter;
 
  periodic_bcs(Index nx,
 	      Index ny,
 	      Index offset,
 	      RealIterator wave_speed_iter,
-/* #ifdef MHD */
-/* 	      RealIterator emf_z_iter, */
-/* #endif */
 	      StateIterator residual_iter)
    : _nx(nx)
     ,_ny(ny)
     ,_offset(offset)
     ,_wave_speed_iter(wave_speed_iter)
-/* #ifdef MHD */
-/*     ,_emf_z_iter(emf_z_iter) */
-/* #endif */
     ,_residual_iter(residual_iter) {}
 
   __host__ __device__
@@ -594,6 +586,10 @@ struct periodic_bcs : public thr::unary_function<Index,void>
     res_bz = thr::get<2>(thr::get<3>(State(this->_residual_iter[Index(index_i)])))
       + thr::get<2>(thr::get<3>(State(this->_residual_iter[Index(index_j)])));
     
+    /* printf("[%d][%d] res.di = %f, res.dj = %f res_d = %f\n",index_i,index_j, */
+    /* 	   thr::get<0>(State(this->_residual_iter[Index(index_i)])), */
+    /* 	   thr::get<0>(State(this->_residual_iter[Index(index_j)])), */
+    /* 	   res_d); */
     
     this->_residual_iter[Index(index_i)] = State(Real(res_d),
 						 Vector(res_mx,res_my,res_mz),
@@ -604,6 +600,11 @@ struct periodic_bcs : public thr::unary_function<Index,void>
 						 Vector(res_mx,res_my,res_mz),
 						 Real(res_en),
 						 Vector(res_bx,res_by,res_bz));
+
+    /* printf("[%d][%d] res.di = %f, res.dj = %f res_d = %f\n",index_i,index_j, */
+    /* 	   thr::get<0>(State(this->_residual_iter[Index(index_i)])), */
+    /* 	   thr::get<0>(State(this->_residual_iter[Index(index_j)])), */
+    /* 	   res_d); */
 
 /* #ifdef MHD     */
 /*     if (this->_offset < Index(2)){// bottom-top boundaries */
@@ -706,39 +707,21 @@ struct outflow_bcs : public thr::unary_function<BoundaryFace,void>
     State state_i, state_j;
     State prim_state_i, prim_state_j;
 
-
     state_i = State(this->_state_iter[point_i]);
     state_j = State(this->_state_iter[point_j]);
 
     prim_state_i = cons2prim_func(this->_gamma,state_i);
     prim_state_j = cons2prim_func(this->_gamma,state_j);
 
-    /* printf("[%d][%d] di = %f dj = %f res.di = %f res.dj = %f anx = %f any = %f\n",point_i,point_j, */
-    /* 	   thr::get<0>(state_i), */
-    /* 	   thr::get<0>(state_j), */
-    /* 	   thr::get<0>(State(this->_residual_iter[Index(point_i)])), */
-    /* 	   thr::get<0>(State(this->_residual_iter[Index(point_j)])), */
-    /* 	   get_x(area_vec),get_y(area_vec)); */
-
     // node i
-#ifdef MHD
-      hlld_n(this->_gamma,Real(0.0),area_vec,state_i,state_i,normal_wave_speed,flux_i);
-#else
-      hllc_n(this->_gamma,Real(0.0),area_vec,prim_state_i,prim_state_i,normal_wave_speed,flux_i);
-      /* rhll(this->_gamma,Real(0.0),area_vec,prim_state_i,prim_state_i,normal_wave_speed,flux_i); */
-#endif
+    flux_hydro(this->_gamma,Real(0.0),area_vec,prim_state_i,prim_state_i,normal_wave_speed,flux_i);
 
     // update wave speeds
     Real wave_speed_i = Real(this->_wave_speed_iter[point_i]) + normal_wave_speed;
     this->_wave_speed_iter[point_i] = wave_speed_i;
 
     // node j
-#ifdef MHD
-      hlld_n(this->_gamma,Real(0.0),area_vec,state_j,state_j,normal_wave_speed,flux_j);
-#else
-      hllc_n(this->_gamma,Real(0.0),area_vec,prim_state_j,prim_state_j,normal_wave_speed,flux_j);
-      /* rhll(this->_gamma,Real(0.0),area_vec,prim_state_j,prim_state_j,normal_wave_speed,flux_j); */
-#endif
+    flux_hydro(this->_gamma,Real(0.0),area_vec,prim_state_j,prim_state_j,normal_wave_speed,flux_j);
 
     Real wave_speed_j = Real(this->_wave_speed_iter[point_j]) + normal_wave_speed;
     this->_wave_speed_iter[point_j] = wave_speed_j;
@@ -806,9 +789,9 @@ struct outflow_bcs : public thr::unary_function<BoundaryFace,void>
 	+ thr::get<0>(flux_i);
       res_mx = get_x(thr::get<1>(State(this->_residual_iter[Index(point_i)])))
 	+ get_x(thr::get<1>(flux_i));
-      res_mz = get_y(thr::get<1>(State(this->_residual_iter[Index(point_i)])))
+      res_my = get_y(thr::get<1>(State(this->_residual_iter[Index(point_i)])))
 	+ get_y(thr::get<1>(flux_i));
-      res_my = get_z(thr::get<1>(State(this->_residual_iter[Index(point_i)])))
+      res_mz = get_z(thr::get<1>(State(this->_residual_iter[Index(point_i)])))
 	+ get_z(thr::get<1>(flux_i));
       res_en = thr::get<2>(State(this->_residual_iter[Index(point_i)]))
 	+ thr::get<2>(flux_i);
@@ -1383,6 +1366,170 @@ struct kh_instability_init : public thr::unary_function<Index,State>
 		   pg,
 		   Vector(Real(0.0),Real(0.0),Real(0.0)));
     }
+
+  }
+};
+
+/*****************************************************/
+/* Linear wave                                       */
+/*---------------------------------------------------*/
+/*****************************************************/
+struct linear_wave_init : public thr::unary_function<Index,State>
+{
+
+  Index _ncell_x;
+  Real _dx;
+  Real _dy;
+  Real _Lx;
+  Real _Ly;
+  Real _gamma;
+  StateIterator _state_iter;
+
+ linear_wave_init(Index ncell_x,
+		  Real dx,
+		  Real dy,
+		  Real Lx,
+		  Real Ly,
+		  Real gamma)
+
+   :_ncell_x(ncell_x)
+    ,_dx(dx)
+    ,_dy(dy)
+    ,_Lx(Lx)
+    ,_Ly(Ly) 
+    ,_gamma(gamma){}
+
+  __host__ __device__
+    State operator()(const Index& index) const
+  {
+
+    Real amp = Real(0.1);
+
+    Index i = index % this->_ncell_x;
+    Index j = (index - i)/this->_ncell_x;
+
+    Real x = (Real(i))*this->_dx;
+    Real y = (Real(j))*this->_dy;
+
+    Real angle = Real(atan2(this->_Ly,this->_Lx));
+    Real cosa = Real(cos(angle));
+    Real sina = Real(sin(angle));
+    Real wavelength = this->_Lx*cosa;
+    /* printf("[%d] %f %f\n",index,x,y); */
+
+    if(sina > cosa) wavelength = this->_Ly*sina;
+
+    Real kpar = Real(2.0)*M_PI/wavelength;
+
+    Real d = Real(1.0);
+    Real pg = Real(1.0)/this->_gamma;
+    Real vx  = 1.0;
+    Real vy  = 0.0;
+    Real vz  = 0.0;
+    Real bx  = 0.0;
+    Real by  = 0.0;
+    Real bz  = 0.0;
+
+    Real cs = std::sqrt(this->_gamma*pg/d);
+
+    Real xpar = kpar*(x*cosa + y*sina);
+    Real vpar = Real(0.0);
+
+    d += amp*Real(sin(xpar))*(vx + cs);
+    vx += amp*Real(sin(xpar))*(vx);
+    vy += amp*Real(sin(xpar))*(vx);
+
+    Real vy  = vpar*sina + vperp*cosa;
+    Real vz = amp*Real(cos(xpar));
+
+    Real bpar = Real(1.0);
+    Real bperp = vperp;
+    Real bx  = bpar*cosa - bperp*sina;
+    Real by  = bpar*sina + bperp*cosa;
+    Real bz = vz;
+
+    return State(d,
+		 Vector(vx,vy,vz),
+		 pg,
+		 Vector(bx,by,bz));
+
+  }
+};
+
+/*****************************************************/
+/* Circularly polarized Alfven wave                  */
+/*---------------------------------------------------*/
+/*****************************************************/
+struct cpaw_init : public thr::unary_function<Index,State>
+{
+
+  Index _ncell_x;
+  Real _dx;
+  Real _dy;
+  Real _Lx;
+  Real _Ly;
+  Real _gamma;
+  StateIterator _state_iter;
+
+ cpaw_init(Index ncell_x,
+	   Real dx,
+	   Real dy,
+	   Real Lx,
+	   Real Ly,
+	   Real gamma)
+
+   :_ncell_x(ncell_x)
+    ,_dx(dx)
+    ,_dy(dy)
+    ,_Lx(Lx)
+    ,_Ly(Ly) 
+    ,_gamma(gamma){}
+
+  __host__ __device__
+    State operator()(const Index& index) const
+  {
+
+    Real amp = Real(0.1);
+
+    Index i = index % this->_ncell_x;
+    Index j = (index - i)/this->_ncell_x;
+
+    Real x = (Real(i))*this->_dx;
+    Real y = (Real(j))*this->_dy;
+
+    Real angle = Real(atan2(this->_Ly,this->_Lx));
+    Real cosa = Real(cos(angle));
+    Real sina = Real(sin(angle));
+    Real wavelength = this->_Lx*cosa;
+    /* printf("[%d] %f %f\n",index,x,y); */
+
+    if(sina > cosa) wavelength = this->_Ly*sina;
+
+    Real kpar = Real(2.0)*M_PI/wavelength;
+
+    Real d = Real(1.0);
+    Real pg = Real(0.1);
+
+    Real cs = std::sqrt(this->_gamma*pg/d);
+
+    Real xpar = kpar*(x*cosa + y*sina);
+    Real vpar = Real(0.0);
+    Real vperp = amp*Real(sin(xpar));
+    
+    Real vx  = vpar*cosa - vperp*sina;
+    Real vy  = vpar*sina + vperp*cosa;
+    Real vz = amp*Real(cos(xpar));
+
+    Real bpar = Real(1.0);
+    Real bperp = vperp;
+    Real bx  = bpar*cosa - bperp*sina;
+    Real by  = bpar*sina + bperp*cosa;
+    Real bz = vz;
+
+    return State(d,
+		 Vector(vx,vy,vz),
+		 pg,
+		 Vector(bx,by,bz));
 
   }
 };

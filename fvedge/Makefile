@@ -14,14 +14,17 @@ SRC2 = src/main.cpp
 #-------------------------------------
 # Target
 #-------------------------------------
-EXE1 = gpu.run
-EXE2 = omp.run
+EXE1 = gpu_hd.run
+EXE2 = omp_hd.run
+EXE3 = gpu_mhd.run
+EXE4 = omp_mhd.run
 TST = test.run
 
 #-------------------------------------
 # Definitions
 #-------------------------------------
 REAL = float
+GAS = MHD
 THR = THRUST_DEVICE_BACKEND_OMP
 
 #----------------------------------------
@@ -59,10 +62,10 @@ $(EXE2): $(SRC2)
 	$(CMP2) $? -o $@ -O3 -fopenmp -DReal=$(REAL) -DTHRUST_DEVICE_SYSTEM=$(THR) -I$(LOC)
 
 $(EXE3): $(SRC1)
-	$(CMP1) $? -o $@ -O3 -DMHD -DReal=$(REAL) -I$(LOC)
+	$(CMP1) $? -o $@ -O3 -D$(GAS) -DReal=$(REAL) -I$(LOC)
 
 $(EXE4): $(SRC2)
-	$(CMP2) $? -o $@ -O3 -fopenmp -DMHD -DReal=$(REAL) -DTHRUST_DEVICE_SYSTEM=$(THR) -I$(LOC)
+	$(CMP2) $? -o $@ -O3 -fopenmp -D$(GAS) -DReal=$(REAL) -DTHRUST_DEVICE_SYSTEM=$(THR) -I$(LOC)
 
 $(TST): src/test.cpp
 	$(CMP2) $? -o $@ -O3 -fopenmp -DReal=$(REAL) -DTHRUST_DEVICE_SYSTEM=$(THR) -l$(LIB) -I$(LOC)
