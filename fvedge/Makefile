@@ -35,9 +35,14 @@ LIB = gomp
 #----------------------------------------
 # Compile and all targets 
 #----------------------------------------
-gpu : $(EXE1)
+gpu_hd : $(EXE1)
 	./$? bin/config.prob
-omp : $(EXE2)
+omp_hd : $(EXE2)
+	./$? bin/config.prob
+
+gpu_mhd : $(EXE3)
+	./$? bin/config.prob
+omp_mhd : $(EXE4)
 	./$? bin/config.prob
 
 test : $(TST)
@@ -52,6 +57,12 @@ $(EXE1): $(SRC1)
 
 $(EXE2): $(SRC2)
 	$(CMP2) $? -o $@ -O3 -fopenmp -DReal=$(REAL) -DTHRUST_DEVICE_SYSTEM=$(THR) -I$(LOC)
+
+$(EXE3): $(SRC1)
+	$(CMP1) $? -o $@ -O3 -DMHD -DReal=$(REAL) -I$(LOC)
+
+$(EXE4): $(SRC2)
+	$(CMP2) $? -o $@ -O3 -fopenmp -DMHD -DReal=$(REAL) -DTHRUST_DEVICE_SYSTEM=$(THR) -I$(LOC)
 
 $(TST): src/test.cpp
 	$(CMP2) $? -o $@ -O3 -fopenmp -DReal=$(REAL) -DTHRUST_DEVICE_SYSTEM=$(THR) -l$(LIB) -I$(LOC)

@@ -179,12 +179,6 @@ class Field
   void init();
   Real dt(Real area, Real vol);
 
-  /* functions */
-/* State lr_states(State wl, State wr); */
-/* State flux(State wl, State wr); */
-  
-  /* void print_states(); */
-
 };
 
 Field::Field() {};
@@ -265,7 +259,6 @@ struct integrate_time : public thr::binary_function<Tuple,Real,State>
    : _dt(dt) {}
 
   __host__ __device__
-    /* State operator()(const State& state,const State& residual) const */
     State operator()(const Tuple& t,const Real& dual_vol) const
   {
     
@@ -321,16 +314,13 @@ struct residual_op : public thr::binary_function<Edge,InterpState,State>
 
   Real _gamma;
   RealIterator _wave_speed_iter;
-  RealIterator _emf_z_iter;
   StateIterator _residual_iter;
 
  residual_op(Real gamma,
 	     RealIterator wave_speed_iter,
-	     RealIterator emf_z_iter,
 	     StateIterator residual_iter)
    : _gamma(gamma)
     ,_wave_speed_iter(wave_speed_iter)
-    ,_emf_z_iter(emf_z_iter)
     ,_residual_iter(residual_iter) {}
 
   __host__ __device__
@@ -377,14 +367,9 @@ struct residual_op : public thr::binary_function<Edge,InterpState,State>
     /* Compute flux using HLLD approximations            */
     /*---------------------------------------------------*/
 
-    /* printf("[%d][%d]\n",point_i,point_j); */
-    if((fabs(get_x(thr::get<3>(State(state_i)))) + fabs(get_y(thr::get<3>(State(state_i))))) > Real(0.0)){
-      hlld_n(this->_gamma,Real(0.0),area_vec,state_i,state_j,normal_wave_speed,flux);
-    }
-    else{
-      /* hllc_n(this->_gamma,Real(0.0),area_vec,prim_state_i,prim_state_j,normal_wave_speed,flux); */
-      rhll(this->_gamma,Real(0.0),area_vec,prim_state_i,prim_state_j,normal_wave_speed,flux);
-    }
+    /* hllc_n(this->_gamma,Real(0.0),area_vec,prim_state_i,prim_state_j,normal_wave_speed,flux); */
+    rhll(this->_gamma,Real(0.0),area_vec,prim_state_i,prim_state_j,normal_wave_speed,flux);
+
     /* printf("\n"); */
     /* printf("[%d][%d] %f %f %f %f\n",point_i,point_j, */
     /* 	   thr::get<0>(prim_state_i),thr::get<0>(prim_state_j), */
@@ -395,7 +380,6 @@ struct residual_op : public thr::binary_function<Edge,InterpState,State>
     /* 	   get_x(thr::get<1>(flux)),get_y(thr::get<1>(flux)),thr::get<2>(flux)); */
     /* printf("[%d][%d] %f %f %f %f %f\n",point_i,point_j,normal_wave_speed,thr::get<0>(flux), */
     /* 	     get_x(thr::get<3>(flux)),get_y(thr::get<3>(flux)),thr::get<2>(flux)); */
-
 
     // update wave speeds
     Real wave_speed_i = Real(this->_wave_speed_iter[point_i]) + normal_wave_speed;
@@ -452,53 +436,6 @@ struct residual_op : public thr::binary_function<Edge,InterpState,State>
 						 Real(res_en),
 						 Vector(res_bx,res_by,res_bz));
     
-    /*----------------------------------*/
-    /* emf contribution                 */
-    /* flux_bx = emf_z                  */
-    /* flux_by = -emf_z                 */
-    /*    -----------------------       */
-    /*    |          |          |       */
-    /*    | flux_bx  |          |       */
-    /*    | = emf_z  |->flux_by |       */
-    /*    |   /|\    |  = -emf_z|       */
-    /*    |    |     |          |       */
-    /*    -----------------------       */
-    /*    |          |          |       */
-    /*    |          |          |       */
-    /*    |          |          |       */
-    /*    |          |          |       */
-    /*    |          |          |       */
-    /*    -----------------------       */
-    /*----------------------------------*/
-
-    Coordinate edge_vec = thr::get<1>(Edge(edge));
-    Real edge_vec_mag = std::sqrt(get_x(edge_vec)*get_x(edge_vec)
-    				     + get_y(edge_vec)*get_y(edge_vec));
-    Real edge_vec_mag_inv = Real(1.0)/edge_vec_mag;
-
-    Real edge_emf_contribution = (flux_bx*fabs(get_x(edge_vec))*edge_vec_mag_inv
-				  - flux_by*fabs(get_y(edge_vec))*edge_vec_mag_inv);
-    
-
-    Real emf_i, emf_j;
-    emf_i = Real(0.0);
-    emf_j = Real(0.0);
-
-    if(index_i > -Index(1)){
-    emf_i = Real(this->_emf_z_iter[Index(index_i)]) 
-      + Real(0.25)*((Real(1.0))*edge_emf_contribution);
-    
-    this->_emf_z_iter[Index(index_i)] = emf_i;
-    }    
-    if(index_j > -Index(1)){
-    emf_j = Real(this->_emf_z_iter[Index(index_j)]) 
-      + Real(0.25)*((Real(1.0))*edge_emf_contribution);
-  
-    this->_emf_z_iter[Index(index_j)] = emf_j;
-    }
-
-    /* printf("[%d][%d] %f %f\n",index_i,index_j,emf_i,emf_j); */
-
     /* define for high order flux calc. */
     Real di = density_i;
     Real mxi = get_x(momentum_i);
@@ -579,20 +516,26 @@ struct periodic_bcs : public thr::unary_function<Index,void>
   Index _ny;
   Index _offset;
   RealIterator _wave_speed_iter;
-  RealIterator _emf_z_iter;
+/* #ifdef MHD */
+/*   RealIterator _emf_z_iter; */
+/* #endif */
   StateIterator _residual_iter;
 
  periodic_bcs(Index nx,
 	      Index ny,
 	      Index offset,
 	      RealIterator wave_speed_iter,
-	      RealIterator emf_z_iter,
+/* #ifdef MHD */
+/* 	      RealIterator emf_z_iter, */
+/* #endif */
 	      StateIterator residual_iter)
    : _nx(nx)
     ,_ny(ny)
     ,_offset(offset)
     ,_wave_speed_iter(wave_speed_iter)
-    ,_emf_z_iter(emf_z_iter)
+/* #ifdef MHD */
+/*     ,_emf_z_iter(emf_z_iter) */
+/* #endif */
     ,_residual_iter(residual_iter) {}
 
   __host__ __device__
@@ -662,33 +605,33 @@ struct periodic_bcs : public thr::unary_function<Index,void>
 						 Real(res_en),
 						 Vector(res_bx,res_by,res_bz));
 
-    
-    if (this->_offset < Index(2)){// bottom-top boundaries
-      if (index < this->_nx){
-	index_i = index*this->_offset;
-	index_j  = index_i + (ncell_y - Index(1))*ncell_x;
+/* #ifdef MHD     */
+/*     if (this->_offset < Index(2)){// bottom-top boundaries */
+/*       if (index < this->_nx){ */
+/* 	index_i = index*this->_offset; */
+/* 	index_j  = index_i + (ncell_y - Index(1))*ncell_x; */
 
-	Real emf = Real(this->_emf_z_iter[Index(index_i)]) 
-	  + Real(this->_emf_z_iter[Index(index_j)]);
+/* 	Real emf = Real(this->_emf_z_iter[Index(index_i)])  */
+/* 	  + Real(this->_emf_z_iter[Index(index_j)]); */
 
-	this->_emf_z_iter[Index(index_i)] = emf;
-	this->_emf_z_iter[Index(index_j)] = emf;
+/* 	this->_emf_z_iter[Index(index_i)] = emf; */
+/* 	this->_emf_z_iter[Index(index_j)] = emf; */
 
-      }
-    }
-    else {// left-right boundaries
-      if (index < this->_ny){
-	index_i = index*(this->_offset - Index(1));
-	index_j  = index_i + (ncell_x - Index(1));
+/*       } */
+/*     } */
+/*     else {// left-right boundaries */
+/*       if (index < this->_ny){ */
+/* 	index_i = index*(this->_offset - Index(1)); */
+/* 	index_j  = index_i + (ncell_x - Index(1)); */
 
-	Real emf = Real(this->_emf_z_iter[Index(index_i)]) 
-	  + Real(this->_emf_z_iter[Index(index_j)]);
+/* 	Real emf = Real(this->_emf_z_iter[Index(index_i)])  */
+/* 	  + Real(this->_emf_z_iter[Index(index_j)]); */
 
-	this->_emf_z_iter[Index(index_i)] = emf;
-	this->_emf_z_iter[Index(index_j)] = emf;
-      }
-    }
-
+/* 	this->_emf_z_iter[Index(index_i)] = emf; */
+/* 	this->_emf_z_iter[Index(index_j)] = emf; */
+/*       } */
+/*     } */
+/* #endif */
   }
 };
 
@@ -703,7 +646,7 @@ struct outflow_bcs : public thr::unary_function<BoundaryFace,void>
   Real _gamma;
   RealIterator _wave_speed_iter;
   BoundaryNodeIterator _bnode_iter;
-  RealIterator _emf_z_iter;
+  /* RealIterator _emf_z_iter; */
   StateIterator _state_iter;
   StateIterator _residual_iter;
 
@@ -711,14 +654,14 @@ struct outflow_bcs : public thr::unary_function<BoundaryFace,void>
 	     Real gamma,
 	     RealIterator wave_speed_iter,
 	     BoundaryNodeIterator bnode_iter,
-	     RealIterator emf_z_iter,
+	     /* RealIterator emf_z_iter, */
 	     StateIterator state_iter,
 	     StateIterator residual_iter)
    : _iedge_d(iedge_d)
     ,_gamma(gamma)
     ,_wave_speed_iter(wave_speed_iter)
     ,_bnode_iter(bnode_iter)
-    ,_emf_z_iter(emf_z_iter)
+    /* ,_emf_z_iter(emf_z_iter) */
     ,_state_iter(state_iter)
     ,_residual_iter(residual_iter) {}
   
@@ -778,27 +721,24 @@ struct outflow_bcs : public thr::unary_function<BoundaryFace,void>
     /* 	   get_x(area_vec),get_y(area_vec)); */
 
     // node i
-    if((fabs(get_x(thr::get<3>(State(state_i)))) + fabs(get_y(thr::get<3>(State(state_i))))) > Real(0.0)){
+#ifdef MHD
       hlld_n(this->_gamma,Real(0.0),area_vec,state_i,state_i,normal_wave_speed,flux_i);
-    }
-    else{
+#else
       hllc_n(this->_gamma,Real(0.0),area_vec,prim_state_i,prim_state_i,normal_wave_speed,flux_i);
       /* rhll(this->_gamma,Real(0.0),area_vec,prim_state_i,prim_state_i,normal_wave_speed,flux_i); */
-    }
+#endif
 
     // update wave speeds
     Real wave_speed_i = Real(this->_wave_speed_iter[point_i]) + normal_wave_speed;
     this->_wave_speed_iter[point_i] = wave_speed_i;
 
-
     // node j
-    if((fabs(get_x(thr::get<3>(State(state_j)))) + fabs(get_y(thr::get<3>(State(state_j))))) > Real(0.0)){
+#ifdef MHD
       hlld_n(this->_gamma,Real(0.0),area_vec,state_j,state_j,normal_wave_speed,flux_j);
-    }
-    else{
+#else
       hllc_n(this->_gamma,Real(0.0),area_vec,prim_state_j,prim_state_j,normal_wave_speed,flux_j);
       /* rhll(this->_gamma,Real(0.0),area_vec,prim_state_j,prim_state_j,normal_wave_speed,flux_j); */
-    }
+#endif
 
     Real wave_speed_j = Real(this->_wave_speed_iter[point_j]) + normal_wave_speed;
     this->_wave_speed_iter[point_j] = wave_speed_j;
@@ -821,7 +761,7 @@ struct outflow_bcs : public thr::unary_function<BoundaryFace,void>
 	+ sixth*(Real(5.0)*get_x(thr::get<1>(flux_i)) + get_x(thr::get<1>(flux_j)));
       res_my = get_y(thr::get<1>(State(this->_residual_iter[Index(point_i)])))
 	+ sixth*(Real(5.0)*get_y(thr::get<1>(flux_i)) + get_y(thr::get<1>(flux_j)));
-      res_my = get_z(thr::get<1>(State(this->_residual_iter[Index(point_i)])))
+      res_mz = get_z(thr::get<1>(State(this->_residual_iter[Index(point_i)])))
 	+ sixth*(Real(5.0)*get_z(thr::get<1>(flux_i)) + get_z(thr::get<1>(flux_j)));
       res_en = thr::get<2>(State(this->_residual_iter[Index(point_i)]))
 	+ sixth*(Real(5.0)*thr::get<2>(flux_i) + thr::get<2>(flux_j));
@@ -829,7 +769,7 @@ struct outflow_bcs : public thr::unary_function<BoundaryFace,void>
 	+ sixth*(Real(5.0)*get_x(thr::get<3>(flux_i)) + get_x(thr::get<3>(flux_j)));
       res_by = get_y(thr::get<3>(State(this->_residual_iter[Index(point_i)])))
 	+ sixth*(Real(5.0)*get_y(thr::get<3>(flux_i)) + get_y(thr::get<3>(flux_j)));
-      res_by = get_z(thr::get<3>(State(this->_residual_iter[Index(point_i)])))
+      res_bz = get_z(thr::get<3>(State(this->_residual_iter[Index(point_i)])))
 	+ sixth*(Real(5.0)*get_z(thr::get<3>(flux_i)) + get_z(thr::get<3>(flux_j)));
       
       this->_residual_iter[Index(point_i)] = State(Real(res_d),
@@ -844,7 +784,7 @@ struct outflow_bcs : public thr::unary_function<BoundaryFace,void>
 	+ sixth*(Real(5.0)*get_x(thr::get<1>(flux_j)) + get_x(thr::get<1>(flux_i)));
       res_my = get_y(thr::get<1>(State(this->_residual_iter[Index(point_j)])))
 	+ sixth*(Real(5.0)*get_y(thr::get<1>(flux_j)) + get_y(thr::get<1>(flux_i)));
-      res_my = get_z(thr::get<1>(State(this->_residual_iter[Index(point_j)])))
+      res_mz = get_z(thr::get<1>(State(this->_residual_iter[Index(point_j)])))
 	+ sixth*(Real(5.0)*get_z(thr::get<1>(flux_j)) + get_z(thr::get<1>(flux_i)));
       res_en = thr::get<2>(State(this->_residual_iter[Index(point_j)]))
 	+ sixth*(Real(5.0)*thr::get<2>(flux_j) + thr::get<2>(flux_j));
@@ -852,7 +792,7 @@ struct outflow_bcs : public thr::unary_function<BoundaryFace,void>
 	+ sixth*(Real(5.0)*get_x(thr::get<3>(flux_j)) + get_x(thr::get<3>(flux_i)));
       res_by = get_y(thr::get<3>(State(this->_residual_iter[Index(point_j)])))
 	+ sixth*(Real(5.0)*get_y(thr::get<3>(flux_j)) + get_y(thr::get<3>(flux_i)));
-      res_by = get_z(thr::get<3>(State(this->_residual_iter[Index(point_j)])))
+      res_bz = get_z(thr::get<3>(State(this->_residual_iter[Index(point_j)])))
 	+ sixth*(Real(5.0)*get_z(thr::get<3>(flux_j)) + get_z(thr::get<3>(flux_i)));
       
       this->_residual_iter[Index(point_j)] = State(Real(res_d),
@@ -866,7 +806,7 @@ struct outflow_bcs : public thr::unary_function<BoundaryFace,void>
 	+ thr::get<0>(flux_i);
       res_mx = get_x(thr::get<1>(State(this->_residual_iter[Index(point_i)])))
 	+ get_x(thr::get<1>(flux_i));
-      res_my = get_y(thr::get<1>(State(this->_residual_iter[Index(point_i)])))
+      res_mz = get_y(thr::get<1>(State(this->_residual_iter[Index(point_i)])))
 	+ get_y(thr::get<1>(flux_i));
       res_my = get_z(thr::get<1>(State(this->_residual_iter[Index(point_i)])))
 	+ get_z(thr::get<1>(flux_i));
@@ -876,7 +816,7 @@ struct outflow_bcs : public thr::unary_function<BoundaryFace,void>
 	+ get_x(thr::get<3>(flux_i));
       res_by = get_y(thr::get<3>(State(this->_residual_iter[Index(point_i)])))
 	+ get_y(thr::get<3>(flux_i));
-      res_by = get_z(thr::get<3>(State(this->_residual_iter[Index(point_i)])))
+      res_bz = get_z(thr::get<3>(State(this->_residual_iter[Index(point_i)])))
 	+ get_z(thr::get<3>(flux_i));
 
       this->_residual_iter[Index(point_i)] = State(Real(res_d),
@@ -890,7 +830,7 @@ struct outflow_bcs : public thr::unary_function<BoundaryFace,void>
 	+ get_x(thr::get<1>(flux_j));
       res_my = get_y(thr::get<1>(State(this->_residual_iter[Index(point_j)])))
 	+ get_y(thr::get<1>(flux_j));
-      res_my = get_z(thr::get<1>(State(this->_residual_iter[Index(point_j)])))
+      res_mz = get_z(thr::get<1>(State(this->_residual_iter[Index(point_j)])))
 	+ get_z(thr::get<1>(flux_j));
       res_en = thr::get<2>(State(this->_residual_iter[Index(point_j)]))
 	+ thr::get<2>(flux_j);
@@ -898,9 +838,9 @@ struct outflow_bcs : public thr::unary_function<BoundaryFace,void>
 	+ get_x(thr::get<3>(flux_j));
       res_by = get_y(thr::get<3>(State(this->_residual_iter[Index(point_j)])))
 	+ get_y(thr::get<3>(flux_j));
-      res_by = get_z(thr::get<3>(State(this->_residual_iter[Index(point_j)])))
+      res_bz = get_z(thr::get<3>(State(this->_residual_iter[Index(point_j)])))
 	+ get_z(thr::get<3>(flux_j));
-      
+
       this->_residual_iter[Index(point_j)] = State(Real(res_d),
 						   Vector(res_mx,res_my,res_mz),
 						   Real(res_en),

@@ -29,8 +29,16 @@
 /*                                                                       */
 /*************************************************************************/
 
+#ifdef MHD
+
 #include "constrained_transport.h"
-// #include "edge_solver.h"
+
+#else
+
+#include "edge_solver.h"
+
+#endif
+
 #include "mesh_generate.h"
 #include "coloring.h"
 #include "data_io.h"
@@ -158,25 +166,24 @@ int main(int argc, char* argv[]){
   RealArray bn_edge; // normal B at interface
   RealArray bn_edge_n; // normal B at interface at time n
 
-  // if (ct > Index(0)){
+#ifdef MHD
+  emf_z.resize(mesh.ncell());
+  thr::fill_n(emf_z.begin(),emf_z.size(),Real(0.0));
+  
+  emf_z_poin.resize(mesh.npoin());
+  thr::fill_n(emf_z_poin.begin(),emf_z_poin.size(),Real(0.0));
+  
+  bn_edge.resize(mesh.nface());
+  thr::fill_n(bn_edge.begin(),bn_edge.size(),Real(0.0));
+  
+  bn_edge_n.resize(mesh.nface());
+  thr::fill_n(bn_edge_n.begin(),bn_edge_n.size(),Real(0.0));
 
-    emf_z.resize(mesh.ncell());
-    thr::fill_n(emf_z.begin(),emf_z.size(),Real(0.0));
-    
-    emf_z_poin.resize(mesh.npoin());
-    thr::fill_n(emf_z_poin.begin(),emf_z_poin.size(),Real(0.0));
-    
-    bn_edge.resize(mesh.nface());
-    thr::fill_n(bn_edge.begin(),bn_edge.size(),Real(0.0));
-    
-    bn_edge_n.resize(mesh.nface());
-    thr::fill_n(bn_edge_n.begin(),bn_edge_n.size(),Real(0.0));
-    
-  // }
 
   RealIterator emf_z_iter(emf_z.begin());
   RealIterator emf_z_poin_iter(emf_z_poin.begin());
   RealIterator bn_edge_iter(bn_edge.begin());    
+ #endif
 
   // create offset for coloring algorithm
   Offset offset;  
@@ -291,7 +298,7 @@ int main(int argc, char* argv[]){
   
   else if(prob == Index(4)){  
     gamma = Real(5.0)/Real(3.0);
-    nsteps_out = 50;
+    nsteps_out = 100;
     sprintf(base_name,"bin/blast_wave");
     mesh.btype_x = Index(1);
     mesh.btype_y = Index(1);
@@ -333,29 +340,29 @@ int main(int argc, char* argv[]){
     // 		     rotate_field(angle));
   }
 
+#ifdef MHD
   /*-----------------------------------------------------------------*/
   /* Initialize CT variables                                         */
   /*-----------------------------------------------------------------*/  
-  // if(ct > Index(0)){
-    /* initialize emf */
+  /* initialize emf */
 
-    for(Index i=0; i < offset.ncolors; i++){
-      thr::transform_n(edge_iter,
-		       offset.faces_per_color[i],	    
-		       bn_edge_iter,
-		       init_interface_bfield(state_iter));
-
-      edge_iter += offset.faces_per_color[i];
-      bn_edge_iter += offset.faces_per_color[i];
-    }
-    // reset iterator
-    edge_iter = edge.begin();
-    bn_edge_iter = bn_edge.begin();
-  // }
+  for(Index i=0; i < offset.ncolors; i++){
+    thr::transform_n(edge_iter,
+		     offset.faces_per_color[i],	    
+		     bn_edge_iter,
+		     init_interface_bfield(state_iter));
+    
+    edge_iter += offset.faces_per_color[i];
+    bn_edge_iter += offset.faces_per_color[i];
+  }
+  // reset iterator
+  edge_iter = edge.begin();
+  bn_edge_iter = bn_edge.begin();
+  
   // for(Index i = 0; i < mesh.nface(); i++){
   //   printf("interface_bn[%d] = %f\n",i,Real(interface_bn[i]));
   // }
-  
+#endif  
   
   // calculate dual volume at nodes
   thr::transform_n(make_device_counting_iterator(),
@@ -427,10 +434,10 @@ int main(int argc, char* argv[]){
     
     // store state at begining of time step for two-step Runge-Kutta 
     thr::copy(state.begin(),state.end(),state_n.begin());
-
+#ifdef MHD
     // store edge states at begining of time-step
     thr::copy(bn_edge.begin(),bn_edge.end(),bn_edge_n.begin());
-
+#endif
     
     thr::fill_n(wave_speed.begin(),wave_speed.size(),Real(0.0));
 
@@ -521,15 +528,24 @@ int main(int argc, char* argv[]){
       
       // build residual
       for(Index i=0; i < offset.ncolors; i++){
+#ifdef MHD
+	thr::transform_n(edge_iter,
+			 offset.faces_per_color[i],
+			 interp_states_iter,
+			 antidiffusion_iter,
+			 residual_ct(gamma,
+				     wave_speed_iter,
+				     emf_z_iter,
+				     residual_iter));
+#else
 	thr::transform_n(edge_iter,
 			 offset.faces_per_color[i],
 			 interp_states_iter,
 			 antidiffusion_iter,
 			 residual_op(gamma,
 				     wave_speed_iter,
-				     emf_z_iter,
 				     residual_iter));
-	
+#endif	
 	edge_iter += offset.faces_per_color[i];
 	interp_states_iter += offset.faces_per_color[i];
 	antidiffusion_iter += offset.faces_per_color[i];
@@ -548,7 +564,7 @@ int main(int argc, char* argv[]){
 				     mesh.ny,
 				     mesh.nx,
 				     wave_speed_iter,
-				     emf_z_iter,				   
+				     // emf_z_iter,				   
 				     residual_iter));
       }
       else{
@@ -560,7 +576,7 @@ int main(int argc, char* argv[]){
 	  			      gamma,
 	  			      wave_speed_iter,
 	  			      bnode_iter,
-	  			      emf_z_iter,
+	  			      // emf_z_iter,
 	  			      state_iter,
 	  			      residual_iter));
 	  
@@ -580,7 +596,7 @@ int main(int argc, char* argv[]){
 				     mesh.ny,
 				     Index(1),
 				     wave_speed_iter,
-				     emf_z_iter,
+				     // emf_z_iter,
 				     residual_iter));
 	
       }
@@ -594,7 +610,7 @@ int main(int argc, char* argv[]){
 	  			      gamma,
 	  			      wave_speed_iter,
 	  			      bnode_iter,
-	  			      emf_z_iter,
+	  			      // emf_z_iter,
 	  			      state_iter,
 	  			      residual_iter));
 	  
@@ -610,10 +626,11 @@ int main(int argc, char* argv[]){
       // }
 
 
+#ifdef MHD
       /*-----------------------------------------------------------------*/
       /* compute emfs                                                    */
       /*-----------------------------------------------------------------*/  	  	        
-      for(Index i=0; i < offset.ncolors; i++){
+      for(Index i=0; i < interior_ncolors; i++){
 	thr::for_each_n(thr::make_zip_iterator(thr::make_tuple(edge_iter,
 							       antidiffusion_iter)),
 			offset.faces_per_color[i],
@@ -626,13 +643,34 @@ int main(int argc, char* argv[]){
 	antidiffusion_iter += offset.faces_per_color[i];
       }
       // reset iterators
+      // edge_iter = edge.begin();
+      // antidiffusion_iter = antidiffusion.begin();      
+
+      for(Index i = 0; i < mesh.ncell(); i++){
+      	printf("[%d] %f\n",i,Real(emf_z_iter[i]));
+      }      
+
+      // apply boundary conditions left/right      
+      for(Index i = interior_ncolors; i < (offset.ncolors); i++){
+	thr::for_each_n(thr::make_zip_iterator(thr::make_tuple(edge_iter,
+							       antidiffusion_iter)),
+			offset.faces_per_color[i],
+			emf_upwind_bcs<thr::tuple<Edge,State> >(mesh.nx,
+								 mesh.ny,
+								 emf_z_iter,
+								 state_iter));
+	
+	edge_iter += offset.faces_per_color[i];
+	antidiffusion_iter += offset.faces_per_color[i];
+      }
+      // reset iterators
       edge_iter = edge.begin();
       antidiffusion_iter = antidiffusion.begin();      
 
-      // for(Index i = 0; i < mesh.ncell(); i++){
-      // 	printf("[%d] %f\n",i,Real(emf_z_iter[i]));
-      // }      
-
+      for(Index i = 0; i < mesh.ncell(); i++){
+      	printf("[%d] %f\n",i,Real(emf_z_iter[i]));
+      }      
+#endif
 
       /*-----------------------------------------------------------------*/
       /* Update solution: Two-stage Runge-Kutta                          */
@@ -680,6 +718,15 @@ int main(int argc, char* argv[]){
 		       state.begin(),
 		       state.begin(),
 		       sum_and_scale_states(half));
+
+
+#ifdef MHD	  
+	thr::transform(bn_edge_n.begin(),
+		       bn_edge_n.end(),
+		       bn_edge.begin(),
+		       bn_edge.begin(),
+		       sum_and_scale_reals(half));
+#endif
       }
       /*-----------------------------------------------------------------*/
       /* Time integration                                                */
@@ -691,6 +738,7 @@ int main(int argc, char* argv[]){
 		       state.begin(),
 		       integrate_time<thr::tuple<State,State> >(field.Cour*rk_coeff*dt));
       
+#ifdef MHD
       for(Index i=0; i < offset.ncolors; i++)
 	{
 	  thr::transform_n(edge_iter,
@@ -709,7 +757,8 @@ int main(int argc, char* argv[]){
       // reset iterators
       edge_iter = edge.begin();
       bn_edge_iter = bn_edge.begin();
-      
+#endif      
+
       // for(Index i = 0; i < mesh.nface(); i++){
       // 	printf("[%d] %f\n",i,Real(bn_edge_iter[i]));
       // }
