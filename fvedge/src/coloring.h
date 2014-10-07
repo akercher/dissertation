@@ -822,7 +822,7 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
 	
       if(index % Index(2) == 0){ // RIGHT boundary second pass
 	
-	index_i = colors_per_pass*half*(index + Index(1))*this->_ncell_x - Real(1.0);
+	index_i = colors_per_pass*half*(index + Index(1))*this->_ncell_x - Index(1);
 	index_j = Real(-1);
 	
 	belem = index_i;
@@ -846,9 +846,9 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
 	periodic_point_j = -Index(1);
 
 	if(btype == Index(1)){
-	  /* index_j = index_i - this->_ncell_x + Index(1); */
-	  index_i = -Index(2);
-	  index_j = -Index(2);
+	  index_j = index_i - this->_ncell_x + Index(1);
+	  /* index_i = -Index(2); */
+	  /* index_j = -Index(2); */
 	}
 	
       }
@@ -881,9 +881,9 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
 	periodic_point_j = point_j + Index(this->_ncell_x);
 
 	if(btype == Index(1)){
-	  /* index_i = index_j + this->_ncell_x - Index(1); */
-	  index_i = -Index(2);
-	  index_j = -Index(2);
+	  index_i = index_j + this->_ncell_x - Index(1);
+	  /* index_i = -Index(2); */
+	  /* index_j = -Index(2); */
 	}
 	
       }
@@ -990,9 +990,9 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
 	  periodic_point_j = point_j + Index(this->_ncell_y)*nx;
 	  
 	if(btype == Index(1)){
-	  /* index_i = index_j + (this->_ncell_y - Index(1))*this->_ncell_x; */
-	  index_i = -Index(2);
-	  index_j = -Index(2);
+	  index_i = index_j + (this->_ncell_y - Index(1))*this->_ncell_x;
+	  /* index_i = -Index(2); */
+	  /* index_j = -Index(2); */
 
 	}
 
@@ -1023,9 +1023,9 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
 	periodic_point_j = -Index(1);
 
 	if(btype == Index(1)){
-	  /* index_j = index_i - (this->_ncell_y - Index(1))*this->_ncell_x; */
-	  index_i = -Index(2);
-	  index_j = -Index(2);
+	  index_j = index_i - (this->_ncell_y - Index(1))*this->_ncell_x;
+	  /* index_i = -Index(2); */
+	  /* index_j = -Index(2); */
 	}
 
 	

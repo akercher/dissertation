@@ -4,8 +4,6 @@
 /*-----------------------------------------------------------------*/
 /*******************************************************************/
 
-#include "reconstruction.h"
-
 /* Prototypes */
 __host__ __device__ void hlld_n (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j,
 				 Real bn, Real& normal_wave_speed,State& flux);
@@ -95,8 +93,6 @@ void hlld_n (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j,
   Real ptj = pgj + half*(bn*bn + btj*btj + bzj*bzj);
   Real enj = pgj/(gamma - Real(1.0)) + dj*kej;
   Real hj = (enj + ptj)*dj_inv;
-    
-  /* printf("bxi = %f byi = %f bni = %f bxj = %f byj = %f bnj = %f\n",bxi,byi,bni,bxj,byj,bnj); */
 
   // Roe averages
   Real RT = sqrtf(dj/di);
@@ -326,6 +322,7 @@ void hlld_n (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j,
 	enjss = enjs + sqrtdjs*sgnbn*(vbjs - vbss);
       }
 
+    /* printf("vxi = %f vxj = %f vxis = %f vxjs = %f vxiss = %f vxjss = %f\n",vxi,vxj,vxis,vxjs,vxiss,vxjss); */
 
     if (sfi >= Real(0.0))
       {
@@ -437,7 +434,7 @@ void hlld_n (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j,
     normal_wave_speed = sn_mag*half*(fabs(vnroe) + fabs(vtroe) + cfroe);
 
     /* printf("sfi =%f sai = %f sm = %f saj = %f sfj = %f\n",sfi,sai,sm,saj,sfj); */
-    /* if (sm >= Real(0.0))  */
+    /* if (sm >= Real(0.0)) */
     /*   { */
     /* 	printf("di = %f dis = %f diss = %f  f.d = %f\n",di,dis,diss,thr::get<0>(flux)); */
     /* 	printf("vxi = %f vxis = %f vxiss = %f  f.mx = %f\n",vxi,vxis,vxiss,get_x(thr::get<1>(flux))); */

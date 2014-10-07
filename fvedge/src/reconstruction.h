@@ -4,16 +4,16 @@
 /*-----------------------------------------------------------------*/
 /*******************************************************************/
 
-#include "thrust_wrapper.h"
-#include "defs.h"
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <string>
-#include <cmath>
-#include <float.h>
-#include <sys/time.h>
-#include <ctime>
+/* #include "thrust_wrapper.h" */
+/* #include "defs.h" */
+/* #include <iostream> */
+/* #include <fstream> */
+/* #include <sstream> */
+/* #include <string> */
+/* #include <cmath> */
+/* #include <float.h> */
+/* #include <sys/time.h> */
+/* #include <ctime> */
 
 /*-------------------------------------------------*/
 /* Prototypes                                      */

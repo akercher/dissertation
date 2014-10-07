@@ -20,18 +20,6 @@
 /*                                                                       */
 /*************************************************************************/
 
-#include "rsolvers.h"
-#include "fct.h"
-
-/*-------------------------------------------------*/
-/* Type definitions */
-/*-------------------------------------------------*/
-/* typedef REAL Scalar; */
-
-/* #define MAXIMUM_NUM Real(DBL_MAX) */
-/* #define MINIMUM_NUM Real(DBL_MIN) */
-/* #define PRESSURE_MIN Real(1.0e-3) */
-/* #define half Real(0.5) */
 
 /*-------------------------------------------------*/
 /* Mesh */
@@ -81,9 +69,10 @@ void Mesh::init()
 {
   /* ncell_x = 64; */
   /* ncell_y = 1; */
-  Lx = Real(1.0);
-  Ly = Real(1.0);
+  /* Lx = Real(1.0); */
+  /* Ly = Real(1.0); */
 
+  Ly = ncell_y*Lx/ncell_x;
   
   nx = ncell_x + 1;
   ny = 1;
@@ -92,14 +81,14 @@ void Mesh::init()
   ndim = 1;
   if(ny > 1) ndim = 2;
 
-  dx = Real(1.0) /(Real(nx) - Real(1.0)); 
-  /* dy = Real(1.0) /(Real(ny) - Real(1.0)); */
+  dx = Lx /(Real(nx) - Real(1.0)); 
+  dy = Ly /(Real(ny) - Real(1.0));
 
-  dy = Real(1.0);
-  if(ny > 1) dy = dx;
+  /* dy = Real(1.0); */
+  if(ny < 2) dy = Real(1.0);
 
-  Lx = (Real(nx) - Real(1.0))*dx;
-  Ly = (Real(ny) - Real(1.0))*dy;
+  /* Lx = (Real(nx) - Real(1.0))*dx; */
+  /* Ly = (Real(ny) - Real(1.0))*dy; */
 
   vol = dx*dx;
   if(ny > 1) vol = dx*dy;
@@ -586,10 +575,10 @@ struct periodic_bcs : public thr::unary_function<Index,void>
     res_bz = thr::get<2>(thr::get<3>(State(this->_residual_iter[Index(index_i)])))
       + thr::get<2>(thr::get<3>(State(this->_residual_iter[Index(index_j)])));
     
-    /* printf("[%d][%d] res.di = %f, res.dj = %f res_d = %f\n",index_i,index_j, */
-    /* 	   thr::get<0>(State(this->_residual_iter[Index(index_i)])), */
-    /* 	   thr::get<0>(State(this->_residual_iter[Index(index_j)])), */
-    /* 	   res_d); */
+    /* printf("[%d][%d] res.bzi = %f, res.bzj = %f res_bz = %f\n",index_i,index_j, */
+    /* 	   get_z(thr::get<3>(State(this->_residual_iter[Index(index_i)]))), */
+    /* 	   get_z(thr::get<3>(State(this->_residual_iter[Index(index_j)]))), */
+    /* 	   res_bz); */
     
     this->_residual_iter[Index(index_i)] = State(Real(res_d),
 						 Vector(res_mx,res_my,res_mz),
@@ -1021,558 +1010,7 @@ struct cells_init : public thr::unary_function<Index,Coordinate>
   }
 };
 
-/*****************************************************/
-/* initialize grid state variables for shock tube    */
-/*---------------------------------------------------*/
-/*****************************************************/
-struct shock_tube_init : public thr::unary_function<Coordinate,State>
-{
-  Real _disc_x;
-  State _state_l;
-  State _state_r;
 
- shock_tube_init(Real disc_x,
-		 State state_l,
-		 State state_r)
-   : _disc_x(disc_x), _state_l(state_l), _state_r(state_r) {}
-
-  __host__ __device__
-    State operator()(const Coordinate& xpos) const
-  {
-    State state;
-    
-    if(get_x(xpos) < this->_disc_x) state = this->_state_l;
-    else state = this->_state_r;
-    
-    return state;
-  }
-};
-
-/*****************************************************/
-/* Spherical blast wave                              */
-/*---------------------------------------------------*/
-/*****************************************************/
-struct blast_wave_init : public thr::unary_function<Index,State>
-{
-  Index _nx;
-  Real _dx;
-  Real _dy;
-  Real _Lx;
-  Real _Ly;
-
- blast_wave_init(Index nx,
-		 Real dx,
-		 Real dy,
-		 Real Lx,
-		 Real Ly)
-
-   :_nx(nx)
-    ,_dx(dx)
-    ,_dy(dy)
-    ,_Lx(Lx) 
-    ,_Ly(Ly) {}
-
-  __host__ __device__
-    State operator()(const Index& index) const
-  {
-
-    Real pgr = Real(100.0);
-    Real d0 = Real(1.0);
-    Real pg0 = Real(0.1);
-    Real b0 = Real(1.0);
-    Real radius = Real(0.1);
-    Real angle = Real(M_PI)/Real(4.0);
-
-    Index i = index % this->_nx;
-    Index j = (index - i)/this->_nx;
-
-    Real x = (Real(i))*this->_dx - half*this->_Lx;
-    Real y = (Real(j))*this->_dy - half*this->_Ly;
-
-    if (sqrtf(x*x + y*y) < radius) pg0 *= pgr;
-    return State(d0,
-		 Vector(Real(0.0),Real(0.0),Real(0.0)),
-		 pg0,
-		 Vector(Real(0.0),Real(0.0),Real(0.0)));
-		 /* Vector(b0*sinf(angle),b0*sinf(angle),Real(0.0))); */
-    
-
-  }
-};
-
-/*****************************************************/
-/* initialize grid state variables for field loop    */
-/*---------------------------------------------------*/
-/*****************************************************/
-struct field_loop_init : public thr::unary_function<Interface,Real>
-{
-  Index _ncell_x;
-  Real _dx;
-  Real _dy;
-  Real _Lx;
-  Real _Ly;
-  StateIterator _state_iter;
-
- field_loop_init(Index ncell_x,
-		 Real dx,
-		 Real dy,
-		 Real Lx,
-		 Real Ly,
-		 StateIterator state_iter)
-
-   :_ncell_x(ncell_x)
-    ,_dx(dx)
-    ,_dy(dy)
-    ,_Lx(Lx)
-    ,_Ly(Ly)
-    ,_state_iter(state_iter) {}
-
-  __host__ __device__
-    Real operator()(const Interface& interface) const
-  {
-
-    Real amp = Real(1.0e-3);
-    Real radius = Real(0.3);
-    Real fuild_vel = Real(3.0);
-    Real diag = sqrtf(this->_Lx*this->_Lx + this->_Ly*this->_Ly);
-
-    Index index_i = thr::get<0>(thr::get<0>(Interface(interface)));
-    Index index_j = thr::get<1>(thr::get<0>(Interface(interface)));
-
-    Index point_i = thr::get<0>(thr::get<2>(Interface(interface)));
-    Index point_j = thr::get<1>(thr::get<2>(Interface(interface)));
-
-    // modify for outflow conditions
-    if (index_i < 0) index_i = index_j;
-    if (index_j < 0) index_j = index_i;    
-
-    State state_i = State(this->_state_iter[index_i]);
-    State state_j = State(this->_state_iter[index_j]);
-
-    Real di = density_i;
-    Real vxi = get_x(momentum_i);
-    Real vyi = get_y(momentum_i);
-    Real vzi = get_z(momentum_i);
-    Real pgi = energy_i;
-    Real bxi = get_x(bfield_i);
-    Real byi = get_y(bfield_i);
-    Real bzi = get_z(bfield_i);
-
-    Real dj = density_j;
-    Real vxj = get_x(momentum_j);
-    Real vyj = get_y(momentum_j);
-    Real vzj = get_z(momentum_j);
-    Real pgj = energy_j;
-    Real bxj = get_x(bfield_j);
-    Real byj = get_y(bfield_j);
-    Real bzj = get_z(bfield_j);
-
-    Coordinate sn = thr::get<1>(Interface(interface));
-    Real sn_mag = sqrtf(get_x(sn)*get_x(sn) + get_y(sn)*get_y(sn));
-    Real sn_mag_inv = Real(1.0)/sn_mag;
-
-    Real nx = get_x(sn)*sn_mag_inv;
-    Real ny = get_y(sn)*sn_mag_inv;
-
-    Index i = index_j % this->_ncell_x;
-    Index j = (index_j - i)/this->_ncell_x;
-
-    Real xi = Real(i)*this->_dx - half*this->_Lx;
-    Real yi = Real(j)*this->_dy - half*this->_Ly;
-
-    Real xj = xi;// + this->_dy;
-    Real yj = yi + this->_dy;
-    
-    if (ny > nx){
-      xj = xi + this->_dx;
-      yj = yi;// + this->_dx;      
-    }
-
-    /* printf("index_i = %d index_j = %d i = %d j = %d\n",index_i,index_j,i,j); */
-    /* printf("xi = %f yi = %f xj = %f yj = %f\n",xi,yi,xj,yj); */
-
-    Real azi = Real(0.0);
-    if((xi*xi + yi*yi) < radius*radius){
-      azi = amp*(radius - sqrtf(xi*xi + yi*yi));      
-    }
-
-    Real azj = Real(0.0);    
-    if((xj*xj + yj*yj) < radius*radius){
-      azj = amp*(radius - sqrtf(xj*xj + yj*yj));      
-    }
-    
-    di = Real(1.0);    
-    vxi = fuild_vel*this->_Lx/diag;
-    vyi = fuild_vel*this->_Ly/diag;
-    vzi = Real(0.0);
-    pgi = Real(1.0);
-
-
-    Real bn = (azj - azi)/sn_mag;
-
-    if (ny > nx) bn = -bn;
-
-    Real angle = Real(atan2(ny,nx));
-
-    bxi += half*(Real(cos(angle))*bn);
-    byi += half*(Real(sin(angle))*bn);
-
-    bxj += half*(Real(cos(angle))*bn);
-    byj += half*(Real(sin(angle))*bn);
-
-    /* if(index_i == 3 || index_j == 3) */
-    /*   { */
-    /* 	printf("[%d][%d]\n",index_i,index_j); */
-    /* 	printf("xi = %f yi = %f xi = %f yi = %f bn = %f angle = %f\n",xi,yi,xj,yj,bn,angle); */
-    /* 	printf("bxi = %f bxj = %f byi = %f byj = %f\n",bxi,byi,bxj,byj); */
-    /*   } */
-
-    this->_state_iter[index_i] = State(di,
-				       Vector(vxi,vyi,vzi),
-				       pgi,
-				       Vector(bxi,byi,bzi));
-    
-    this->_state_iter[index_j] = State(dj,
-				       Vector(vxj,vyj,vzj),
-				       pgj,
-				       Vector(bxj,byj,bzj));
-    
-    return bn;
-
-  }
-};
-
-/*****************************************************/
-/* initialize grid orszag_tang                       */
-/*---------------------------------------------------*/
-/*****************************************************/
-struct orszag_tang_init : public thr::unary_function<Index,State>
-{
-  Index _ncell_x;
-  Real _dx;
-  Real _dy;
-
- orszag_tang_init(Index ncell_x,
-		  Real dx,
-		  Real dy)
-
-   :_ncell_x(ncell_x)
-    ,_dx(dx)
-    ,_dy(dy) {}
-
-  __host__ __device__
-    State operator()(const Index& index) const
-  {
-
-    Index i = index % this->_ncell_x;
-    Index j = (index - i)/this->_ncell_x;
-
-    Real x = Real(i)*this->_dx;
-    Real y = Real(j)*this->_dy;
-
-    Real d = Real(25.0)/(Real(36.0)*Real(M_PI));
-    Real vz = Real(0.0);
-    Real bz = Real(0.0);
-    Real pg = Real(5.0)/(Real(12.0)*Real(M_PI));
-
-    Real vx = -sinf(Real(2.0)*Real(M_PI)*y);
-    Real vy = sinf(Real(2.0)*Real(M_PI)*x);
-    Real bx = -sinf(Real(2.0)*Real(M_PI)*y)/sqrtf(Real(4.0)*Real(M_PI));
-    Real by = sinf(Real(2.0)*Real(M_PI)*x)/sqrtf(Real(4.0)*Real(M_PI));;
-
-    return State(d,
-		 Vector(vx,vy,vz),
-		 pg,
-		 Vector(bx,by,bz));
-
-  }
-};
-
-/*****************************************************/
-/* initialize grid kh_instability                    */
-/*---------------------------------------------------*/
-/*****************************************************/
-struct kh_instability_init : public thr::unary_function<Index,State>
-{
-
-  Index _ncell_x;
-  Real _dx;
-  Real _dy;
-  Real _Lx;
-  Real _Ly;
-  StateIterator _state_iter;
-
- kh_instability_init(Index ncell_x,
-		     Real dx,
-		     Real dy,
-		     Real Lx,
-		     Real Ly)
-
-   :_ncell_x(ncell_x)
-    ,_dx(dx)
-    ,_dy(dy)
-    ,_Lx(Lx)
-    ,_Ly(Ly) {}
-
-  __host__ __device__
-    State operator()(const Index& index) const
-  {
-    // generate random number from uniform dist. [0,1]
-    thr::default_random_engine get_rand;
-    thr::uniform_real_distribution<Real> uniform_dist;
-
-    get_rand.discard(index);
-
-    /* srand(time(0)); // Use time to help randomize number.     */
-
-    Real disc_y1 = this->_Ly / Real(4.0);
-    Real disc_y2 = Real(3.0) * disc_y1;
-    Real amp = Real(0.01);
-
-    Index i = index % this->_ncell_x;
-    Index j = (index - i)/this->_ncell_x;
-
-    Real x = (Real(i))*this->_dx;
-    Real y = (Real(j))*this->_dy;
-
-    /* printf("[%d] %f %f\n",index,x,y); */
-
-    Real d1 = Real(1.0);
-    Real d2 = Real(2.0);
-    
-    Real v0 = Real(0.5);
-    /* Real vy = -amp*sin(Real(2.0)*Real(M_PI)*x);//amp*Real(rand())/Real(RAND_MAX); */
-    Real vy = amp*(uniform_dist(get_rand) - half);
-    Real vz = Real(0.0);
-    Real pg = Real(2.5);
-
-    Real vx1 =  Real(2.0)*(v0 + vy);//amp * Real(rand())/Real(RAND_MAX);
-    Real vx2 =  -Real(2.0)*(v0 + vy);//amp * Real(rand())/Real(RAND_MAX));
-
-
-    if ((y < disc_y1) || (y > disc_y2)){
-
-    /* printf("1. [%d] %f %f %f %f\n",index,x,y,disc_y1,disc_y2); */
-
-      return State(d1,
-		   Vector(vx1,vy,vz),
-		   pg,
-		   Vector(Real(0.0),Real(0.0),Real(0.0)));
-    }
-    else{
-    /* printf("2. [%d] %f %f %f %f\n",index,x,y,disc_y1,disc_y2); */
-      return State(d2,
-		   Vector(vx2,vy,vz),
-		   pg,
-		   Vector(Real(0.0),Real(0.0),Real(0.0)));
-    }
-
-  }
-};
-
-/*****************************************************/
-/* Linear wave                                       */
-/*---------------------------------------------------*/
-/*****************************************************/
-struct linear_wave_init : public thr::unary_function<Index,State>
-{
-
-  Index _ncell_x;
-  Real _dx;
-  Real _dy;
-  Real _Lx;
-  Real _Ly;
-  Real _gamma;
-  StateIterator _state_iter;
-
- linear_wave_init(Index ncell_x,
-		  Real dx,
-		  Real dy,
-		  Real Lx,
-		  Real Ly,
-		  Real gamma)
-
-   :_ncell_x(ncell_x)
-    ,_dx(dx)
-    ,_dy(dy)
-    ,_Lx(Lx)
-    ,_Ly(Ly) 
-    ,_gamma(gamma){}
-
-  __host__ __device__
-    State operator()(const Index& index) const
-  {
-
-    Real amp = Real(0.1);
-
-    Index i = index % this->_ncell_x;
-    Index j = (index - i)/this->_ncell_x;
-
-    Real x = (Real(i))*this->_dx;
-    Real y = (Real(j))*this->_dy;
-
-    Real angle = Real(atan2(this->_Ly,this->_Lx));
-    Real cosa = Real(cos(angle));
-    Real sina = Real(sin(angle));
-    Real wavelength = this->_Lx*cosa;
-    /* printf("[%d] %f %f\n",index,x,y); */
-
-    if(sina > cosa) wavelength = this->_Ly*sina;
-
-    Real kpar = Real(2.0)*M_PI/wavelength;
-
-    Real d = Real(1.0);
-    Real pg = Real(1.0)/this->_gamma;
-    Real vx  = 1.0;
-    Real vy  = 0.0;
-    Real vz  = 0.0;
-    Real bx  = 0.0;
-    Real by  = 0.0;
-    Real bz  = 0.0;
-
-    Real cs = std::sqrt(this->_gamma*pg/d);
-
-    Real xpar = kpar*(x*cosa + y*sina);
-    Real vpar = Real(0.0);
-
-    d += amp*Real(sin(xpar))*(vx + cs);
-    vx += amp*Real(sin(xpar))*(vx);
-    vy += amp*Real(sin(xpar))*(vx);
-
-    Real vy  = vpar*sina + vperp*cosa;
-    Real vz = amp*Real(cos(xpar));
-
-    Real bpar = Real(1.0);
-    Real bperp = vperp;
-    Real bx  = bpar*cosa - bperp*sina;
-    Real by  = bpar*sina + bperp*cosa;
-    Real bz = vz;
-
-    return State(d,
-		 Vector(vx,vy,vz),
-		 pg,
-		 Vector(bx,by,bz));
-
-  }
-};
-
-/*****************************************************/
-/* Circularly polarized Alfven wave                  */
-/*---------------------------------------------------*/
-/*****************************************************/
-struct cpaw_init : public thr::unary_function<Index,State>
-{
-
-  Index _ncell_x;
-  Real _dx;
-  Real _dy;
-  Real _Lx;
-  Real _Ly;
-  Real _gamma;
-  StateIterator _state_iter;
-
- cpaw_init(Index ncell_x,
-	   Real dx,
-	   Real dy,
-	   Real Lx,
-	   Real Ly,
-	   Real gamma)
-
-   :_ncell_x(ncell_x)
-    ,_dx(dx)
-    ,_dy(dy)
-    ,_Lx(Lx)
-    ,_Ly(Ly) 
-    ,_gamma(gamma){}
-
-  __host__ __device__
-    State operator()(const Index& index) const
-  {
-
-    Real amp = Real(0.1);
-
-    Index i = index % this->_ncell_x;
-    Index j = (index - i)/this->_ncell_x;
-
-    Real x = (Real(i))*this->_dx;
-    Real y = (Real(j))*this->_dy;
-
-    Real angle = Real(atan2(this->_Ly,this->_Lx));
-    Real cosa = Real(cos(angle));
-    Real sina = Real(sin(angle));
-    Real wavelength = this->_Lx*cosa;
-    /* printf("[%d] %f %f\n",index,x,y); */
-
-    if(sina > cosa) wavelength = this->_Ly*sina;
-
-    Real kpar = Real(2.0)*M_PI/wavelength;
-
-    Real d = Real(1.0);
-    Real pg = Real(0.1);
-
-    Real cs = std::sqrt(this->_gamma*pg/d);
-
-    Real xpar = kpar*(x*cosa + y*sina);
-    Real vpar = Real(0.0);
-    Real vperp = amp*Real(sin(xpar));
-    
-    Real vx  = vpar*cosa - vperp*sina;
-    Real vy  = vpar*sina + vperp*cosa;
-    Real vz = amp*Real(cos(xpar));
-
-    Real bpar = Real(1.0);
-    Real bperp = vperp;
-    Real bx  = bpar*cosa - bperp*sina;
-    Real by  = bpar*sina + bperp*cosa;
-    Real bz = vz;
-
-    return State(d,
-		 Vector(vx,vy,vz),
-		 pg,
-		 Vector(bx,by,bz));
-
-  }
-};
-
-/*****************************************************/
-/* initialize grid rotate initial variables          */
-/*---------------------------------------------------*/
-/*****************************************************/
-struct rotate_field : public thr::unary_function<State,State>
-{
-
-  Real _angle;
-
- rotate_field(Real angle)
-
-   :_angle(angle) {}
-
-  __host__ __device__
-    State operator()(const State& state) const
-  {
-    
-    Real d = density;
-    Real mx = get_x(momentum);
-    Real my = get_y(momentum);
-    Real mz = get_z(momentum);
-    Real en = energy;
-    Real bx = get_x(bfield);
-    Real by = get_y(bfield);
-    Real bz = get_z(bfield);
-
-    Real m1 = mx*cos(this->_angle) - my*sin(this->_angle);
-    Real m2 = mx*sin(this->_angle) + my*cos(this->_angle);
-
-    Real b1 = bx*cos(this->_angle) - by*sin(this->_angle);
-    Real b2 = bx*sin(this->_angle) + by*cos(this->_angle);
-
-    return State(d,
-		 Vector(m1,m2,mz),
-		 en,
-		 Vector(b1,b2,mz));
-
-  }
-};
 
 /*****************************************************/
 /* set state variables to const                      */
@@ -1823,7 +1261,7 @@ struct print_states //: public std::unary_function<Tuple,void>
 /* Read configuration                                */
 /*---------------------------------------------------*/
 /*****************************************************/
-void read_configuration(std::ifstream& input, Index& fct, Index& ct,Index& prob,
+void read_configuration(std::ifstream& input, Index& fct, Index& ct,std::string& prob,
 			Real& Cour, Real& cdiss, Real& cwm,
 			Index& max_steps, Index& rk_stages, 
 			Mesh& mesh, Real& disc_x, Real& tf, 
@@ -1837,10 +1275,14 @@ void read_configuration(std::ifstream& input, Index& fct, Index& ct,Index& prob,
   Real dl,vxl,vyl,vzl,pgl,bxl,byl,bzl;
   Real dr,vxr,vyr,vzr,pgr,bxr,byr,bzr;
 
+  getline (input,prob);
+  std::cout << prob << std::endl;
+
   while (input >> line >> value){
     if(line.compare("fct") == 0) fct = Index(value);
     else if(line.compare("ct") == 0) ct = Index(value);
-    else if(line.compare("prob") == 0) prob = Index(value);
+    /* else if(line.compare("prob") == 0) prob = Index(value); */
+    /* else if(line.compare("prob") == 0) prob.assign(value); */
     else if(line.compare("iface_d") == 0) mesh.iface_d = Index(value);
     else if(line.compare("Cour") == 0) Cour = Real(value);
     else if(line.compare("cdiss") == 0) cdiss = Real(value);
@@ -1849,6 +1291,7 @@ void read_configuration(std::ifstream& input, Index& fct, Index& ct,Index& prob,
     else if(line.compare("rk_stages") == 0) rk_stages = Index(value);
     else if(line.compare("ncell_x") == 0) mesh.ncell_x = Index(value);
     else if(line.compare("ncell_y") == 0) mesh.ncell_y = Index(value);
+    else if(line.compare("Lx") == 0) mesh.Lx = Real(value);
     else if(line.compare("disc_x") == 0) disc_x = Real(value);
     else if(line.compare("btype_x") == 0) mesh.btype_x = Index(value);
     else if(line.compare("btype_y") == 0) mesh.btype_y = Index(value);
@@ -1876,13 +1319,13 @@ void read_configuration(std::ifstream& input, Index& fct, Index& ct,Index& prob,
   input.close();
 
   state_l = State(dl,
-			Vector(vxl,vyl,vzl),
-			pgl,
-			Vector(bxl,byl,bzl));
+		  Vector(vxl,vyl,vzl),
+		  pgl,
+		  Vector(bxl,byl,bzl));
   state_r = State(dr,
-			Vector(vxr,vyr,vzr),
-			pgr,
-			Vector(bxr,byr,bzr));
+		  Vector(vxr,vyr,vzr),
+		  pgr,
+		  Vector(bxr,byr,bzr));
 
 
 };
