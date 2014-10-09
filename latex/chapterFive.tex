@@ -12,7 +12,7 @@
 \chapter[Parallel processing]{Parallel processing}
 \label{chp:gpu}
 
-A description of a new method, known as CWM, which produces an approximate solution to Riemann problems of ideal MHD that contain only regular waves without knowledge of the exact was completed last chapter.  The final chapter of this dissertation describes the implementation of a multidimensional flow solver for HD and MHD capable of shared memory parallelism on both a CPU and GPU.  An overview of the multidimensional algorithms and grid structure is given.  Although the HD solver is relatively unchanged, CT \citep{Evans:1988} is incorporated into the MHD solver to ensure that $\divergebf{B} = 0$ throughout the simulation (assuming it was initially zero).  Important concepts for parallel programming on shared memory devices, e.g., avoiding memory contention, are described.  A performance comparison of parallel execution for three multidimensional test problems of HD and MHD is given.  We find a performance increase of  seven times for the GPU over the CPU.  
+A description of a new method, known as CWM, which produces an approximate solution to Riemann problems of ideal MHD that contain only regular waves without knowledge of the exact solution  was completed last chapter.  The final chapter of this dissertation describes the implementation of a multidimensional flow solver for HD and MHD capable of shared memory parallelism on both a CPU and GPU.  An overview of the multidimensional algorithms and grid structure is given.  Although the HD solver is relatively unchanged, CT \citep{Evans:1988} is incorporated into the MHD solver to ensure that $\divergebf{B} = 0$ throughout the simulation (assuming it was initially zero).  Important concepts for parallel programming on shared memory devices, e.g., avoiding memory contention, are described.  A performance comparison of parallel execution for three multidimensional test problems of HD and MHD is given.  We find a performance increase of  seven times for the GPU over the CPU.  
 
 %----------------------------------------------------------------------------------------
 %	2D Algorithms
@@ -394,7 +394,7 @@ The Orszag-Tang vortex \citep{Orszag:1979} has been extensively studied and used
 % Performance results 
 %-----------------------------------------------------------------
 \begin{table}[htbp]\figSpace
-\caption{Performance comparison of GPU and CPU.}
+\caption{Performance comparison of GPU and CPU (Ratio of  cells/sec.). }
 \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}} cccc}
 \\ 
 \hline 

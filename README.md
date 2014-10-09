@@ -1,7 +1,7 @@
 dissertation
 ============
 
-* This dissertation includes extensions to version 4.2 of Athena, a code for astrophysical NHD.  
+* This dissertation includes extensions to version 4.2 of Athena, a code for astrophysical MHD.  
   The official version of Athena can be downloaded from
   https://trac.princeton.edu/Athena/wiki/AthenaDocsDownLd. 
 

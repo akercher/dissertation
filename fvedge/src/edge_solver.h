@@ -283,7 +283,7 @@ struct integrate_time : public thr::binary_function<Tuple,Real,State>
     by -= this->_dt*vol_inv*res_by;
     bz -= this->_dt*vol_inv*res_bz;
 
-#ifdef MHD
+#ifdef CT
     bx = Real(0.0);
     by = Real(0.0);
 #endif
@@ -538,12 +538,14 @@ struct periodic_bcs : public thr::unary_function<Index,void>
     ncell_x = this->_nx - Index(1);
     ncell_y = this->_ny - Index(1);
 
+    Index point = index + Index(1);
+
     if (this->_offset < Index(2)){// bottom-top boundaries
-      index_i = index*this->_offset;
+      index_i = point*this->_offset;
       index_j  = index_i + (this->_ny - Index(1))*this->_nx;
     }
     else {// left-right boundaries
-      index_i = index*this->_offset;
+      index_i = point*this->_offset;
       index_j  = index_i + (this->_nx - Index(1));
     }
 
@@ -575,10 +577,20 @@ struct periodic_bcs : public thr::unary_function<Index,void>
     res_bz = thr::get<2>(thr::get<3>(State(this->_residual_iter[Index(index_i)])))
       + thr::get<2>(thr::get<3>(State(this->_residual_iter[Index(index_j)])));
     
-    /* printf("[%d][%d] res.bzi = %f, res.bzj = %f res_bz = %f\n",index_i,index_j, */
-    /* 	   get_z(thr::get<3>(State(this->_residual_iter[Index(index_i)]))), */
-    /* 	   get_z(thr::get<3>(State(this->_residual_iter[Index(index_j)]))), */
-    /* 	   res_bz); */
+    /* printf("[%d][%d] res.mxi = %f, res.mxj = %f res_mx = %f\n",index_i,index_j, */
+    /* 	   get_x(thr::get<1>(State(this->_residual_iter[Index(index_i)]))), */
+    /* 	   get_x(thr::get<1>(State(this->_residual_iter[Index(index_j)]))), */
+    /* 	   res_mx); */
+
+    // XXX incorrect for triangles
+    /* res_d *= half; */
+    /* res_mx *= half; */
+    /* res_my *= half; */
+    /* res_mz *= half; */
+    /* res_en *= half; */
+    /* res_bx *= half; */
+    /* res_by *= half; */
+    /* res_bz *= half; */
     
     this->_residual_iter[Index(index_i)] = State(Real(res_d),
 						 Vector(res_mx,res_my,res_mz),
@@ -595,34 +607,86 @@ struct periodic_bcs : public thr::unary_function<Index,void>
     /* 	   thr::get<0>(State(this->_residual_iter[Index(index_j)])), */
     /* 	   res_d); */
 
-/* #ifdef MHD     */
-/*     if (this->_offset < Index(2)){// bottom-top boundaries */
-/*       if (index < this->_nx){ */
-/* 	index_i = index*this->_offset; */
-/* 	index_j  = index_i + (ncell_y - Index(1))*ncell_x; */
-
-/* 	Real emf = Real(this->_emf_z_iter[Index(index_i)])  */
-/* 	  + Real(this->_emf_z_iter[Index(index_j)]); */
-
-/* 	this->_emf_z_iter[Index(index_i)] = emf; */
-/* 	this->_emf_z_iter[Index(index_j)] = emf; */
-
-/*       } */
-/*     } */
-/*     else {// left-right boundaries */
-/*       if (index < this->_ny){ */
-/* 	index_i = index*(this->_offset - Index(1)); */
-/* 	index_j  = index_i + (ncell_x - Index(1)); */
-
-/* 	Real emf = Real(this->_emf_z_iter[Index(index_i)])  */
-/* 	  + Real(this->_emf_z_iter[Index(index_j)]); */
-
-/* 	this->_emf_z_iter[Index(index_i)] = emf; */
-/* 	this->_emf_z_iter[Index(index_j)] = emf; */
-/*       } */
-/*     } */
-/* #endif */
   }
+};
+
+/*******************************************************************/
+/* Fix corners for periodic boundary conditions                    */
+/*-----------------------------------------------------------------*/
+/*******************************************************************/
+__host__ __device__
+void periodic_corners (Real& wave_speed_i, Real& wave_speed_j, State& residual_i, State& residual_j)
+{
+   
+    /*---------------------------------------------------*/
+    /* Apply boundary conditions                         */
+    /*---------------------------------------------------*/
+    /* Periodic                                          */
+    /*---------------------------------------------------*/
+
+    Index index_i;
+    Index index_j;
+    Real wave_speed;
+    Real res_d,res_mx,res_my,res_mz,res_en,res_bx,res_by,res_bz;
+
+    wave_speed = wave_speed_i + wave_speed_j;
+    wave_speed_i = wave_speed;
+    wave_speed_j = wave_speed;
+
+    res_d = thr::get<0>(State(residual_i))
+      + thr::get<0>(State(residual_j));
+    
+    res_mx = thr::get<0>(thr::get<1>(State(residual_i)))
+      + thr::get<0>(thr::get<1>(State(residual_j)));
+
+    res_my = thr::get<1>(thr::get<1>(State(residual_i)))
+      + thr::get<1>(thr::get<1>(State(residual_j)));
+
+    res_mz = thr::get<2>(thr::get<1>(State(residual_i)))
+      + thr::get<2>(thr::get<1>(State(residual_j)));
+
+    res_en = thr::get<2>(State(residual_i))
+      + thr::get<2>(State(residual_j));
+    
+    res_bx = thr::get<0>(thr::get<3>(State(residual_i)))
+      + thr::get<0>(thr::get<3>(State(residual_j)));
+
+    res_by = thr::get<1>(thr::get<3>(State(residual_i)))
+      + thr::get<1>(thr::get<3>(State(residual_j)));
+
+    res_bz = thr::get<2>(thr::get<3>(State(residual_i)))
+      + thr::get<2>(thr::get<3>(State(residual_j)));
+        
+    /* printf("[%d][%d] res.mxi = %f, res.mxj = %f res_mx = %f\n",index_i,index_j, */
+    /* 	   get_x(thr::get<1>(State(this->_residual_iter[Index(index_i)]))), */
+    /* 	   get_x(thr::get<1>(State(this->_residual_iter[Index(index_j)]))), */
+    /* 	   res_mx); */
+
+    // XXX incorrect for triangles
+    /* res_d *= half; */
+    /* res_mx *= half; */
+    /* res_my *= half; */
+    /* res_mz *= half; */
+    /* res_en *= half; */
+    /* res_bx *= half; */
+    /* res_by *= half; */
+    /* res_bz *= half; */
+    
+    residual_i = State(Real(res_d),
+		       Vector(res_mx,res_my,res_mz),
+		       Real(res_en),
+		       Vector(res_bx,res_by,res_bz));
+    
+    residual_j = State(Real(res_d),
+		       Vector(res_mx,res_my,res_mz),
+		       Real(res_en),
+		       Vector(res_bx,res_by,res_bz));
+
+    /* printf("[%d][%d] res.di = %f, res.dj = %f res_d = %f\n",index_i,index_j, */
+    /* 	   thr::get<0>(State(this->_residual_iter[Index(index_i)])), */
+    /* 	   thr::get<0>(State(this->_residual_iter[Index(index_j)])), */
+    /* 	   res_d); */
+
 };
 
 /*******************************************************************/

@@ -28,6 +28,9 @@
 /*     along with fvsmp.  If not, see <http://www.gnu.org/licenses/>.    */
 /*                                                                       */
 /*************************************************************************/
+#ifdef MHD
+#define CT
+#endif
 
 #define flux_hydro rhll
 
@@ -285,8 +288,8 @@ int main(int argc, char* argv[]){
   if (prob.compare("constant") == Index(0)){
     sprintf(base_name,"bin/constant_output");
     thr::fill_n(state.begin(),state.size(),State(Real(1.0),
-						 Vector(Real(1.0),Real(1.0),Real(0.0)),
-						 Real(1.0),
+						 Vector(Real(2.0),Real(0.5),Real(0.0)),
+						 Real(5.0),
 						 Vector(Real(0.0),Real(0.0),Real(0.0))));  
   }
   // else if (prob == Index(1)){
@@ -300,11 +303,12 @@ int main(int argc, char* argv[]){
     // thr::fill_n(bn_edge.begin(),bn_edge.size(),Real(1.0));    
   }
   else if (prob.compare("linear_wave") == Index(0)){
-    Real ieigen = Index(3);
+    Real ieigen = Index(1);
+    Real vflow = Real(0.0);
     gamma = Real(5.0)/Real(3.0);
     nsteps_out = 20;
     sprintf(base_name,"bin/linear_wave");
-    mesh.btype_x = Index(1);
+    mesh.btype_x = Index(3);
     mesh.btype_y = Index(1);
     thr::transform_n(make_device_counting_iterator(),
 		     state.size(),
@@ -314,7 +318,7 @@ int main(int argc, char* argv[]){
 				      mesh.dy,
 				      mesh.Lx,
 				      mesh.Ly,
-				      Real(1.0),
+				      vflow,
 				      ieigen,
 				      gamma));
 #ifdef MHD
@@ -327,7 +331,7 @@ int main(int argc, char* argv[]){
 						  mesh.dy,
 						  mesh.Lx,
 						  mesh.Ly,
-						  Real(1.0),
+						  vflow,
 						  ieigen,
 						  gamma));
 
@@ -662,7 +666,11 @@ int main(int argc, char* argv[]){
       
       rk_coeff = Real(1.0)/(Real(istage) + Real(1.0));
       set_state_const(Real(0.0),residual);
-      
+
+#ifdef MHD
+      thr::fill_n(emf_z.begin(),emf_z.size(),Real(0.0));
+#endif      
+
       // set gradiants to zero
       thr::fill_n(lsq_grad.begin(),lsq_grad.size(),
 		  StateGradiant(State(Real(0.0),
@@ -725,12 +733,12 @@ int main(int argc, char* argv[]){
       // 		get_x(thr::get<1>(get_x(InterpState(interp_states_iter[i])))),
       // 	 	get_y(thr::get<1>(get_y(InterpState(interp_states_iter[i])))));
       // }
-      
 
       /*-----------------------------------------------------------------*/
       /* Build Residual                                                  */
       /*-----------------------------------------------------------------*/
-      for(Index i=0; i < offset.ncolors; i++){
+      // for(Index i=0; i < offset.ncolors; i++){
+      for(Index i=0; i < interior_ncolors; i++){
 #ifdef MHD
 	thr::transform_n(thr::make_zip_iterator(thr::make_tuple(edge_iter,
 								bn_edge_iter)),
@@ -759,6 +767,66 @@ int main(int argc, char* argv[]){
 	antidiffusion_iter += offset.faces_per_color[i];
 #endif	
       }
+
+      /*-----------------------------------------------------------------*/
+      /* Apply Periodic BCs                                              */
+      /*-----------------------------------------------------------------*/
+      if (mesh.btype_x == Index(1)){
+      	// periodic left/right
+      	thr::for_each_n(make_device_counting_iterator(),
+      			mesh.ny - Index(2.0),
+      			periodic_bcs(mesh.nx,
+      				     mesh.ny,
+      				     mesh.nx,
+      				     wave_speed_iter,
+      				     residual_iter));
+      }
+      if (mesh.btype_y == Index(1)){
+      	// periodic top/bottom
+      	thr::for_each_n(make_device_counting_iterator(),
+      			mesh.nx - Index(2),
+      			periodic_bcs(mesh.nx,
+      				     mesh.ny,
+      				     Index(1),
+      				     wave_speed_iter,
+      				     residual_iter));
+	
+      }
+
+      
+      /*-----------------------------------------------------------------*/
+      /* Boundary edge contribution to residual                          */
+      /*-----------------------------------------------------------------*/
+      for(Index i=interior_ncolors; i < offset.ncolors; i++){
+#ifdef MHD
+	thr::transform_n(thr::make_zip_iterator(thr::make_tuple(edge_iter,
+								bn_edge_iter)),
+			 offset.faces_per_color[i],
+			 interp_states_iter,
+			 antidiffusion_iter,
+			 residual_ct<thr::tuple<Edge,Real> >(gamma,
+							     wave_speed_iter,
+							     emf_z_iter,
+							     residual_iter));
+	edge_iter += offset.faces_per_color[i];
+	interp_states_iter += offset.faces_per_color[i];
+	antidiffusion_iter += offset.faces_per_color[i];
+	bn_edge_iter += offset.faces_per_color[i];
+#else
+	thr::transform_n(edge_iter,
+			 offset.faces_per_color[i],
+			 interp_states_iter,
+			 antidiffusion_iter,
+			 residual_op(gamma,
+				     wave_speed_iter,
+				     residual_iter));
+
+	edge_iter += offset.faces_per_color[i];
+	interp_states_iter += offset.faces_per_color[i];
+	antidiffusion_iter += offset.faces_per_color[i];
+#endif	
+      }
+
       // reset iterators
       edge_iter = edge.begin();
       interp_states_iter = interp_states.begin();
@@ -767,22 +835,172 @@ int main(int argc, char* argv[]){
       bn_edge_iter = bn_edge.begin();
 #endif	
 
+
+      /*-----------------------------------------------------------------*/
+      /* Fix residual at corners                                         */
+      /*-----------------------------------------------------------------*/
+      Index index_i, index_j;
+      Real wsi, wsj;
+      State residual_i, residual_j;
+      if (mesh.btype_x == Index(1)){
+
+	index_i = Zero;
+	index_j = mesh.nx - One;
+	
+	wsi = wave_speed[index_i];
+	wsj = wave_speed[index_j];
+	residual_i = residual[index_i];
+	residual_j = residual[index_j];
+
+	periodic_corners(wsi, wsj,
+			 residual_i,
+			 residual_j);
+
+ 	wave_speed[index_i] = wsi;
+ 	wave_speed[index_j] = wsj;
+
+	residual[index_i] = State(thr::get<0>(residual_i),
+				  Vector(get_x(thr::get<1>(residual_i)),
+					 get_y(thr::get<1>(residual_i)),
+					 get_z(thr::get<1>(residual_i))),
+				  thr::get<2>(residual_i),
+				  Vector(get_x(thr::get<3>(residual_i)),
+					 get_y(thr::get<3>(residual_i)),
+					 get_z(thr::get<3>(residual_i))));
+
+	residual[index_j] = State(thr::get<0>(residual_i),
+				  Vector(get_x(thr::get<1>(residual_i)),
+					 get_y(thr::get<1>(residual_i)),
+					 get_z(thr::get<1>(residual_i))),
+				  thr::get<2>(residual_i),
+				  Vector(get_x(thr::get<3>(residual_i)),
+					 get_y(thr::get<3>(residual_i)),
+					 get_z(thr::get<3>(residual_i))));
+
+	index_i = mesh.npoin() - One;
+	index_j = (mesh.ny - One)*mesh.nx;
+	
+	wsi = wave_speed[index_i];
+	wsj = wave_speed[index_j];
+	residual_i = residual[index_i];
+	residual_j = residual[index_j];
+
+	periodic_corners(wsi, wsj,
+			 residual_i,
+			 residual_j);
+
+ 	wave_speed[index_i] = wsi;
+ 	wave_speed[index_j] = wsj;
+
+	residual[index_i] = State(thr::get<0>(residual_i),
+				  Vector(get_x(thr::get<1>(residual_i)),
+					 get_y(thr::get<1>(residual_i)),
+					 get_z(thr::get<1>(residual_i))),
+				  thr::get<2>(residual_i),
+				  Vector(get_x(thr::get<3>(residual_i)),
+					 get_y(thr::get<3>(residual_i)),
+					 get_z(thr::get<3>(residual_i))));
+
+	residual[index_j] = State(thr::get<0>(residual_i),
+				  Vector(get_x(thr::get<1>(residual_i)),
+					 get_y(thr::get<1>(residual_i)),
+					 get_z(thr::get<1>(residual_i))),
+				  thr::get<2>(residual_i),
+				  Vector(get_x(thr::get<3>(residual_i)),
+					 get_y(thr::get<3>(residual_i)),
+					 get_z(thr::get<3>(residual_i))));
+	
+      }
+
+      // residual[index_i] = residual_i;
+      
+      if (mesh.btype_y == Index(1)){
+
+	index_i = Zero;
+	index_j = (mesh.ny - One)*mesh.nx;
+	
+	wsi = wave_speed[index_i];
+	wsj = wave_speed[index_j];
+	residual_i = residual[index_i];
+	residual_j = residual[index_j];
+
+	periodic_corners(wsi, wsj,
+			 residual_i,
+			 residual_j);
+
+ 	wave_speed[index_i] = wsi;
+ 	wave_speed[index_j] = wsj;
+
+	residual[index_i] = State(thr::get<0>(residual_i),
+				  Vector(get_x(thr::get<1>(residual_i)),
+					 get_y(thr::get<1>(residual_i)),
+					 get_z(thr::get<1>(residual_i))),
+				  thr::get<2>(residual_i),
+				  Vector(get_x(thr::get<3>(residual_i)),
+					 get_y(thr::get<3>(residual_i)),
+					 get_z(thr::get<3>(residual_i))));
+
+	residual[index_j] = State(thr::get<0>(residual_i),
+				  Vector(get_x(thr::get<1>(residual_i)),
+					 get_y(thr::get<1>(residual_i)),
+					 get_z(thr::get<1>(residual_i))),
+				  thr::get<2>(residual_i),
+				  Vector(get_x(thr::get<3>(residual_i)),
+					 get_y(thr::get<3>(residual_i)),
+					 get_z(thr::get<3>(residual_i))));
+
+	index_i = mesh.nx - One;
+	index_j = mesh.npoin() - One;
+	
+	wsi = wave_speed[index_i];
+	wsj = wave_speed[index_j];
+	residual_i = residual[index_i];
+	residual_j = residual[index_j];
+
+	periodic_corners(wsi, wsj,
+			 residual_i,
+			 residual_j);
+
+ 	wave_speed[index_i] = wsi;
+ 	wave_speed[index_j] = wsj;
+
+	residual[index_i] = State(thr::get<0>(residual_i),
+				  Vector(get_x(thr::get<1>(residual_i)),
+					 get_y(thr::get<1>(residual_i)),
+					 get_z(thr::get<1>(residual_i))),
+				  thr::get<2>(residual_i),
+				  Vector(get_x(thr::get<3>(residual_i)),
+					 get_y(thr::get<3>(residual_i)),
+					 get_z(thr::get<3>(residual_i))));
+
+	residual[index_j] = State(thr::get<0>(residual_i),
+				  Vector(get_x(thr::get<1>(residual_i)),
+					 get_y(thr::get<1>(residual_i)),
+					 get_z(thr::get<1>(residual_i))),
+				  thr::get<2>(residual_i),
+				  Vector(get_x(thr::get<3>(residual_i)),
+					 get_y(thr::get<3>(residual_i)),
+					 get_z(thr::get<3>(residual_i))));
+
+      }
+
+
       if (1 == 1){/////////////////////////////////////////////////////////////////////////
 
       /*-----------------------------------------------------------------*/
       /* Apply BCs                                                       */
       /*-----------------------------------------------------------------*/
-      if (mesh.btype_x == Index(1)){
-	// periodic left/right
-	thr::for_each_n(make_device_counting_iterator(),
-			mesh.ny,
-			periodic_bcs(mesh.nx,
-				     mesh.ny,
-				     mesh.nx,
-				     wave_speed_iter,
-				     residual_iter));
-      }
-      else{
+      // if (mesh.btype_x == Index(1)){
+      // 	// periodic left/right
+      // 	thr::for_each_n(make_device_counting_iterator(),
+      // 			mesh.ny,
+      // 			periodic_bcs(mesh.nx,
+      // 				     mesh.ny,
+      // 				     mesh.nx,
+      // 				     wave_speed_iter,
+      // 				     residual_iter));
+      // }
+      if (mesh.btype_x == Index(0)){
 	// outflow left/right
 	for(Index i = interior_ncolors; i < (offset.ncolors - Index(2)); i++){
 #ifdef MHD
@@ -822,19 +1040,19 @@ int main(int argc, char* argv[]){
       }
 
       // apply boundary conditions
-      if (mesh.btype_y == Index(1)){
-      	// periodic top/bottom
-      	thr::for_each_n(make_device_counting_iterator(),
-      			mesh.nx,
-      			periodic_bcs(mesh.nx,
-      				     mesh.ny,
-      				     Index(1),
-      				     wave_speed_iter,
-      				     // emf_z_iter,
-      				     residual_iter));
+      // if (mesh.btype_y == Index(1)){
+      // 	// periodic top/bottom
+      // 	thr::for_each_n(make_device_counting_iterator(),
+      // 			mesh.nx,
+      // 			periodic_bcs(mesh.nx,
+      // 				     mesh.ny,
+      // 				     Index(1),
+      // 				     wave_speed_iter,
+      // 				     residual_iter));
 	
-      }
-      else{
+      // }
+
+      if (mesh.btype_y == Index(0)){
 	bface_iter += Index(2);
 	// outflow top/bottom
 	for(Index i = (interior_ncolors + Index(2)); i < (offset.ncolors); i++){
@@ -881,17 +1099,17 @@ int main(int argc, char* argv[]){
       /*-----------------------------------------------------------------*/
       /* compute emfs                                                    */
       /*-----------------------------------------------------------------*/  	  	        
-      for(Index i=0; i < interior_ncolors; i++){
-	thr::for_each_n(thr::make_zip_iterator(thr::make_tuple(edge_iter,
-							       antidiffusion_iter)),
-			offset.faces_per_color[i],
-			emf_upwind_calc<thr::tuple<Edge,State> >(mesh.nx,
-								 mesh.ny,
-								 emf_z_iter,
-								 state_iter));
+       for(Index i=0; i < interior_ncolors; i++){
+      	thr::for_each_n(thr::make_zip_iterator(thr::make_tuple(edge_iter,
+      							       antidiffusion_iter)),
+      			offset.faces_per_color[i],
+      			emf_upwind_calc<thr::tuple<Edge,State> >(mesh.nx,
+      								 mesh.ny,
+      								 emf_z_iter,
+      								 state_iter));
 	
-	edge_iter += offset.faces_per_color[i];
-	antidiffusion_iter += offset.faces_per_color[i];
+      	edge_iter += offset.faces_per_color[i];
+      	antidiffusion_iter += offset.faces_per_color[i];
       }
 
       // apply boundary conditions left/right      
@@ -910,10 +1128,6 @@ int main(int argc, char* argv[]){
       // reset iterators
       edge_iter = edge.begin();
       antidiffusion_iter = antidiffusion.begin();      
-
-      // for(Index i = 0; i < mesh.ncell(); i++){
-      // 	printf("[%d] %f\n",i,Real(emf_z_iter[i]));
-      // }      
 
       // for(Index i = 0; i < mesh.ncell(); i++){
       // 	printf("[%d] %f\n",i,Real(emf_z_iter[i]));
@@ -1004,7 +1218,7 @@ int main(int argc, char* argv[]){
 		       state.begin(),
 		       integrate_time<thr::tuple<State,State> >(field.Cour*rk_coeff*dt));
       
-#ifdef MHD
+#ifdef CT
       for(Index i=0; i < offset.ncolors; i++)
       	{
       	  thr::transform_n(edge_iter,

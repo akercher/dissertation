@@ -23,7 +23,7 @@ TST = test.run
 #-------------------------------------
 # Definitions
 #-------------------------------------
-REAL = float
+REAL = double
 GAS = MHD
 THR = THRUST_DEVICE_BACKEND_OMP
 
