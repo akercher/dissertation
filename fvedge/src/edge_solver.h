@@ -360,16 +360,11 @@ struct residual_op : public thr::binary_function<Edge,InterpState,State>
 
     flux_hydro(this->_gamma,Real(0.0),area_vec,prim_state_i,prim_state_j,normal_wave_speed,flux);
 
-    /* printf("\n"); */
-    /* printf("[%d][%d] %f %f %f %f\n",point_i,point_j, */
-    /* 	   thr::get<0>(prim_state_i),thr::get<0>(prim_state_j), */
-    /*  	   /\* thr::get<2>(prim_state_i),thr::get<2>(prim_state_j), *\/ */
-    /* 	   area_vec_mag, */
-    /* 	   normal_wave_speed); */
-    /* printf("[%d][%d] %f %f %f %f\n",point_i,point_j,thr::get<0>(flux), */
-    /* 	   get_x(thr::get<1>(flux)),get_y(thr::get<1>(flux)),thr::get<2>(flux)); */
-    /* printf("[%d][%d] %f %f %f %f %f\n",point_i,point_j,normal_wave_speed,thr::get<0>(flux), */
-    /* 	     get_x(thr::get<3>(flux)),get_y(thr::get<3>(flux)),thr::get<2>(flux)); */
+    /* printf(" area_vec_mag = %f\n",area_vec_mag); */
+    /* printf("[%d][%d] di = %f dj = %f pgi = %f pgj = %f F.d = %f F.en = %f\n",point_i,point_j, */
+    /* 	   density_i,density_j,pressure_i,pressure_j,flux_d,flux_en); */
+    /* printf("[%d][%d] vxi = %f vxj = %f vyi = %f vyj = %f F.mx = %f F.my = %f\n",point_i,point_j, */
+    /* 	   get_x(velocity_i),get_x(velocity_j),get_y(velocity_i),get_y(velocity_j),flux_mx,flux_my); */
 
     // update wave speeds
     Real wave_speed_i = Real(this->_wave_speed_iter[point_i]) + normal_wave_speed;
@@ -657,15 +652,14 @@ void periodic_corners (Real& wave_speed_i, Real& wave_speed_j, State& residual_i
     res_bz = thr::get<2>(thr::get<3>(State(residual_i)))
       + thr::get<2>(thr::get<3>(State(residual_j)));
         
-    /* printf("[%d][%d] res.mxi = %f, res.mxj = %f res_mx = %f\n",index_i,index_j, */
-    /* 	   get_x(thr::get<1>(State(this->_residual_iter[Index(index_i)]))), */
-    /* 	   get_x(thr::get<1>(State(this->_residual_iter[Index(index_j)]))), */
-    /* 	   res_mx); */
+    /* printf("res.myi = %f, res.myj = %f res_my = %f\n",get_y(thr::get<1>(State(residual_i))), */
+    /* 	   get_y(thr::get<1>(State(residual_j))), */
+    /* 	   res_my); */
 
     // XXX incorrect for triangles
-    /* res_d *= half; */
-    /* res_mx *= half; */
-    /* res_my *= half; */
+    /* res_d *= half*half; */
+    /* res_mx *= half*half; */
+    /* res_my *= half*half; */
     /* res_mz *= half; */
     /* res_en *= half; */
     /* res_bx *= half; */

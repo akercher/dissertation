@@ -12,7 +12,7 @@
 \chapter[Parallel processing]{Parallel processing}
 \label{chp:gpu}
 
-A description of a new method, known as CWM, which produces an approximate solution to Riemann problems of ideal MHD that contain only regular waves without knowledge of the exact solution  was completed last chapter.  The final chapter of this dissertation describes the implementation of a multidimensional flow solver for HD and MHD capable of shared memory parallelism on both a CPU and GPU.  An overview of the multidimensional algorithms and grid structure is given.  Although the HD solver is relatively unchanged, CT \citep{Evans:1988} is incorporated into the MHD solver to ensure that $\divergebf{B} = 0$ throughout the simulation (assuming it was initially zero).  Important concepts for parallel programming on shared memory devices, e.g., avoiding memory contention, are described.  A performance comparison of parallel execution for three multidimensional test problems of HD and MHD is given.  We find a performance increase of  seven times for the GPU over the CPU.  
+A description of a new method, known as CWM, which produces an approximate solution to Riemann problems of ideal MHD that contain only regular waves without knowledge of the exact solution  was completed in the last chapter.  The final chapter of this dissertation describes the implementation of a multidimensional flow solver for HD and MHD capable of shared memory parallelism on both a CPU and GPU.  An overview of the multidimensional algorithms and grid structure is given.  Although the HD solver is relatively unchanged, CT \citep{Evans:1988} is incorporated into the MHD solver to ensure that $\divergebf{B} = 0$ throughout the simulation (assuming it was initially zero).  Important concepts for parallel programming on shared memory devices, e.g., avoiding memory contention, are described.  A performance comparison of parallel execution for three multidimensional test problems of HD and MHD is given.  We find a performance increase of seven times for the GPU over the CPU when measured by cells per second.  
 
 %----------------------------------------------------------------------------------------
 %	2D Algorithms
@@ -20,9 +20,9 @@ A description of a new method, known as CWM, which produces an approximate solut
 \section[Methods for ideal MHD in higher dimensions]{Methods for ideal MHD in higher dimensions}          
 \label{sec:2d_mhd}
 
-Care must be taken in multidimensional MHD simulations to ensure errors associated with \divergebf{B} do not be grow large enough to introduce numerical instabilities.  A number of different approaches have been devised to contain the growth of \divergebf{B}.  A brief description of a few of the more popular approaches is given below.  For a thorough review and a performance comparison of the schemes discussed below, see \citep{Toth:2000}.  
+Care must be taken in multidimensional MHD simulations to ensure errors associated with \divergebf{B} do not grow large enough to introduce numerical instabilities.  A number of different approaches have been devised to contain the growth of \divergebf{B}.  A brief description of a few of the more popular approaches is given below.  For a thorough review and a performance comparison of the schemes discussed below, see \citep{Toth:2000}.  
 
-\citet{Powell:1999} derived the following non-conservative set of form of \eqref{eqn:mhd1} - \eqref{eqn:mhd4} where source terms proportional to \divergebf{B} are added to the right-hand side
+\citet{Powell:1999} derived the following non-conservative form of \eqref{eqn:mhd1} - \eqref{eqn:mhd4} where source terms proportional to \divergebf{B} are added to the right-hand side
 \begin{gather}
 \label{eqn:8wave1} \pd{\rho}{t} + \diverge{\left(\rho\mbf{v}\right)} = 0 \text{ ,} \\
 \label{eqn:8wave2} \pd{(\rho \mbf{v})}{t} + \diverge{\left[ \outerproduct{\rho\mbf{v}}{\mbf{v}} + \left( p_g + \frac{B^2}{2}\right)\underline{\mbf{I}} - \outerproductbf{B}{B}\right]}  = -\mathbf{B}(\divergebf{B}) \text{ ,}\\
@@ -31,7 +31,7 @@ Care must be taken in multidimensional MHD simulations to ensure errors associat
 \end{gather}
 It is known as the eight-wave scheme with the eighth wave corresponding to the propagation of \divergebf{B}.  
 
-\citet{Brackbill:1980} introduced a corrective step for $\mbf{B}$ where the updated solution is projected to one that is  divergence free.  The so-called projection scheme corrects the updated magnetic field by subtracting the scalar potential associated with the updated field.  This is done by writing the updated solution $\mbf{B*}$ as the sum of the curl and gradient of the vector and scalar potentials,
+\citet{Brackbill:1980} introduced a corrective step for $\mbf{B}$ where the updated solution is projected to one that is  divergence free.  The so-called projection scheme corrects the updated magnetic field by subtracting the scalar potential associated with the updated field.  This is done by writing the updated solution $\mbf{B}^*$ as the sum of the curl and gradient of the vector and scalar potentials,
 \begin{gather}
 \label{eqn:projection1}
 \mbf{B}^* = \curlbf{A} + \grad{\phi}.
@@ -39,9 +39,9 @@ It is known as the eight-wave scheme with the eighth wave corresponding to the p
 The correction of \eqref{eqn:projection1} is found by taking the curl of both sides and solving the resulting Poisson equation
 \begin{gather}
 \label{eqn:projection_poisson}
-\laplace{\phi} = \divergebf{B^*}.
+\laplace{\phi} = \diverge{\mbf{B}^*}.
 \end{gather} 
-The solution of \eqref{eqn:projection_poisson} is then subtracted from $\mbf{B}^*$ to give the advanced the magnetic field as
+The solution of \eqref{eqn:projection_poisson} is then subtracted from $\mbf{B}^*$ to give the time advanced magnetic field as
 \begin{gather}
 \label{eqn:projection2}
 \mbf{B}^{n+1} = \mbf{B}^* - \grad{\phi}.
@@ -56,12 +56,12 @@ In order for $\diverge{\mbf{B}^{n+1}} = 0$, the Laplacian of \eqref{eqn:projecti
 \tikzsetnextfilename{ct_grid}
 \input{fig/ct_grid.tex}
 \end{center}
-\caption{Staggered field geometry of the constrained transport scheme.  The components of the magnetic field are located at the cell interfaces, $\xi_z$ is located at the cell corners.}
+\caption{Staggered field geometry of the constrained transport scheme.  The components of the magnetic field are located at the cell interfaces, and $\xi_z$ is located at the cell corners.}
 \label{fig:ct_grid}
 \figSpace
 \end{figure}
 
-The final approach discussed here, and the one implemented for this dissertation, is the CT method of \citet{Evans:1988}.  For CT, the $\divergebf{B} = 0$ is maintained by staggering the grid with the magnetic field components placed at the cell interfaces.  The electromotive force $\mbf{E} = -\crossproductbf{v}{B}$ is defined along the edges in three-dimensions and at the cell corners in two-dimensions.  Following the notation of \citep{Stone:2008}, the z-component of the electromotive force is denoted $\xi_z$.  The placement of $\mbf{B}$ and $\xi_z$ in two-dimensions is shown in Figure~\ref{fig:ct_grid}, with $B_x$ place at $x_{i+1/2}, y_j$ and $B_y$ place at $x_i,y_{j+1/2}$.  The integration is done along cell edges in terms of finite areas instead of finite volumes.  The updated magnetic field components are
+The final approach discussed here, and the one implemented for this dissertation, is the CT method of \citet{Evans:1988}.  For CT, the $\divergebf{B} = 0$ is maintained by staggering the grid with the magnetic field components placed at the cell interfaces.  The electromotive force $\mbf{E} = -\crossproductbf{v}{B}$ is defined along the edges in three-dimensions and at the cell corners in two-dimensions.  Following the notation of \citep{Stone:2008}, the z-component of the electromotive force is denoted $\xi_z$.  The placement of $\mbf{B}$ and $\xi_z$ in two-dimensions is shown in Figure~\ref{fig:ct_grid}, with $B_x$ placed at $x_{i+1/2}, y_j$ and $B_y$ place at $x_i,y_{j+1/2}$.  The integration is done along cell edges in terms of finite areas instead of finite volumes.  The updated magnetic field components are
 \begin{gather}
 B^{n+1}_{x,i+1/2,j} = B^{n}_{x,i+1/2,j} - \frac{\delta t}{\delta y}\left( \xi_{z,i+1/2,j+1/2} - \xi_{z,i+1/2,j-1/2}\right), \text{ and} \\
 B^{n+1}_{y,i,j+1/2} = B^{n}_{y,i,j+1/2} + \frac{\delta t}{\delta x}\left( \xi_{z,i+1/2,j+1/2} - \xi_{z,i-1/2,j-1/2}\right).
@@ -72,14 +72,14 @@ Due to perfect cancellation, the numerical divergence in the cell
 \end{gather}
 remains zero after the solution is updated.
 
-The electromotive forces are initially calculated at the faces and must be integrated to the corners.  \citet{Gardiner:2005} argued that simple averaging across the faces will produce incorrect results for plane-parallel grid aligned flows and proposed an upwind method.  They gave the emfs at the cell corner as 
+The \glspl{emf} are initially calculated at the faces and must be integrated to the corners.  \citet{Gardiner:2005} argued that simple averaging across the faces will produce incorrect results for plane-parallel grid-aligned flows and proposed an upwind method.  They gave the EMFs at the cell corners as 
 \begin{gather}
 \xi_{z,i+1/2,j+1/2} = \frac{1}{4}(\xi_{z,i+1/2,j} + \xi_{z,i+1/2,j+1} + \xi_{z,i,j+1/2} + \xi_{z,i+1,j+1/2}) \\
 \;\;\;\;\;\;\;\;\;\;\;\;  +  \frac{\delta y}{8} \left( \left(\pd{\xi_z}{y}\right)_{i+1/2,j+1/4} - \left(\pd{\xi_z}{y}\right)_{i+1/2,j+3/4} \right) \\
 \;\;\;\;\;\;\;\;\;\;\;\;  +  \frac{\delta x}{8} \left( \left(\pd{\xi_z}{x}\right)_{i+1/4,j+1/2} - \left(\pd{\xi_z}{y}\right)_{i+3/4,j+1/2} \right) .
 \end{gather}  
 
-The derivatives of the emf, $\partial \xi_z / \partial y$ ($\partial \xi_z / \partial x$) , at the x (y) interfaces are upwinded based on the contact mode.  In \citep{Gardiner:2005}, they are given as
+The derivatives of the EMF, $\partial \xi_z / \partial y$ ($\partial \xi_z / \partial x$) , at the x (y) interfaces are upwinded based on the contact mode.  In \citep{Gardiner:2005}, they are given as
 \begin{gather}
 \label{eqn:emf_upwind}
 \left( \pd{\xi_z}{y}\right)_{i+1/2,j+1/4} =
@@ -93,12 +93,12 @@ The derivatives are
 \begin{gather}
 \left( \pd{\xi_z}{y} \right)_{i,j-1/4} = \frac{\xi^r_{z,i,j} - \xi_{z,i,j-1/2}}{2\delta y}.
 \end{gather}
-where $\xi^r_{z,i,j}$ is a reference emf computed at the cell center, see Figure 5 of \citep{Stone:2008}.  Similar expressions can be obtained for $\partial \xi_z / \partial x$. 
+where $\xi^r_{z,i,j}$ is a reference EMF computed at the cell center, see Figure 5 of \citep{Stone:2008}.  Similar expressions can be obtained for $\partial \xi_z / \partial x$. 
 
 The steps of the two-dimensional algorithm are given as follows:
 \begin{enumerate}
 \item Calculate the fluxes at each interface replacing the normal component of the magnetic field at cell center with the value at the interface.
-\item Calculate the emfs at the cell corners using the algorithm described above.
+\item Calculate the EMFs at the cell corners using the algorithm described above.
 \item Calculate the reference field $\xi^r_{i,j}$ at the cell centers.
 \item Update the hydrodynamical conserved variables and $B_z$ at the cell centers.
 \item Update the magnetic field at each interface using CT.
@@ -109,7 +109,7 @@ The steps of the two-dimensional algorithm are given as follows:
 \item Calculate new time step and repeat steps 1-9 until stopping criteria is met.
 \end{enumerate}
 
-In the next section, a detailed description is given of how the one- and two-dimensional algorithms are implemented for this dissertation to run in parallel on shared memory processors.
+In the next section, a detailed description is given of the parallel implementations of the one- and two-dimensional algorithms of this dissertation.
 
 %----------------------------------------------------------------------------------------
 %	Shared Memory Parallelism
@@ -117,9 +117,9 @@ In the next section, a detailed description is given of how the one- and two-dim
 \section[Shared memory parallelism]{Shared memory parallelism}
 \label{sec:shared_memory}
 
-Shared memory parallelism refers to simultaneous execution on a common section of memory.  It was implemented for this dissertations using Thrust, a \cpp  parallel template library based on the \gls{stl}.  It supports four device backends: \gls{cuda}, \gls{omp}, \gls{tbb}, and the standard \cpp device for serial runs.  The CUDA backend utilizes the GPU, while the OMP and TBB backends utilize multi-core processing on the CPU.  This dissertation compares the performance of the the CUDA and OMP backends.
+Shared memory parallelism refers to simultaneous execution on a common section of memory.  It was implemented for this dissertations using Thrust, a \cpp$\,$  parallel template library based on the \gls{stl}.  It supports four device backends: \gls{cuda}, \gls{omp}, \gls{tbb}, and the standard \cpp$\,$  device for serial runs.  The CUDA backend utilizes the GPU, while the OMP and TBB backends utilize multi-core processing on the CPU.  This dissertation compares the performance of the the CUDA and OMP backends.
 
-It is essential that there is no overlap of memory access of the different threads.  In fluid dynamics, this done by what is termed \emph{coloring} the faces/edges.  Coloring refers to grouping the faces/edges, i.e., coloring them, so that no two members of the group need to access the same memory space for the calculations.  For FV schemes, an iteration over the faces in serial becomes an iteration over the colors and the corresponding faces in parallel. 
+It is essential that there is no overlap of memory access of the different threads.  In fluid dynamics, this is achieved by \emph{coloring} the faces/edges.  Coloring refers to grouping the faces/edges, i.e., coloring them, so that no two members of the group need to access the same memory space for the calculations.  For FV schemes, an iteration over the faces in serial becomes an iteration over the colors and the corresponding faces in parallel. 
 
 %-----------------------------------------------------------------
 % Face coloring 1
@@ -149,7 +149,7 @@ A possible coloring, and the one implemented for this dissertation, of the inter
 \figSpace
 \end{figure}
 
-Coloring is more complicated when CT is used in conjunction with a cell-centered FV scheme.  In this case, each loop over the faces consists of a contribution to the residual at the cell center and a contribution to the emf at the cell corner.  Not only accessing the same cell, but also the same point must be avoided.  The coloring scheme shown in Figure~\ref{fig:face_color_1} only avoids one these potential pitfalls, because the faces/edges of each group can access the same point simultaneously.  An alternative coloring scheme is shown in Figure~\ref{fig:face_color_2} where eight colors are used instead of four.  In this case, the faces and the edges are colored,  this is equivalent to doubling the amount of colors for the faces since edges and faces are the same in two-dimensions.
+Coloring is more complicated when CT is used in conjunction with a cell-centered FV scheme.  In this case, each loop over the faces consists of a contribution to the residual at the cell center and a contribution to the EMF at the cell corner.  Not only accessing the same cell, but also the same point must be avoided.  The coloring scheme shown in Figure~\ref{fig:face_color_1} only avoids one of these potential pitfalls, because the faces/edges of each group can access the same point simultaneously.  An alternative coloring scheme is shown in Figure~\ref{fig:face_color_2} where eight colors are used instead of four.  In this case, the faces and the edges are colored.  This is equivalent to doubling the amount of colors for the faces since edges and faces are the same in two-dimensions.
 
 %----------------------------------------------------------------------------------------
 %	GPU efficient algorithms
@@ -157,7 +157,7 @@ Coloring is more complicated when CT is used in conjunction with a cell-centered
 \section[Efficient algorithms]{Efficient algorithms}
 \label{sec:efficient_algo}
 
-This section discusses increasing parallel performance with efficient data storage and utilization computational power.  Two types of data storage are AoS and SoA.  With limited memory available on the GPU, it is important to limit data storage.  This is achieved through function composition, or operator fusion.
+This section discusses increasing parallel performance with efficient data storage and proper utilization of computational power.  Two types of data storage are AoS and SoA.  With limited memory available on the GPU, it is important to limit data storage.  This is achieved through function composition, or operator fusion.
 
 The goal of operator fusion is to reduce storage of temporary data for similar operations.  As an example, consider the two transformations, $f(x)$ and $g(f(x))$ \citep{Thrust}.
 \begin{lstlisting}
@@ -217,7 +217,7 @@ Using \verb+transform_iterators+ reduces the storage requirements to $2n$ floats
                       conservative_states.begin(),
                       convert_primitive_to_conservative());
 \end{lstlisting}
-The storage of the cell positions and primitive variables is eliminated using the \verb+make_transform_iterator+ as follows 
+The storage of the cell positions and primitive variables is eliminated using the \\ \verb+make_transform_iterator+ as follows 
 \begin{lstlisting}
   // type definitions
   typedef thrust::device_vector<float,float,float> Vector;// (d, mx, E)
@@ -239,9 +239,9 @@ The storage of the cell positions and primitive variables is eliminated using th
                        conservative_states.begin(),
                        convert_primitive_to_conservative());
 \end{lstlisting}
-see Appendix~\ref{app:thrust_add} for the definitions of \verb+transform_n+ and \verb+make_device_counting_iterator+.  By fusing the transformations, the need to store $5n$ floats was eliminate, the number of reads and writes was reduce by $5n$, and no temporaries were stored.  The storage requirements are reduced by $10n$ in the case of multi-dimensional MHD.  Transform iterators help reduce the amount of stored data, however, it is important to properly store the remaining data to achieve memory coalescing.
+see Appendix~\ref{app:thrust_add} for the definitions of \verb+transform_n+ and \verb+make_device_counting_iterator+.  By fusing the transformations, the need to store $5n$ floats was eliminated, the number of reads and writes was reduced by $5n$, and no temporaries were stored.  The storage requirements are reduced by $10n$ in the case of multi-dimensional MHD.  Transform iterators help reduce the amount of stored data, however, it is important to properly store the remaining data to achieve memory coalescing.
 
-Memory coalescing occurs when multiple memory addresses are accessed with a single transaction.  A warp is 32 consecutive thread on the GPU.  It can access 128 bytes, i.e., 32 single precision values, with one transaction.  If memory is uncoalesced, multiple transactions are required to load 128 bytes.  Coalescing does not occur when data is stored with AoS, it will however, with SoA.  Below is an example of a structure containing one-dimensional hydrodynamic state variables.
+Memory coalescing occurs when multiple memory addresses are accessed with a single transaction.  A warp is 32 consecutive threads on the GPU.  It can access 128 bytes, i.e., 32 single precision values, with one transaction.  If memory is uncoalesced, multiple transactions are required to load 128 bytes.  Coalescing does not occur when data is stored with AoS, it will however, with SoA.  Below is an example of a structure containing one-dimensional hydrodynamic state variables.
 \begin{lstlisting}
 struc conservative_variables{
   float density;
@@ -256,7 +256,7 @@ state[i].momentum_x = another_number;
 state[i].energy = one_more_number;
 \end{lstlisting} 
 
-To ensure memory is coalesced, the variables need to stored in an SoA, as shown below.
+To ensure memory is coalesced, the variables need to be stored in an SoA, as shown below.
 \begin{lstlisting}
 struc conservative_variables{
   float *density;
@@ -340,7 +340,7 @@ thrust::transform_n(thrust::make_zip_iterator(make_tuple(d.begin(),
                     convert_primitive_to_conservative(gamma));
 \end{lstlisting} 
 
-The algorithms and techniques discussed above have been implemented in an multidimensional hydrodynamic and ideal magnetohydrodynamic solver capable of shared memory parallelism.  In the following section, the accuracy and performance of the code is demonstrated on some well known test problems, namely Kelvin-Helmholtz instability, spherical blast waves, and Orzag-Tang vortex.  
+The algorithms and techniques discussed above have been implemented in a multidimensional hydrodynamic and ideal magnetohydrodynamic solver capable of shared memory parallelism.  In the following section, the accuracy and performance of the code is demonstrated on some well known test problems, namely Kelvin-Helmholtz instability, spherical blast waves, and Orzag-Tang vortex.  
 
 %----------------------------------------------------------------------------------------
 %	Performance Results
@@ -348,7 +348,7 @@ The algorithms and techniques discussed above have been implemented in an multid
 \section[Performance results]{Performance results}
 \label{sec:gpu_results}
 
-In Section~\ref{sec:shared_memory} performance enhancing techniques such as operator fusion and SoA data storage were described.  The algorithms described in Section~\ref{sec:2d_mhd} were implemented in an an edge-based finite-volume flow solver.  The performance results on a Dell Precision 7500 workstation with a (Dual CPU) Intel Xeon E5645 @ 2.40 Ghz and a GeFroce GTX TITAN GPU with a memory bandwidth of 288.4 GB/sec and 2688 CUDA cores are given for three test cases, the Kelvin-Helmholtz instability, spherical blast waves, and Orzag-Tang vortex.  In all three tests, we use the initial conditions of \citep{url:athena} for comparison purposes.
+In Section~\ref{sec:shared_memory} performance enhancing techniques such as operator fusion and SoA data storage were described.  The algorithms described in Section~\ref{sec:2d_mhd} were implemented in an edge-based finite-volume flow solver.  The performance results on a Dell Precision 7500 workstation with a (Dual CPU) Intel Xeon E5645 @ 2.40 Ghz and a GeFroce GTX TITAN GPU with a memory bandwidth of 288.4 GB/sec and 2688 CUDA cores are given for three test cases, the Kelvin-Helmholtz instability, spherical blast waves, and Orzag-Tang vortex.  In all three tests, we use the initial conditions of \citep{url:athena} for comparison purposes.
 
 %----------------------------------------------------------------
 % KH-instability
@@ -368,7 +368,7 @@ In Section~\ref{sec:shared_memory} performance enhancing techniques such as oper
 
 The Kelvin-Helmholtz instability \citep{hydro_stability} considers a slip surface, i.e., a discontinuity between oppositely directed flows.  The version of the test considered here is identical to the version given by \citet{url:athena}.  The simulation is performed on a square domain, $[0,1] \times [0,1]$, with periodic boundaries everywhere.  The flow speed is $0.5$; it is in the $-x$ direction for $ y < 0.25$ and $y > 0.75$, where $\rho = 1$, and in the $x$ direction for $0.25 \le y \le 0.75$, where $\rho = 2$.  The gas pressure is initially $2.5$ everywhere and the ratio of specific heats is $\gamma = 1.4$.  The instability is produced by adding random perturbations with a peak amplitude of $0.01$ to both the $x$ and $y$ velocities. 
 
-The density at times $t=1$ and $t=5$ is shown in the top and bottom panels of Figure~\ref{fig:kh_instability} respectively.  The initial conditions are shown in Figure~\ref{fig:kh_instability_ics} of Appendix~~\ref{app:kh_instability_ics}.  The boundary between the two fluids is well resolved at later times, this indicates numerical diffusion is not excessive.  If excessive numerical diffusion were present, the instability would be suppressed \citep{url:athena}. 
+The density at times $t=1$ and $t=5$ is shown in the top and bottom panels of Figure~\ref{fig:kh_instability} respectively.  The initial conditions are shown in Figure~\ref{fig:kh_instability_ics} of Appendix~\ref{app:kh_instability_ics}.  The boundary between the two fluids is well resolved at later times.  This indicates numerical diffusion is not excessive.  If excessive numerical diffusion were present, the instability would be suppressed \citep{url:athena}. 
 
 %----------------------------------------------------------------
 % Spherical Blast waves
@@ -383,7 +383,7 @@ The density at times $t=1$ and $t=5$ is shown in the top and bottom panels of Fi
 \figSpace
 \end{figure}
 
-For second case, a spherical blast wave is simulated on a rectangular domain with $L_y = 3L_x/2$ and periodic boundary conditions \citep{Zachary:1994,Balsara:1999,Londrillo:2000}.  The problem is initialized with a high pressure region corresponding to $r < 0.1$ where the gas pressure is two orders of magnitude greater than the background pressure.  A uniform density of $\rho = 1$ is used throughout the domain; the background gas pressure is $0.1$; the ratio of specific heats is $\gamma = 5/3$.
+For the second case, a spherical blast wave is simulated on a rectangular domain with $L_y = 3L_x/2$ and periodic boundary conditions \citep{Zachary:1994,Balsara:1999,Londrillo:2000}.  The problem is initialized with a high pressure region corresponding to $r < 0.1$ where the gas pressure is two orders of magnitude greater than the background pressure.  A uniform density of $\rho = 1$ is used throughout the domain; the background gas pressure is $0.1$; the ratio of specific heats is $\gamma = 5/3$.
 
 The density at times $t = 0.2$ and $t = 1.5$ is shown in the left and right panels of Figure~\ref{fig:blast_waves} respectively.  The blast wave is initially spherical as there are no effects due to grid alignment.  As the blast reaches the boundaries, complex interactions between linear and nonlinear waves are produced and solution remains symmetric across the $x$ and $y$ axis.  
 
@@ -412,9 +412,9 @@ $1024\times1024$ & 81 & 81 & 86 \\
 \figSpace
 \end{table}
 
-Performance comparisons between the GPU and CPU for the three test cases described above are listed in Table~\ref{tab:performance}.  The CPU has six physical cores and two logical cores per physical, making 12 cores available with hyper-threading enabled.  Assuming near perfect scaling, running on the GPU is approximately seven times faster than running in parallel on the CPU.  A larger increase in performance of the GPU over the CPU is observed in the MHD test as compared to the HD tests.  The MHD equations are more complex than the HD equations and more calculations are required per time step.  The performance increase demonstrates the superior ability of the GPU to process many operations simultaneously.  
+Performance comparisons between the GPU and CPU for the three test cases described above are listed in Table~\ref{tab:performance}.  The CPU has six physical cores and two logical cores per physical core, making 12 cores available with hyper-threading enabled.  Assuming near perfect scaling, running on the GPU is approximately seven times faster than running in parallel on the CPU.  A larger increase in performance of the GPU over the CPU is observed in the MHD test as compared to the HD tests.  The MHD equations are more complex than the HD equations and more calculations are required per time step.  The performance increase demonstrates the superior ability of the GPU to process many operations simultaneously.  
 
- The results indicate that the cost to performance ratio for a  GPUs such as NVIDIAs GTX Titan, which retails for about \$1000.00, is such that they are an ideal choice for shared memory processors, if the limited memory is managed properly.  The relatively large memory capacity of 6 GB on the GTX Titan is around $6.5\%$ of the 92 GB available on the Xeon E5.  For the equivalent memory of one, Xeon E5, fifteen GPUs are required, costing nearly three times that of one Xeon E5.  In order for GPUs to be worth the investment, computations on the fly must be maximized and data storage minimized.  
+ The results indicate that the cost to performance ratio for a  GPUs such as NVIDIAs GTX Titan, which retails for about \$1000.00, is such that they are an ideal choice for shared memory processors, if the limited memory is managed properly.  The relatively large memory capacity of 6 GB on the GTX Titan is around $6.5\%$ of the 92 GB available on the Xeon E5.  For the equivalent memory of one Xeon E5, fifteen GPUs are required, costing nearly three times that of one Xeon E5.  In order for GPUs to be worth the investment, computations on the fly must be maximized and data storage minimized.  
 
 
 %-----------------------------------------------------------------

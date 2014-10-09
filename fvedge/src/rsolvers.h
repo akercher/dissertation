@@ -515,7 +515,7 @@ void hlld_ct (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j
   Real bnisq = bn*bn;
   Real btisq = bti*bti;
   Real bperpisq = btisq + bzi*bzi;
-  Real pbi = + half*(bn*bn + bti*bti + bzi*bzi);
+  Real pbi = half*(bn*bn + bti*bti + bzi*bzi);
   Real pti = pgi + pbi;
   Real eni = pgi/(gamma - Real(1.0)) + di*kei + pbi;
   Real hi = (eni + pti)*di_inv;
@@ -540,7 +540,7 @@ void hlld_ct (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j
   Real bperpjsq = btjsq + bzj*bzj;
   Real csj = std::sqrt(gamma*pgj/dj);
   Real kej = half*(vxj*vxj + vyj*vyj + vzj*vzj);
-  Real pbj = + half*(bn*bn + btj*btj + bzj*bzj);
+  Real pbj = half*(bn*bn + btj*btj + bzj*bzj);
   Real ptj = pgj + pbj;
   Real enj = pgj/(gamma - Real(1.0)) + dj*kej + pbj;
   Real hj = (enj + ptj)*dj_inv;
@@ -624,7 +624,7 @@ void hlld_ct (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j
     /* total pressure throughout intermediate states, Eq. (41) of [1] */
     /* Real pts = pti + di*sdi*(sdi-sdmi); */
     Real pts = (sdj*dj*pti - sdi*di*ptj + di*dj*sdj*sdi*(vnj - vni))/(sdj*dj - sdi*di);
-    
+
     /* Alfven wave speed */
     Real dis = di*sdi/sdmi;
     Real sqrtdis = std::sqrt(dis);
@@ -810,8 +810,8 @@ void hlld_ct (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j
 			    + sfi*(dis*vzis - di*vzi)),  
 		     vni*(eni + pti) - bn*(vxi*bxi + vyi*byi + vzi*bzi)
 		     + sfi*(enis - eni), 
-		     Vector(vni*bxi - vxi*bn + sfi*(bxis - bxi),				
-			    vni*byi - vyi*bn + sfi*(byis - byi), 
+		     Vector((vni*bxi - vxi*bn + sfi*(bxis - bxi))*fabs(ny),				
+			    (vni*byi - vyi*bn + sfi*(byis - byi))*fabs(nx), 
 			    vni*bzi - vzi*bn + sfi*(bzis - bzi)));
       }
     else if (sm >= Real(0.0))
@@ -826,8 +826,8 @@ void hlld_ct (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j
 			    - sfi*di*vzi - tmp*dis*vzis + sai*diss*vziss), 
 		     vni*(eni + pti) - bn*(vxi*bxi + vyi*byi + vzi*bzi)
 		     - sfi*eni - tmp*enis + sai*eniss, 
-		     Vector(vni*bxi - vxi*bn - sfi*bxi - tmp*bxis + sai*bxiss, 
-			    vni*byi - vyi*bn - sfi*byi - tmp*byis + sai*byiss, 
+		     Vector((vni*bxi - vxi*bn - sfi*bxi - tmp*bxis + sai*bxiss)*fabs(ny), 
+			    (vni*byi - vyi*bn - sfi*byi - tmp*byis + sai*byiss)*fabs(nx), 
 			    vni*bzi - vzi*bn - sfi*bzi - tmp*bzis + sai*bziss));
 
       }
@@ -843,8 +843,8 @@ void hlld_ct (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j
 			    - sfj*dj*vzj - tmp*djs*vzjs + saj*djss*vzjss), 
 		     vnj*(enj + ptj) - bn*(vxj*bxj + vyj*byj + vzj*bzj)
 		     - sfj*enj - tmp*enjs + saj*enjss, 
-		     Vector(vnj*bxj - vxj*bn - sfj*bxj - tmp*bxjs + saj*bxjss, 
-			    vnj*byj - vyj*bn - sfj*byj - tmp*byjs + saj*byjss, 
+		     Vector((vnj*bxj - vxj*bn - sfj*bxj - tmp*bxjs + saj*bxjss)*fabs(ny), 
+			    (vnj*byj - vyj*bn - sfj*byj - tmp*byjs + saj*byjss)*fabs(nx), 
 			    vnj*bzj - vzj*bn - sfj*bzj - tmp*bzjs + saj*bzjss));
 
 	/* printf("djs =%f vyjs = %f byis = %f byjs = %f\n",djs, vyjs, byi, byjs); */
@@ -861,8 +861,8 @@ void hlld_ct (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j
 			    + sfj*(djs*vzjs - dj*vzj)),  
 		     vnj*(enj + ptj) - bn*(vxj*bxj + vyj*byj + vzj*bzj)
 		     + sfj*(enjs - enj), 
-		     Vector(vnj*bxj - vxj*bn + sfj*(bxjs - bxj), 
-			    vnj*byj - vyj*bn + sfj*(byjs - byj), 
+		     Vector((vnj*bxj - vxj*bn + sfj*(bxjs - bxj))*fabs(ny), 
+			    (vnj*byj - vyj*bn + sfj*(byjs - byj))*fabs(nx), 
 			    vnj*bzj - vzj*bn + sfj*(bzjs - bzj)));
       }
 
@@ -875,6 +875,7 @@ void hlld_ct (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j
     normal_wave_speed = sn_mag*half*(fabs(vnroe) + fabs(vtroe) + cfroe);
 
     /* printf("sfi =%f sai = %f sm = %f saj = %f sfj = %f\n",sfi,sai,sm,saj,sfj); */
+    /* printf("vxis =%f vxjs = %f bxis =%f bxjs = %f\n",vxis,vxjs,bxis,bxjs); */
     /* if (sm >= Real(0.0)) */
     /*   { */
     /* 	printf("di = %f dis = %f diss = %f  f.d = %f\n",di,dis,diss,thr::get<0>(flux)); */
@@ -958,7 +959,7 @@ void rhll (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j,
   Real tx = -ny;
   Real ty = nx;
   
-  Real eps = Real(1.0e-12)*Minf;
+  Real eps = Real(1.0e-5)*Minf; //Real(1.0e-12)*Minf for double precision
 
   Real abs_dq = std::sqrt((vxj - vxi)*(vxj - vxi) + (vyj - vyi)*(vyj - vyi));
 
@@ -1029,21 +1030,21 @@ void rhll (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j,
   // left eigenvectors and differences in state variables
   Real LdU[4];
   LdU[0] = (dpg - droe*csroe*dvn )/(Real(2.0)*csroe*csroe);
-  LdU[1] = dd - dpg/(csroe*csroe);
-  LdU[2] = (dpg + droe*csroe*dvn )/(Real(2.0)*csroe*csroe);
-  LdU[3] = droe;
+  LdU[1] = droe*dvt/csroe;//dd - dpg/(csroe*csroe);
+  LdU[2] = dd - dpg/(csroe*csroe);//(dpg + droe*csroe*dvn )/(Real(2.0)*csroe*csroe);
+  LdU[3] = (dpg + droe*csroe*dvn )/(Real(2.0)*csroe*csroe); //droe;
     
   // eigenvalues
   Real ev[4];
   ev[0] = vnroe - csroe;
   ev[1] = vnroe;
-  ev[2] = vnroe + csroe;
-  ev[3] = vnroe;
+  ev[2] = vnroe;//vnroe + csroe;
+  ev[3] = vnroe + csroe;//vnroe;
 
   // wave speeds
   Real si = fabs(ev[0]); // left-going acoustic wave
   /* Real sm = std::fabs(ev2); // entropy and shear wave */
-  Real sj = fabs(ev[2]); // right-going acoustic wave
+  Real sj = fabs(ev[3]); // right-going acoustic wave
 
   // Harten's Entropy Fix JCP(1983), 49, pp357-393:
   // only for the nonlinear fields (i.e. shocks and rarefactions).
@@ -1065,32 +1066,30 @@ void rhll (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j,
 
   Real rem[4][4];
 
-  //left moving acoustic waves
-  rem[0][0] = Real(1.0);    
-  rem[1][0] = vxroe - csroe*nxr;
-  rem[2][0] = vyroe - csroe*nyr;
-  rem[3][0] = hroe - vnroe*csroe;
-
-  //enthorpy wave
-  rem[0][1] = Real(1.0);
-  rem[1][1] = vxroe;
-  rem[2][1] = vyroe;
-  rem[3][1] = keroe;
-
-  //right moving acoustic waves    
-  rem[0][2] = Real(1.0);
-  rem[1][2] = vxroe + csroe*nxr;
-  rem[2][2] = vyroe + csroe*nyr;
-  rem[3][2] = hroe + vnroe*csroe;
-
   //shear waves
-  Real dvx = vxj - vxi;
-  Real dvy = vyj - vyi;
+  /* Real dvx = vxj - vxi; */
+  /* Real dvy = vyj - vyi; */
 
-  rem[0][3] = Real(0.0);
-  rem[1][3] = dvx - dvn*nxr;
-  rem[2][3] = dvy - dvn*nyr;
-  rem[3][3] = vxroe*dvx + vyroe*dvy - vnroe*dvn;
+  rem[0][0] = Real(1.0);    
+  rem[0][1] = Zero;//Real(1.0);
+  rem[0][2] = Real(1.0);
+  rem[0][3] = Real(1.0); //Real(0.0);
+
+  rem[1][0] = vxroe - csroe*nxr;
+  rem[1][1] = csroe*txr;//vxroe;
+  rem[1][2] = vxroe;// + csroe*nxr;
+  rem[1][3] = vxroe + csroe*nxr;//dvx - dvn*nxr;
+
+  rem[2][0] = vyroe - csroe*nyr;
+  rem[2][1] = csroe*tyr;//vyroe;
+  rem[2][2] = vyroe; // + csroe*nyr;
+  rem[2][3] = vyroe + csroe*nyr;//dvy - dvn*nyr;
+
+
+  rem[3][0] = hroe - vnroe*csroe;
+  rem[3][1] = csroe*vtroe;//keroe;
+  rem[3][2] = keroe;//hroe + vnroe*csroe;
+  rem[3][3] = hroe + vnroe*csroe;//vxroe*dvx + vyroe*dvy - vnroe*dvn;
 
   Real fdiss[4];  
   for (Index i=0;i<4;i++){

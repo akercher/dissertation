@@ -119,7 +119,6 @@ int main(int argc, char* argv[]){
   read_configuration(input, fct, ct, prob, field.Cour, cdiss, cwm, max_steps, 
 		     rk_stages, mesh, disc_x, tf, gamma, state_l, state_r);
 
-
   if (prob.compare("linear_wave") == Index(0)) mesh.Lx = 2.2360680;
   else if (prob.compare("cpaw") == Index(0)) mesh.Lx = 2.2360680;
   // if (prob.compare("cpaw") == Index(0)) {
@@ -277,15 +276,16 @@ int main(int argc, char* argv[]){
   bface_iter = bface.begin();
 
   // for (Index i=0; i<mesh.nface();i++){
-  // // for (Index i=0; i<12;i++){
-  //   print_edges_host(i,edge[i]);
+  // for (Index i=0; i<12;i++){
+    // print_edges_host(i,edge[i]);
+  //   printf("[%d] pi = %d pj = %d\n",i,get_x(thr::get<2>(Edge(edge[i]))),get_y(thr::get<2>(Edge(edge[i]))));
   // }
 
   /*-----------------------------------------------------------------*/
   /* Initialize node centered consevative state variables            */
   /*-----------------------------------------------------------------*/  
 
-  if (prob.compare("constant") == Index(0)){
+  if (prob.compare("constant") == Index(3)){
     sprintf(base_name,"bin/constant_output");
     thr::fill_n(state.begin(),state.size(),State(Real(1.0),
 						 Vector(Real(2.0),Real(0.5),Real(0.0)),
@@ -303,13 +303,16 @@ int main(int argc, char* argv[]){
     // thr::fill_n(bn_edge.begin(),bn_edge.size(),Real(1.0));    
   }
   else if (prob.compare("linear_wave") == Index(0)){
-    Real ieigen = Index(1);
-    Real vflow = Real(0.0);
+
+    Real ieigen = Index(2);
+    Real vflow = Real(1.0);
     gamma = Real(5.0)/Real(3.0);
     nsteps_out = 20;
     sprintf(base_name,"bin/linear_wave");
-    mesh.btype_x = Index(3);
+
+    mesh.btype_x = Index(1);
     mesh.btype_y = Index(1);
+
     thr::transform_n(make_device_counting_iterator(),
 		     state.size(),
 		     state.begin(),
@@ -321,6 +324,7 @@ int main(int argc, char* argv[]){
 				      vflow,
 				      ieigen,
 				      gamma));
+
 #ifdef MHD
     for(Index i=0; i < offset.ncolors; i++){
       thr::transform_n(edge_iter,
@@ -460,7 +464,7 @@ int main(int argc, char* argv[]){
   else{
     std::cout << prob << " " << "not valid" << std::endl;
   }
-  
+
 #ifdef MHD
   /*-----------------------------------------------------------------*/
   /* Initialize CT variables                                         */
@@ -768,6 +772,11 @@ int main(int argc, char* argv[]){
 #endif	
       }
 
+    // for(Index i = 0; i < mesh.npoin(); i++){
+    //   if(i % mesh.nx == Index(0)) printf("\n");
+    //   print_states_host(i,State(residual_iter[i]));
+    // }
+
       /*-----------------------------------------------------------------*/
       /* Apply Periodic BCs                                              */
       /*-----------------------------------------------------------------*/
@@ -797,6 +806,7 @@ int main(int argc, char* argv[]){
       /*-----------------------------------------------------------------*/
       /* Boundary edge contribution to residual                          */
       /*-----------------------------------------------------------------*/
+
       for(Index i=interior_ncolors; i < offset.ncolors; i++){
 #ifdef MHD
 	thr::transform_n(thr::make_zip_iterator(thr::make_tuple(edge_iter,
@@ -842,73 +852,77 @@ int main(int argc, char* argv[]){
       Index index_i, index_j;
       Real wsi, wsj;
       State residual_i, residual_j;
+
       if (mesh.btype_x == Index(1)){
 
-	index_i = Zero;
-	index_j = mesh.nx - One;
+      	index_i = Zero;
+      	index_j = mesh.nx - One;
 	
-	wsi = wave_speed[index_i];
-	wsj = wave_speed[index_j];
-	residual_i = residual[index_i];
-	residual_j = residual[index_j];
+      	wsi = wave_speed[index_i];
+      	wsj = wave_speed[index_j];
+      	residual_i = residual[index_i];
+      	residual_j = residual[index_j];
 
-	periodic_corners(wsi, wsj,
-			 residual_i,
-			 residual_j);
+      	// printf("[%d][%d]\n",index_i,index_j);
+      	periodic_corners(wsi, wsj,
+      			 residual_i,
+      			 residual_j);
 
- 	wave_speed[index_i] = wsi;
- 	wave_speed[index_j] = wsj;
+      	wave_speed[index_i] = wsi;
+      	wave_speed[index_j] = wsj;
 
-	residual[index_i] = State(thr::get<0>(residual_i),
-				  Vector(get_x(thr::get<1>(residual_i)),
-					 get_y(thr::get<1>(residual_i)),
-					 get_z(thr::get<1>(residual_i))),
-				  thr::get<2>(residual_i),
-				  Vector(get_x(thr::get<3>(residual_i)),
-					 get_y(thr::get<3>(residual_i)),
-					 get_z(thr::get<3>(residual_i))));
+      	residual[index_i] = State(thr::get<0>(residual_i),
+      				  Vector(get_x(thr::get<1>(residual_i)),
+      					 get_y(thr::get<1>(residual_i)),
+      					 get_z(thr::get<1>(residual_i))),
+      				  thr::get<2>(residual_i),
+      				  Vector(get_x(thr::get<3>(residual_i)),
+      					 get_y(thr::get<3>(residual_i)),
+      					 get_z(thr::get<3>(residual_i))));
 
-	residual[index_j] = State(thr::get<0>(residual_i),
-				  Vector(get_x(thr::get<1>(residual_i)),
-					 get_y(thr::get<1>(residual_i)),
-					 get_z(thr::get<1>(residual_i))),
-				  thr::get<2>(residual_i),
-				  Vector(get_x(thr::get<3>(residual_i)),
-					 get_y(thr::get<3>(residual_i)),
-					 get_z(thr::get<3>(residual_i))));
+      	residual[index_j] = State(thr::get<0>(residual_i),
+      				  Vector(get_x(thr::get<1>(residual_i)),
+      					 get_y(thr::get<1>(residual_i)),
+      					 get_z(thr::get<1>(residual_i))),
+      				  thr::get<2>(residual_i),
+      				  Vector(get_x(thr::get<3>(residual_i)),
+      					 get_y(thr::get<3>(residual_i)),
+      					 get_z(thr::get<3>(residual_i))));
 
-	index_i = mesh.npoin() - One;
-	index_j = (mesh.ny - One)*mesh.nx;
+      	index_i = (mesh.ny - One)*mesh.nx;
+      	index_j = mesh.npoin() - One;
+
 	
-	wsi = wave_speed[index_i];
-	wsj = wave_speed[index_j];
-	residual_i = residual[index_i];
-	residual_j = residual[index_j];
+      	wsi = wave_speed[index_i];
+      	wsj = wave_speed[index_j];
+      	residual_i = residual[index_i];
+      	residual_j = residual[index_j];
 
-	periodic_corners(wsi, wsj,
-			 residual_i,
-			 residual_j);
+      	// printf("[%d][%d]\n",index_i,index_j);
+      	periodic_corners(wsi, wsj,
+      			 residual_i,
+      			 residual_j);
 
- 	wave_speed[index_i] = wsi;
- 	wave_speed[index_j] = wsj;
+      	wave_speed[index_i] = wsi;
+      	wave_speed[index_j] = wsj;
 
-	residual[index_i] = State(thr::get<0>(residual_i),
-				  Vector(get_x(thr::get<1>(residual_i)),
-					 get_y(thr::get<1>(residual_i)),
-					 get_z(thr::get<1>(residual_i))),
-				  thr::get<2>(residual_i),
-				  Vector(get_x(thr::get<3>(residual_i)),
-					 get_y(thr::get<3>(residual_i)),
-					 get_z(thr::get<3>(residual_i))));
+      	residual[index_i] = State(thr::get<0>(residual_i),
+      				  Vector(get_x(thr::get<1>(residual_i)),
+      					 get_y(thr::get<1>(residual_i)),
+      					 get_z(thr::get<1>(residual_i))),
+      				  thr::get<2>(residual_i),
+      				  Vector(get_x(thr::get<3>(residual_i)),
+      					 get_y(thr::get<3>(residual_i)),
+      					 get_z(thr::get<3>(residual_i))));
 
-	residual[index_j] = State(thr::get<0>(residual_i),
-				  Vector(get_x(thr::get<1>(residual_i)),
-					 get_y(thr::get<1>(residual_i)),
-					 get_z(thr::get<1>(residual_i))),
-				  thr::get<2>(residual_i),
-				  Vector(get_x(thr::get<3>(residual_i)),
-					 get_y(thr::get<3>(residual_i)),
-					 get_z(thr::get<3>(residual_i))));
+      	residual[index_j] = State(thr::get<0>(residual_i),
+      				  Vector(get_x(thr::get<1>(residual_i)),
+      					 get_y(thr::get<1>(residual_i)),
+      					 get_z(thr::get<1>(residual_i))),
+      				  thr::get<2>(residual_i),
+      				  Vector(get_x(thr::get<3>(residual_i)),
+      					 get_y(thr::get<3>(residual_i)),
+      					 get_z(thr::get<3>(residual_i))));
 	
       }
 
@@ -916,71 +930,74 @@ int main(int argc, char* argv[]){
       
       if (mesh.btype_y == Index(1)){
 
-	index_i = Zero;
-	index_j = (mesh.ny - One)*mesh.nx;
+      	index_i = Zero;
+      	index_j = (mesh.ny - One)*mesh.nx;
 	
-	wsi = wave_speed[index_i];
-	wsj = wave_speed[index_j];
-	residual_i = residual[index_i];
-	residual_j = residual[index_j];
+      	wsi = wave_speed[index_i];
+      	wsj = wave_speed[index_j];
+      	residual_i = residual[index_i];
+      	residual_j = residual[index_j];
 
-	periodic_corners(wsi, wsj,
-			 residual_i,
-			 residual_j);
+      	// printf("[%d][%d]\n",index_i,index_j);
+      	periodic_corners(wsi, wsj,
+      			 residual_i,
+      			 residual_j);
 
- 	wave_speed[index_i] = wsi;
- 	wave_speed[index_j] = wsj;
 
-	residual[index_i] = State(thr::get<0>(residual_i),
-				  Vector(get_x(thr::get<1>(residual_i)),
-					 get_y(thr::get<1>(residual_i)),
-					 get_z(thr::get<1>(residual_i))),
-				  thr::get<2>(residual_i),
-				  Vector(get_x(thr::get<3>(residual_i)),
-					 get_y(thr::get<3>(residual_i)),
-					 get_z(thr::get<3>(residual_i))));
+      	wave_speed[index_i] = wsi;
+      	wave_speed[index_j] = wsj;
 
-	residual[index_j] = State(thr::get<0>(residual_i),
-				  Vector(get_x(thr::get<1>(residual_i)),
-					 get_y(thr::get<1>(residual_i)),
-					 get_z(thr::get<1>(residual_i))),
-				  thr::get<2>(residual_i),
-				  Vector(get_x(thr::get<3>(residual_i)),
-					 get_y(thr::get<3>(residual_i)),
-					 get_z(thr::get<3>(residual_i))));
+      	residual[index_i] = State(thr::get<0>(residual_i),
+      				  Vector(get_x(thr::get<1>(residual_i)),
+      					 get_y(thr::get<1>(residual_i)),
+      					 get_z(thr::get<1>(residual_i))),
+      				  thr::get<2>(residual_i),
+      				  Vector(get_x(thr::get<3>(residual_i)),
+      					 get_y(thr::get<3>(residual_i)),
+      					 get_z(thr::get<3>(residual_i))));
 
-	index_i = mesh.nx - One;
-	index_j = mesh.npoin() - One;
+      	residual[index_j] = State(thr::get<0>(residual_i),
+      				  Vector(get_x(thr::get<1>(residual_i)),
+      					 get_y(thr::get<1>(residual_i)),
+      					 get_z(thr::get<1>(residual_i))),
+      				  thr::get<2>(residual_i),
+      				  Vector(get_x(thr::get<3>(residual_i)),
+      					 get_y(thr::get<3>(residual_i)),
+      					 get_z(thr::get<3>(residual_i))));
+
+      	index_i = mesh.nx - One;
+      	index_j = mesh.npoin() - One;
 	
-	wsi = wave_speed[index_i];
-	wsj = wave_speed[index_j];
-	residual_i = residual[index_i];
-	residual_j = residual[index_j];
+      	wsi = wave_speed[index_i];
+      	wsj = wave_speed[index_j];
+      	residual_i = residual[index_i];
+      	residual_j = residual[index_j];
 
-	periodic_corners(wsi, wsj,
-			 residual_i,
-			 residual_j);
+      	// printf("[%d][%d]\n",index_i,index_j);
+      	periodic_corners(wsi, wsj,
+      			 residual_i,
+      			 residual_j);
 
- 	wave_speed[index_i] = wsi;
- 	wave_speed[index_j] = wsj;
+      	wave_speed[index_i] = wsi;
+      	wave_speed[index_j] = wsj;
 
-	residual[index_i] = State(thr::get<0>(residual_i),
-				  Vector(get_x(thr::get<1>(residual_i)),
-					 get_y(thr::get<1>(residual_i)),
-					 get_z(thr::get<1>(residual_i))),
-				  thr::get<2>(residual_i),
-				  Vector(get_x(thr::get<3>(residual_i)),
-					 get_y(thr::get<3>(residual_i)),
-					 get_z(thr::get<3>(residual_i))));
+      	residual[index_i] = State(thr::get<0>(residual_i),
+      				  Vector(get_x(thr::get<1>(residual_i)),
+      					 get_y(thr::get<1>(residual_i)),
+      					 get_z(thr::get<1>(residual_i))),
+      				  thr::get<2>(residual_i),
+      				  Vector(get_x(thr::get<3>(residual_i)),
+      					 get_y(thr::get<3>(residual_i)),
+      					 get_z(thr::get<3>(residual_i))));
 
-	residual[index_j] = State(thr::get<0>(residual_i),
-				  Vector(get_x(thr::get<1>(residual_i)),
-					 get_y(thr::get<1>(residual_i)),
-					 get_z(thr::get<1>(residual_i))),
-				  thr::get<2>(residual_i),
-				  Vector(get_x(thr::get<3>(residual_i)),
-					 get_y(thr::get<3>(residual_i)),
-					 get_z(thr::get<3>(residual_i))));
+      	residual[index_j] = State(thr::get<0>(residual_i),
+      				  Vector(get_x(thr::get<1>(residual_i)),
+      					 get_y(thr::get<1>(residual_i)),
+      					 get_z(thr::get<1>(residual_i))),
+      				  thr::get<2>(residual_i),
+      				  Vector(get_x(thr::get<3>(residual_i)),
+      					 get_y(thr::get<3>(residual_i)),
+      					 get_z(thr::get<3>(residual_i))));
 
       }
 
@@ -1280,7 +1297,7 @@ int main(int argc, char* argv[]){
     faces_per_wall_sec = mesh.nface()/face_timer.elapsed_wall_time();
     cells_per_wall_sec = mesh.ncell()/cell_timer.elapsed_wall_time();
 
-  if(mesh.ncell_x < Index(10)){
+  if(mesh.ncell_x < Index(20)){
     printf("\n");
     printf("step %d\n",ksteps);
     for(Index i = 0; i < mesh.npoin(); i++){
