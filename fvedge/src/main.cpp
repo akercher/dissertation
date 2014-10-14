@@ -276,9 +276,9 @@ int main(int argc, char* argv[]){
   bface_iter = bface.begin();
 
   // for (Index i=0; i<mesh.nface();i++){
-  // for (Index i=0; i<12;i++){
-    // print_edges_host(i,edge[i]);
-  //   printf("[%d] pi = %d pj = %d\n",i,get_x(thr::get<2>(Edge(edge[i]))),get_y(thr::get<2>(Edge(edge[i]))));
+  // // for (Index i=0; i<12;i++){
+  //   print_edges_host(i,edge[i]);
+  //   // printf("[%d] pi = %d pj = %d\n",i,get_x(thr::get<2>(Edge(edge[i]))),get_y(thr::get<2>(Edge(edge[i]))));
   // }
 
   /*-----------------------------------------------------------------*/
@@ -322,6 +322,7 @@ int main(int argc, char* argv[]){
 				      mesh.Lx,
 				      mesh.Ly,
 				      vflow,
+				      Real(0.0251392)*Real(0.0),				      
 				      ieigen,
 				      gamma));
 
@@ -336,6 +337,7 @@ int main(int argc, char* argv[]){
 						  mesh.Lx,
 						  mesh.Ly,
 						  vflow,
+						  Real(0.0251392)*Real(0.0),				      
 						  ieigen,
 						  gamma));
 
@@ -634,6 +636,15 @@ int main(int argc, char* argv[]){
   face_cycles_per_wall_sec = Real(0.0);
 
   program_timer.start();
+
+  if(mesh.ncell_x < Index(20)){
+    printf("\n");
+    printf("step %d\n",Index(0));
+    for(Index i = 0; i < mesh.npoin(); i++){
+      if(i % mesh.nx == Index(0)) printf("\n");
+      print_states_host(i,State(state_iter[i]));
+    }
+  }
 
   /*-----------------------------------------------------------------*/
   /* Main loop                                                       */

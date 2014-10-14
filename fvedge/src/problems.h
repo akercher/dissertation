@@ -402,6 +402,7 @@ struct linear_wave_init : public thr::unary_function<Index,State>
   Real _Lx;
   Real _Ly;
   Real _vflow;
+  Real _dt;
   Index _ieigen;
   Real _gamma;
 
@@ -411,6 +412,7 @@ struct linear_wave_init : public thr::unary_function<Index,State>
 		  Real Lx,
 		  Real Ly,
 		  Real vflow,
+		  Real dt,
 		  Index ieigen,
 		  Real gamma)
 
@@ -420,6 +422,7 @@ struct linear_wave_init : public thr::unary_function<Index,State>
     ,_Lx(Lx)
     ,_Ly(Ly) 
     ,_vflow(vflow) 
+    ,_dt(dt) 
     ,_ieigen(ieigen)
     ,_gamma(gamma){}
 
@@ -460,6 +463,8 @@ struct linear_wave_init : public thr::unary_function<Index,State>
     Real bz0  = 0.0;
     Real ke = half*(vx0*vx0 + vy0*vy0 + vz0*vz0);
     Real c0 = std::sqrt(this->_gamma*pg0/d0);
+
+    Real vdt = this->_vflow*this->_dt;
 
 #ifdef MHD
 
@@ -502,18 +507,18 @@ struct linear_wave_init : public thr::unary_function<Index,State>
     /* Real vpar = Real(0.0); */
     /* Real vperp = amp*Real(sin(xpar)); */
 
-    Real d = d0 + amp*Real(sin(kpar*xpar))*rem[0][this->_ieigen];
-    Real mx0 = d0*vx0 + amp*Real(sin(kpar*xpar))*rem[1][this->_ieigen];
-    Real my0 = amp*Real(sin(kpar*xpar))*rem[2][this->_ieigen];
-    Real mz0 = amp*Real(sin(kpar*xpar))*rem[3][this->_ieigen];
+    Real d = d0 + amp*Real(sin(kpar*(xpar - vdt)))*rem[0][this->_ieigen];
+    Real mx0 = d0*vx0 + amp*Real(sin(kpar*(xpar - vdt)))*rem[1][this->_ieigen];
+    Real my0 = amp*Real(sin(kpar*(xpar - vdt)))*rem[2][this->_ieigen];
+    Real mz0 = amp*Real(sin(kpar*(xpar - vdt)))*rem[3][this->_ieigen];
 
     Real mx = mx0*cosa - my0*sina;
     Real my = mx0*sina + my0*cosa;
     Real mz = Real(0.0);
 
-    /* printf("%f %f %f %f %f %f %f %f %f\n",x,y,xpar,kpar,cosa,sina,d,mx0,mx); */
+    /* printf("%f %f %f %f %f\n",x,y,xpar,angle,d); */
 
-    Real en = pg0/(this->_gamma - One) + d0*ke + amp*Real(sin(kpar*xpar))*rem[4][this->_ieigen];
+    Real en = pg0/(this->_gamma - One) + d0*ke + amp*Real(sin(kpar*(xpar - vdt)))*rem[4][this->_ieigen];
 
 #ifdef MHD
     en += half*(bx0*bx0 + by0*by0 + bz0*bz0);
@@ -531,35 +536,35 @@ struct linear_wave_init : public thr::unary_function<Index,State>
     Real y2 = y + half*this->_dy;
 
     Real bx = Real(0.0);
-    Az1 = vector_potential_lw_z(x1, y1, Real(0.0), angle, kpar, bx0, by0, bz0, dby);
-    Az2 = vector_potential_lw_z(x1, y2, Real(0.0), angle, kpar, bx0, by0, bz0, dby);
+    Az1 = vector_potential_lw_z(x1, y1, vdt, angle, kpar, bx0, by0, bz0, dby);
+    Az2 = vector_potential_lw_z(x1, y2, vdt, angle, kpar, bx0, by0, bz0, dby);
     bx += half*(Az2 - Az1)/this->_dy;
 
-    Az1 = vector_potential_lw_z(x2, y1, Real(0.0), angle, kpar, bx0, by0, bz0, dby);
-    Az2 = vector_potential_lw_z(x2, y2, Real(0.0), angle, kpar, bx0, by0, bz0, dby);
+    Az1 = vector_potential_lw_z(x2, y1, vdt, angle, kpar, bx0, by0, bz0, dby);
+    Az2 = vector_potential_lw_z(x2, y2, vdt, angle, kpar, bx0, by0, bz0, dby);
     bx += half*(Az2 - Az1)/this->_dy;
 
     Real by = Real(0.0);
-    Az1 = vector_potential_lw_z(x1, y1, Real(0.0), angle, kpar, bx0, by0, bz0, dby);
-    Az2 = vector_potential_lw_z(x2, y1, Real(0.0), angle, kpar, bx0, by0, bz0, dby);
+    Az1 = vector_potential_lw_z(x1, y1, vdt, angle, kpar, bx0, by0, bz0, dby);
+    Az2 = vector_potential_lw_z(x2, y1, vdt, angle, kpar, bx0, by0, bz0, dby);
     by -= half*(Az2 - Az1)/this->_dx;
 
-    Az1 = vector_potential_lw_z(x1, y2, Real(0.0), angle, kpar, bx0, by0, bz0, dby);
-    Az2 = vector_potential_lw_z(x2, y2, Real(0.0), angle, kpar, bx0, by0, bz0, dby);
+    Az1 = vector_potential_lw_z(x1, y2, vdt, angle, kpar, bx0, by0, bz0, dby);
+    Az2 = vector_potential_lw_z(x2, y2, vdt, angle, kpar, bx0, by0, bz0, dby);
     by -= half*(Az2 - Az1)/this->_dx;
 
 
     Real bz = Real(0.0);
-    Ay1 = vector_potential_lw_y(x1, y2, Real(0.0), angle, kpar, bx0, by0, bz0, dbz);
-    Ay2 = vector_potential_lw_y(x2, y2, Real(0.0), angle, kpar, bx0, by0, bz0, dbz);
+    Ay1 = vector_potential_lw_y(x1, y2, vdt, angle, kpar, bx0, by0, bz0, dbz);
+    Ay2 = vector_potential_lw_y(x2, y2, vdt, angle, kpar, bx0, by0, bz0, dbz);
     bz += (Ay2 - Ay1)/this->_dx;
 
-    Ax1 = vector_potential_lw_x(x2, y1, Real(0.0), angle, kpar, bx0, by0, bz0, dbz);
-    Ax2 = vector_potential_lw_x(x2, y2, Real(0.0), angle, kpar, bx0, by0, bz0, dbz);
+    Ax1 = vector_potential_lw_x(x2, y1, vdt, angle, kpar, bx0, by0, bz0, dbz);
+    Ax2 = vector_potential_lw_x(x2, y2, vdt, angle, kpar, bx0, by0, bz0, dbz);
     bz -= (Ax2 - Ax1)/this->_dy;
 
 
-    /* printf("[%d] %f %f %f %f %f %f\n",index,this->_dy,Ay1,Ay2,Ax1,Ax2,bz); */
+    /* printf("[%d] %f %f %f %f %f %f\n",index,this->_dy,Az1,Az2,bx,by,bz); */
     /* printf("[%d] %f %f %f %f\n",index,this->_dx,this->_dy,Ay2-Ay1,Ax2-Ax1); */
 
     bx = Real(0.0);
@@ -588,6 +593,7 @@ struct linear_wave_init_interface : public thr::unary_function<Edge,Real>
   Real _Lx;
   Real _Ly;
   Real _vflow;
+  Real _dt;
   Index _ieigen;
   Real _gamma;
 
@@ -597,6 +603,7 @@ struct linear_wave_init_interface : public thr::unary_function<Edge,Real>
 			    Real Lx,
 			    Real Ly,
 			    Real vflow,
+			    Real dt,
 			    Index ieigen,
 			    Real gamma)
 
@@ -606,6 +613,7 @@ struct linear_wave_init_interface : public thr::unary_function<Edge,Real>
     ,_Lx(Lx)
     ,_Ly(Ly) 
     ,_vflow(vflow) 
+    ,_dt(dt)
     ,_ieigen(ieigen)
     ,_gamma(gamma) {}
 
@@ -660,7 +668,6 @@ struct linear_wave_init_interface : public thr::unary_function<Edge,Real>
     Real sina = Real(sin(angle));
     Real wavelength = this->_Lx*cosa;//fmin(this->_Lx*cosa,this->_Ly*sina);
 
-    Index ieigen = Index(1);
     Real kpar = Real(2.0)*M_PI/wavelength;    
     Real bpar = Real(1.0);
     Real bperp = Real(0.1);
@@ -672,6 +679,8 @@ struct linear_wave_init_interface : public thr::unary_function<Edge,Real>
     Real vz  = Zero;
     Real ke = half*(vx*vx + vy*vy + vz*vz);
     Real c0 = std::sqrt(this->_gamma*pg/d);
+
+    Real vdt = this->_vflow*this->_dt;
 
     Real bn = Real(0.0);
     Real Az1,Az2;
@@ -692,7 +701,7 @@ struct linear_wave_init_interface : public thr::unary_function<Edge,Real>
 
     get_eigen_system_mhd (this->_gamma, d, vx, vy, vz, h, bx, by, bz, xfac, yfac, ev, rem);
 
-    Real amp = Real(1.0e-2);
+    Real amp = Real(1.0e-3);
     Real dby = amp*rem[5][this->_ieigen];
     Real dbz = amp*rem[6][this->_ieigen];
 
@@ -700,14 +709,14 @@ struct linear_wave_init_interface : public thr::unary_function<Edge,Real>
     /* Real y = -x1*sina + y1*cosa; */
     
     /* Az1 = bperp*(Real(cos(kpar*x)))/kpar + bpar*y; */
-    Az1 = vector_potential_lw_z(x1, y1, Real(0.0), angle, kpar, bx, by, bz, dby);
+    Az1 = vector_potential_lw_z(x1, y1, vdt, angle, kpar, bx, by, bz, dby);
     /* printf("[%d][%d] %f %f %f\n",point_i,point_j,x1,y1,Az1); */
 
     /* x = x2*cosa + y2*sina; */
     /* y = -x2*sina + y2*cosa; */
     
     /* Az2 = bperp*(Real(cos(kpar*x)))/kpar + bpar*y; */
-    Az2 = vector_potential_lw_z(x2, y2, Real(0.0), angle, kpar, bx, by, bz, dby);
+    Az2 = vector_potential_lw_z(x2, y2, vdt, angle, kpar, bx, by, bz, dby);
     /* printf("[%d][%d] %f %f %f %f\n",point_i,point_j,(x2-x1),(y2-y1),Az1,Az2); */
 
     bx = Real(0.0);
@@ -789,8 +798,8 @@ struct cpaw_init : public thr::unary_function<Index,State>
     Real xpar = x*cosa + y*sina;
 
     Real vx0  = vpar;
-    Real vy0  = -ct*Real(sin(kpar*(xpar + vdt)));
-    Real vz0 = -ct*Real(cos(kpar*(xpar + vdt)));
+    Real vy0  = -ct*Real(sin(kpar*(xpar - vdt)));
+    Real vz0 = -ct*Real(cos(kpar*(xpar - vdt)));
 
     Real vx = vx0*cosa - vy0*sina;
     Real vy = vx0*sina + vy0*cosa;

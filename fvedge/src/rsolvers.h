@@ -810,8 +810,8 @@ void hlld_ct (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j
 			    + sfi*(dis*vzis - di*vzi)),  
 		     vni*(eni + pti) - bn*(vxi*bxi + vyi*byi + vzi*bzi)
 		     + sfi*(enis - eni), 
-		     Vector((vni*bxi - vxi*bn + sfi*(bxis - bxi))*fabs(ny),				
-			    (vni*byi - vyi*bn + sfi*(byis - byi))*fabs(nx), 
+		     Vector((vni*bxi - vxi*bn + sfi*(bxis - bxi)),
+			    (vni*byi - vyi*bn + sfi*(byis - byi)),
 			    vni*bzi - vzi*bn + sfi*(bzis - bzi)));
       }
     else if (sm >= Real(0.0))
@@ -826,8 +826,8 @@ void hlld_ct (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j
 			    - sfi*di*vzi - tmp*dis*vzis + sai*diss*vziss), 
 		     vni*(eni + pti) - bn*(vxi*bxi + vyi*byi + vzi*bzi)
 		     - sfi*eni - tmp*enis + sai*eniss, 
-		     Vector((vni*bxi - vxi*bn - sfi*bxi - tmp*bxis + sai*bxiss)*fabs(ny), 
-			    (vni*byi - vyi*bn - sfi*byi - tmp*byis + sai*byiss)*fabs(nx), 
+		     Vector((vni*bxi - vxi*bn - sfi*bxi - tmp*bxis + sai*bxiss),
+			    (vni*byi - vyi*bn - sfi*byi - tmp*byis + sai*byiss),
 			    vni*bzi - vzi*bn - sfi*bzi - tmp*bzis + sai*bziss));
 
       }
@@ -843,8 +843,8 @@ void hlld_ct (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j
 			    - sfj*dj*vzj - tmp*djs*vzjs + saj*djss*vzjss), 
 		     vnj*(enj + ptj) - bn*(vxj*bxj + vyj*byj + vzj*bzj)
 		     - sfj*enj - tmp*enjs + saj*enjss, 
-		     Vector((vnj*bxj - vxj*bn - sfj*bxj - tmp*bxjs + saj*bxjss)*fabs(ny), 
-			    (vnj*byj - vyj*bn - sfj*byj - tmp*byjs + saj*byjss)*fabs(nx), 
+		     Vector((vnj*bxj - vxj*bn - sfj*bxj - tmp*bxjs + saj*bxjss),
+			    (vnj*byj - vyj*bn - sfj*byj - tmp*byjs + saj*byjss), 
 			    vnj*bzj - vzj*bn - sfj*bzj - tmp*bzjs + saj*bzjss));
 
 	/* printf("djs =%f vyjs = %f byis = %f byjs = %f\n",djs, vyjs, byi, byjs); */
@@ -861,8 +861,8 @@ void hlld_ct (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j
 			    + sfj*(djs*vzjs - dj*vzj)),  
 		     vnj*(enj + ptj) - bn*(vxj*bxj + vyj*byj + vzj*bzj)
 		     + sfj*(enjs - enj), 
-		     Vector((vnj*bxj - vxj*bn + sfj*(bxjs - bxj))*fabs(ny), 
-			    (vnj*byj - vyj*bn + sfj*(byjs - byj))*fabs(nx), 
+		     Vector((vnj*bxj - vxj*bn + sfj*(bxjs - bxj)), 
+			    (vnj*byj - vyj*bn + sfj*(byjs - byj)), 
 			    vnj*bzj - vzj*bn + sfj*(bzjs - bzj)));
       }
 
@@ -905,8 +905,8 @@ void hlld_ct (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j
     get_y(thr::get<1>(flux)) *= sn_mag;
     get_z(thr::get<1>(flux)) *= sn_mag;
     thr::get<2>(flux)        *= sn_mag;
-    get_x(thr::get<3>(flux)) *= sn_mag;
-    get_y(thr::get<3>(flux)) *= sn_mag;
+    get_x(thr::get<3>(flux)) *= sn_mag*abs(ny);
+    get_y(thr::get<3>(flux)) *= sn_mag*abs(nx);
     get_z(thr::get<3>(flux)) *= sn_mag;
 
 };

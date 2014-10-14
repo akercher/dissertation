@@ -77,3 +77,4 @@ clean:
 	rm -f $(EXE)
 	rm -f $(TST)
 	rm -f *.run
+	rm -f bin/*.vtk
