@@ -536,6 +536,8 @@ struct periodic_bcs : public thr::unary_function<Index,void>
     Index point = index + Index(1);
 
     if (this->_offset < Index(2)){// bottom-top boundaries
+      /* index_i = point*this->_offset; */
+      /* index_j  = index_i + (this->_ny - Index(1))*this->_nx; */
       index_i = point*this->_offset;
       index_j  = index_i + (this->_ny - Index(1))*this->_nx;
     }

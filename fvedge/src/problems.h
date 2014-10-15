@@ -494,6 +494,9 @@ struct linear_wave_init : public thr::unary_function<Index,State>
 #else
 
     Real h = (pg0/(this->_gamma - Real(1.0)) + d0*ke + pg0)/d0;
+    Real bx = bx0;
+    Real by = by0;
+    Real bz = bz0;
 
     Real ev[5];
     Real rem[5][5];

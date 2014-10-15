@@ -30,7 +30,13 @@
 /*************************************************************************/
 #ifdef MHD
 #define CT
+#define DEBUG_BN
+// #define DEBUG_EMF
 #endif
+
+// #define DEBUG_EDGES
+// #define DEBUG_RESIDUAL
+// #define LINEAR
 
 #define flux_hydro rhll
 
@@ -60,7 +66,6 @@
 #include "data_io.h"
 
 int main(int argc, char* argv[]){
-
 
   std::ofstream outputr;
   Real gamma;// = Real(5.0)/Real(3.0);
@@ -275,11 +280,13 @@ int main(int argc, char* argv[]){
   edge_iter = edge.begin();
   bface_iter = bface.begin();
 
-  // for (Index i=0; i<mesh.nface();i++){
-  // // for (Index i=0; i<12;i++){
-  //   print_edges_host(i,edge[i]);
-  //   // printf("[%d] pi = %d pj = %d\n",i,get_x(thr::get<2>(Edge(edge[i]))),get_y(thr::get<2>(Edge(edge[i]))));
-  // }
+#ifdef DEBUG_EDGES
+  for (Index i=0; i<mesh.nface();i++){
+  // for (Index i=0; i<12;i++){
+    print_edges_host(i,edge[i]);
+    // printf("[%d] pi = %d pj = %d\n",i,get_x(thr::get<2>(Edge(edge[i]))),get_y(thr::get<2>(Edge(edge[i]))));
+  }
+#endif
 
   /*-----------------------------------------------------------------*/
   /* Initialize node centered consevative state variables            */
@@ -645,7 +652,6 @@ int main(int argc, char* argv[]){
       print_states_host(i,State(state_iter[i]));
     }
   }
-
   /*-----------------------------------------------------------------*/
   /* Main loop                                                       */
   /*-----------------------------------------------------------------*/
@@ -672,7 +678,7 @@ int main(int argc, char* argv[]){
     
     face_timer.start();
     cell_timer.start();
-    
+ 
     for(Index istage = 0; istage < rk_stages; istage++){ ////////////////////////////////////////////////////
       
       /*-----------------------------------------------------------------*/
@@ -782,11 +788,6 @@ int main(int argc, char* argv[]){
 	antidiffusion_iter += offset.faces_per_color[i];
 #endif	
       }
-
-    // for(Index i = 0; i < mesh.npoin(); i++){
-    //   if(i % mesh.nx == Index(0)) printf("\n");
-    //   print_states_host(i,State(residual_iter[i]));
-    // }
 
       /*-----------------------------------------------------------------*/
       /* Apply Periodic BCs                                              */
@@ -1012,7 +1013,6 @@ int main(int argc, char* argv[]){
 
       }
 
-
       if (1 == 1){/////////////////////////////////////////////////////////////////////////
 
       /*-----------------------------------------------------------------*/
@@ -1118,6 +1118,14 @@ int main(int argc, char* argv[]){
 
       }////////////////////////////////////////////////////////////////////////////////////
 
+#ifdef DEBUG_RESIDUAL
+      printf("\n Residual:");
+      for(Index i = 0; i < mesh.npoin(); i++){
+	if(i % mesh.nx == Index(0)) printf("\n");
+	print_states_host(i,State(residual_iter[i]));
+      }
+#endif
+
     // for(Index i = 0; i < mesh.npoin(); i++){
     //   if(i % mesh.nx == Index(0)) printf("\n");
     //   print_states_host(i,State(residual_iter[i]));
@@ -1157,10 +1165,13 @@ int main(int argc, char* argv[]){
       edge_iter = edge.begin();
       antidiffusion_iter = antidiffusion.begin();      
 
-      // for(Index i = 0; i < mesh.ncell(); i++){
-      // 	printf("[%d] %f\n",i,Real(emf_z_iter[i]));
-      // }      
+#ifdef DEBUG_EMF
+      for(Index i = 0; i < mesh.ncell(); i++){
+      	printf("[%d] %f\n",i,Real(emf_z_iter[i]));
+      }      
 #endif
+
+#endif // MHD
 
 
       /*-----------------------------------------------------------------*/
@@ -1268,10 +1279,6 @@ int main(int argc, char* argv[]){
 
       // update bfield at boundary nodes
 
-      // for(Index i = 0; i < mesh.nface(); i++){
-      // 	printf("[%d] %f\n",i,Real(bn_edge_iter[i]));
-      // }      
-      
       // left/right
       thr::for_each_n(make_device_counting_iterator(),
       		      mesh.ny,

@@ -427,29 +427,31 @@ void hlld_n (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j,
     /* Real normal_wave_speed; */
     normal_wave_speed = sn_mag*half*(fabs(vnroe) + fabs(vtroe) + cfroe);
 
-    /* printf("sfi =%f sai = %f sm = %f saj = %f sfj = %f\n",sfi,sai,sm,saj,sfj); */
-    /* if (sm >= Real(0.0)) */
-    /*   { */
-    /* 	printf("di = %f dis = %f diss = %f  f.d = %f\n",di,dis,diss,thr::get<0>(flux)); */
-    /* 	printf("vxi = %f vxis = %f vxiss = %f  f.mx = %f\n",vxi,vxis,vxiss,get_x(thr::get<1>(flux))); */
-    /* 	printf("vyi = %f vyis = %f vyiss = %f  f.my = %f\n",vyi,vyis,vyiss,get_y(thr::get<1>(flux))); */
-    /* 	printf("vzi = %f vzis = %f vziss = %f  f.mz = %f\n",vzi,vzis,vziss,get_z(thr::get<1>(flux))); */
-    /* 	printf("eni = %f enis = %f eniss = %f  f.en = %f\n",eni,enis,eniss,thr::get<2>(flux)); */
-    /* 	printf("bxi = %f bxis = %f bxiss = %f  f.bx = %f\n",bxi,bxis,bxiss,get_x(thr::get<3>(flux))); */
-    /* 	printf("byi = %f byis = %f byiss = %f  f.by = %f\n",byi,byis,byiss,get_y(thr::get<3>(flux))); */
-    /* 	printf("bzi = %f bzis = %f bziss = %f  f.bz = %f\n",bzi,bzis,bziss,get_z(thr::get<3>(flux))); */
-    /*   } */
-    /* else */
-    /*   { */
-    /* 	printf("dj = %f djs = %f djss = %f  f.d = %f\n",dj,djs,djss,thr::get<0>(flux)); */
-    /* 	printf("vxj = %f vxjs = %f vxss = %f  f.mx = %f\n",vxj,vxjs,vxjss,get_x(thr::get<1>(flux))); */
-    /* 	printf("vyj = %f vyjs = %f vyjss = %f  f.my = %f\n",vyj,vyjs,vyjss,get_y(thr::get<1>(flux))); */
-    /* 	printf("vzj = %f vzjs = %f vzjss = %f  f.mz = %f\n",vzj,vzjs,vzjss,get_z(thr::get<1>(flux))); */
-    /* 	printf("enj = %f enjs = %f enjss = %f  f.en = %f\n",enj,enjs,enjss,thr::get<2>(flux)); */
-    /* 	printf("bxj = %f bxjs = %f bxjss = %f  f.bx = %f\n",bxj,bxjs,bxjss,get_x(thr::get<3>(flux))); */
-    /* 	printf("byj = %f byjs = %f byjss = %f  f.by = %f\n",byj,byjs,byjss,get_y(thr::get<3>(flux))); */
-    /* 	printf("bzj = %f bzjs = %f bzjss = %f  f.bz = %f\n",bzj,bzjs,bzjss,get_z(thr::get<3>(flux))); */
-    /*   } */
+#ifdef DEBUG_FLUX
+    printf("sfi =%f sai = %f sm = %f saj = %f sfj = %f\n",sfi,sai,sm,saj,sfj);
+    if (sm >= Real(0.0))
+      {
+    	printf("di = %f dis = %f diss = %f  f.d = %f\n",di,dis,diss,thr::get<0>(flux));
+    	printf("vxi = %f vxis = %f vxiss = %f  f.mx = %f\n",vxi,vxis,vxiss,get_x(thr::get<1>(flux)));
+    	printf("vyi = %f vyis = %f vyiss = %f  f.my = %f\n",vyi,vyis,vyiss,get_y(thr::get<1>(flux)));
+    	printf("vzi = %f vzis = %f vziss = %f  f.mz = %f\n",vzi,vzis,vziss,get_z(thr::get<1>(flux)));
+    	printf("eni = %f enis = %f eniss = %f  f.en = %f\n",eni,enis,eniss,thr::get<2>(flux));
+    	printf("bxi = %f bxis = %f bxiss = %f  f.bx = %f\n",bxi,bxis,bxiss,get_x(thr::get<3>(flux)));
+    	printf("byi = %f byis = %f byiss = %f  f.by = %f\n",byi,byis,byiss,get_y(thr::get<3>(flux)));
+    	printf("bzi = %f bzis = %f bziss = %f  f.bz = %f\n",bzi,bzis,bziss,get_z(thr::get<3>(flux)));
+      }
+    else
+      {
+    	printf("dj = %f djs = %f djss = %f  f.d = %f\n",dj,djs,djss,thr::get<0>(flux));
+    	printf("vxj = %f vxjs = %f vxss = %f  f.mx = %f\n",vxj,vxjs,vxjss,get_x(thr::get<1>(flux)));
+    	printf("vyj = %f vyjs = %f vyjss = %f  f.my = %f\n",vyj,vyjs,vyjss,get_y(thr::get<1>(flux)));
+    	printf("vzj = %f vzjs = %f vzjss = %f  f.mz = %f\n",vzj,vzjs,vzjss,get_z(thr::get<1>(flux)));
+    	printf("enj = %f enjs = %f enjss = %f  f.en = %f\n",enj,enjs,enjss,thr::get<2>(flux));
+    	printf("bxj = %f bxjs = %f bxjss = %f  f.bx = %f\n",bxj,bxjs,bxjss,get_x(thr::get<3>(flux)));
+    	printf("byj = %f byjs = %f byjss = %f  f.by = %f\n",byj,byjs,byjss,get_y(thr::get<3>(flux)));
+    	printf("bzj = %f bzjs = %f bzjss = %f  f.bz = %f\n",bzj,bzjs,bzjss,get_z(thr::get<3>(flux)));
+      }
+#endif
 
     /* scale flux by magnitude of face normal */
     thr::get<0>(flux)        *= sn_mag;
@@ -874,30 +876,32 @@ void hlld_ct (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j
     /* Real normal_wave_speed; */
     normal_wave_speed = sn_mag*half*(fabs(vnroe) + fabs(vtroe) + cfroe);
 
-    /* printf("sfi =%f sai = %f sm = %f saj = %f sfj = %f\n",sfi,sai,sm,saj,sfj); */
-    /* printf("vxis =%f vxjs = %f bxis =%f bxjs = %f\n",vxis,vxjs,bxis,bxjs); */
-    /* if (sm >= Real(0.0)) */
-    /*   { */
-    /* 	printf("di = %f dis = %f diss = %f  f.d = %f\n",di,dis,diss,thr::get<0>(flux)); */
-    /* 	printf("vxi = %f vxis = %f vxiss = %f  f.mx = %f\n",vxi,vxis,vxiss,get_x(thr::get<1>(flux))); */
-    /* 	printf("vyi = %f vyis = %f vyiss = %f  f.my = %f\n",vyi,vyis,vyiss,get_y(thr::get<1>(flux))); */
-    /* 	printf("vzi = %f vzis = %f vziss = %f  f.mz = %f\n",vzi,vzis,vziss,get_z(thr::get<1>(flux))); */
-    /* 	printf("eni = %f enis = %f eniss = %f  f.en = %f\n",eni,enis,eniss,thr::get<2>(flux)); */
-    /* 	printf("bxi = %f bxis = %f bxiss = %f  f.bx = %f\n",bxi,bxis,bxiss,get_x(thr::get<3>(flux))); */
-    /* 	printf("byi = %f byis = %f byiss = %f  f.by = %f\n",byi,byis,byiss,get_y(thr::get<3>(flux))); */
-    /* 	printf("bzi = %f bzis = %f bziss = %f  f.bz = %f\n",bzi,bzis,bziss,get_z(thr::get<3>(flux))); */
-    /*   } */
-    /* else */
-    /*   { */
-    /* 	printf("dj = %f djs = %f djss = %f  f.d = %f\n",dj,djs,djss,thr::get<0>(flux)); */
-    /* 	printf("vxj = %f vxjs = %f vxss = %f  f.mx = %f\n",vxj,vxjs,vxjss,get_x(thr::get<1>(flux))); */
-    /* 	printf("vyj = %f vyjs = %f vyjss = %f  f.my = %f\n",vyj,vyjs,vyjss,get_y(thr::get<1>(flux))); */
-    /* 	printf("vzj = %f vzjs = %f vzjss = %f  f.mz = %f\n",vzj,vzjs,vzjss,get_z(thr::get<1>(flux))); */
-    /* 	printf("enj = %f enjs = %f enjss = %f  f.en = %f\n",enj,enjs,enjss,thr::get<2>(flux)); */
-    /* 	printf("bxj = %f bxjs = %f bxjss = %f  f.bx = %f\n",bxj,bxjs,bxjss,get_x(thr::get<3>(flux))); */
-    /* 	printf("byj = %f byjs = %f byjss = %f  f.by = %f\n",byj,byjs,byjss,get_y(thr::get<3>(flux))); */
-    /* 	printf("bzj = %f bzjs = %f bzjss = %f  f.bz = %f\n",bzj,bzjs,bzjss,get_z(thr::get<3>(flux))); */
-    /*   } */
+#ifdef DEBUG_FLUX
+    printf("sfi =%f sai = %f sm = %f saj = %f sfj = %f\n",sfi,sai,sm,saj,sfj);
+    printf("vxis =%f vxjs = %f bxis =%f bxjs = %f\n",vxis,vxjs,bxis,bxjs);
+    if (sm >= Real(0.0))
+      {
+    	printf("di = %f dis = %f diss = %f  f.d = %f\n",di,dis,diss,thr::get<0>(flux));
+    	printf("vxi = %f vxis = %f vxiss = %f  f.mx = %f\n",vxi,vxis,vxiss,get_x(thr::get<1>(flux)));
+    	printf("vyi = %f vyis = %f vyiss = %f  f.my = %f\n",vyi,vyis,vyiss,get_y(thr::get<1>(flux)));
+    	printf("vzi = %f vzis = %f vziss = %f  f.mz = %f\n",vzi,vzis,vziss,get_z(thr::get<1>(flux)));
+    	printf("eni = %f enis = %f eniss = %f  f.en = %f\n",eni,enis,eniss,thr::get<2>(flux));
+    	printf("bxi = %f bxis = %f bxiss = %f  f.bx = %f\n",bxi,bxis,bxiss,get_x(thr::get<3>(flux)));
+    	printf("byi = %f byis = %f byiss = %f  f.by = %f\n",byi,byis,byiss,get_y(thr::get<3>(flux)));
+    	printf("bzi = %f bzis = %f bziss = %f  f.bz = %f\n",bzi,bzis,bziss,get_z(thr::get<3>(flux)));
+      }
+    else
+      {
+    	printf("dj = %f djs = %f djss = %f  f.d = %f\n",dj,djs,djss,thr::get<0>(flux));
+    	printf("vxj = %f vxjs = %f vxss = %f  f.mx = %f\n",vxj,vxjs,vxjss,get_x(thr::get<1>(flux)));
+    	printf("vyj = %f vyjs = %f vyjss = %f  f.my = %f\n",vyj,vyjs,vyjss,get_y(thr::get<1>(flux)));
+    	printf("vzj = %f vzjs = %f vzjss = %f  f.mz = %f\n",vzj,vzjs,vzjss,get_z(thr::get<1>(flux)));
+    	printf("enj = %f enjs = %f enjss = %f  f.en = %f\n",enj,enjs,enjss,thr::get<2>(flux));
+    	printf("bxj = %f bxjs = %f bxjss = %f  f.bx = %f\n",bxj,bxjs,bxjss,get_x(thr::get<3>(flux)));
+    	printf("byj = %f byjs = %f byjss = %f  f.by = %f\n",byj,byjs,byjss,get_y(thr::get<3>(flux)));
+    	printf("bzj = %f bzjs = %f bzjss = %f  f.bz = %f\n",bzj,bzjs,bzjss,get_z(thr::get<3>(flux)));
+      }
+#endif
 
     /* scale flux by magnitude of face normal */
     thr::get<0>(flux)        *= sn_mag;
@@ -959,7 +963,7 @@ void rhll (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j,
   Real tx = -ny;
   Real ty = nx;
   
-  Real eps = Real(1.0e-5)*Minf; //Real(1.0e-12)*Minf for double precision
+  Real eps = Real(1.0e-12)*Minf; //Real(1.0e-12)*Minf for double precision
 
   Real abs_dq = std::sqrt((vxj - vxi)*(vxj - vxi) + (vyj - vyi)*(vyj - vyi));
 

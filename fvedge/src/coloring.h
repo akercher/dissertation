@@ -750,11 +750,10 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
 
       btype = this->_btype_x;
 
-      /* if(this->_btype_x == 0){ // outflow x-faces first pass */
-      if(index % Index(2) == 0){ // left boundary first pass
+      if(index % Index(2) == 0){ // LEFT boundary first pass
 
-	anx = this->_dy*area_1;//third;
-	any = -this->_dx*area_2;//*third*Real(2.0);
+	anx = this->_dy*area_1;
+	any = -this->_dx*area_2;
 	
 	enx = Real(0.0);
 	eny = -this->_dy;
@@ -778,6 +777,20 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
 
 	if(btype == Index(1)){
 	  index_i = index_j + this->_ncell_x - Index(1);
+
+	  anx *= half;
+	  any *= -half;
+	  eny *= -One;
+
+	  i = point_i;
+	  j = point_j;
+	  
+	  point_i = j;
+	  point_j = i;
+
+	  periodic_point_i = point_i + Index(this->_ncell_x);
+	  periodic_point_j = point_j + Index(this->_ncell_x);
+	  
 	}
 
       }
@@ -808,6 +821,12 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
 	
 	if(btype == Index(1)){
 	  index_j = index_i - this->_ncell_x + Index(1);
+	  anx *= half;
+	  any *= half;
+
+	  periodic_point_i = point_i - Index(this->_ncell_x);
+	  periodic_point_j = point_j - Index(this->_ncell_x);
+
 	}
 
       }	
@@ -847,8 +866,14 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
 
 	if(btype == Index(1)){
 	  index_j = index_i - this->_ncell_x + Index(1);
-	  /* index_i = -Index(2); */
-	  /* index_j = -Index(2); */
+
+	  anx *= half;
+	  any *= half;
+
+	periodic_point_i = point_i - Index(this->_ncell_x);
+	periodic_point_j = point_j - Index(this->_ncell_x);
+
+
 	}
 	
       }
@@ -882,12 +907,22 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
 
 	if(btype == Index(1)){
 	  index_i = index_j + this->_ncell_x - Index(1);
-	  /* index_i = -Index(2); */
-	  /* index_j = -Index(2); */
-	}
-	
+
+	  anx *= half;
+	  any *= -half;
+	  eny *= -One;
+
+	  i = point_i;
+	  j = point_j;
+	  
+	  point_i = j;
+	  point_j = i;
+
+	  periodic_point_i = point_i + Index(this->_ncell_x);
+	  periodic_point_j = point_j + Index(this->_ncell_x);
+
+	}	
       }
-	
     }
 	
     else if(((this->_color_index - this->_iface_d)% Index(4)) < 3 
@@ -924,10 +959,24 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
 	
 	if(btype == Index(1)){
 	  index_i = index_j + (this->_ncell_y - Index(1))*this->_ncell_x;
+
+	  anx *= -half;
+	  any *= half;
+	  enx *= -One;
+
+	  i = point_i;
+	  j = point_j;
+	  
+	  point_i = j;
+	  point_j = i;
+
+	  periodic_point_i = point_i + Index(this->_ncell_y)*nx;
+	  periodic_point_j = point_j + Index(this->_ncell_y)*nx;
+
 	}
 
       }
-      else{ // outflow top boundary first pass
+      else{ // top boundary first pass
 	
 	index_i = this->_ncell_x*(this->_ncell_y - Index(1)) + (index % this->_ncell_x);
 	index_j = Real(-1);
@@ -954,6 +1003,13 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
 
 	if(btype == Index(1)){
 	  index_j = index_i - (this->_ncell_y - Index(1))*this->_ncell_x;
+
+	  anx *= half;
+	  any *= half;
+
+	  periodic_point_i = point_i - Index(this->_ncell_y)*nx;
+	  periodic_point_j = point_j - Index(this->_ncell_y)*nx;
+
 	}
 
       }
@@ -964,7 +1020,7 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
 
       /* if(this->_btype_y == 0){ // outflow */
       
-      if (index % Index(2) > Index(0)) // boundary second pass
+      if (index % Index(2) > Index(0)) // BOTTOM boundary second pass
 	{
 	  index_i = Index(-1);
 	  index_j = index;
@@ -989,14 +1045,24 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
 	  periodic_point_i = point_i + Index(this->_ncell_y)*nx;
 	  periodic_point_j = point_j + Index(this->_ncell_y)*nx;
 	  
-	if(btype == Index(1)){
-	  index_i = index_j + (this->_ncell_y - Index(1))*this->_ncell_x;
-	  /* index_i = -Index(2); */
-	  /* index_j = -Index(2); */
-
+	  if(btype == Index(1)){
+	    index_i = index_j + (this->_ncell_y - Index(1))*this->_ncell_x;
+	    
+	    anx *= -half;
+	    any *= half;
+	    enx *= -One;
+	    
+	    i = point_i;
+	    j = point_j;
+	    
+	    point_i = j;
+	    point_j = i;
+	    
+	    periodic_point_i = point_i + Index(this->_ncell_y)*nx;
+	    periodic_point_j = point_j + Index(this->_ncell_y)*nx;
+	  }
 	}
 
-	}
       else{ // top boundary second pass
 	
 	index_i = this->_ncell_x*(this->_ncell_y - Index(1)) + (index % this->_ncell_x);
@@ -1024,11 +1090,14 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
 
 	if(btype == Index(1)){
 	  index_j = index_i - (this->_ncell_y - Index(1))*this->_ncell_x;
-	  /* index_i = -Index(2); */
-	  /* index_j = -Index(2); */
-	}
 
-	
+	  anx *= half;
+	  any *= half;
+
+	  periodic_point_i = point_i - Index(this->_ncell_y)*nx;
+	  periodic_point_j = point_j - Index(this->_ncell_y)*nx;
+
+	}	
       }
     }
     
