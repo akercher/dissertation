@@ -31,7 +31,6 @@ __host__ __device__ void get_eigen_system_mhd (const Real gamma, const Real d, c
 					       const Real bz, const Real xfac, const Real yfac, 
 					       Real ev[7], Real rem[7][7]);
 
-
 /*****************************************************/
 /* Eigenvector and right eigenmatrix for adiabatic   */
 /* hydrodynamics.                                    */
@@ -184,7 +183,6 @@ void get_eigen_system_mhd (const Real gamma, const Real d, const Real vx, const 
   Real aspbb = as_prime*btstar*betast_sq;
  
   /* right eigenvectors, stored as COLUMNS eq. B21 of [1] */
-  rem[0][0] = One;
   rem[0][0] = alpha_f;
   rem[0][1] = Zero;
   rem[0][2] = alpha_s;
@@ -250,3 +248,4 @@ void get_eigen_system_mhd (const Real gamma, const Real d, const Real vx, const 
   rem[6][6] = rem[6][0];
 
 }
+

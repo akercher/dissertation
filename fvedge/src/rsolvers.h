@@ -611,10 +611,10 @@ void hlld_ct (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j
 
   Real nx = get_x(sn)*sn_mag_inv;
   Real ny = get_y(sn)*sn_mag_inv;
-  /* Real tx = -ny; */
-  /* Real ty = nx; */
-  Real tx = ny;
-  Real ty = -nx;
+  Real tx = -ny;
+  Real ty = nx;
+  /* Real tx = ny; */
+  /* Real ty = -nx; */
 
   /* point_i */
   Real di = density_i;
@@ -760,6 +760,8 @@ void hlld_ct (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j
     Real vns = sm;
     Real vxis;
     Real vyis;
+    /* Real vnis; */
+    /* Real vtis; */
     Real vzis;
     Real bxis;
     Real byis;
