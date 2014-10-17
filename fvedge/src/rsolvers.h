@@ -5,16 +5,132 @@
 /*******************************************************************/
 
 /* Prototypes */
-__host__ __device__ void hlld_ct (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j,
+__host__ __device__ void roe_ct (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j,
 				 Real bn, Real& normal_wave_speed,State& flux);
+__host__ __device__ void hlld_ct (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j,
+				  Real bn, Real& normal_wave_speed,State& flux);
 __host__ __device__ void hlld_n (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j,
 				 Real& normal_wave_speed,State& flux);
 __host__ __device__ void rhll (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j,
 			       Real& normal_wave_speed,State& flux);
 __host__ __device__ void hllc_n (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j,
-				  Real& normal_wave_speed,State& flux);
+				 Real& normal_wave_speed,State& flux);
 __host__ __device__ void hlle_n (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j,
-				  Real& normal_wave_speed,State& flux);
+				 Real& normal_wave_speed,State& flux);
+/*****************************************************/
+/* HLLD Approximate Riemann solver                   */
+/*      Revised for general geometry.                */
+/*                                                   */
+/*  References:                                      */
+/*    [1] T. Miyoshi & K. Kusano, "A multi-state     */
+/*        HLLD approximate Riemann solver for ideal  */
+/*        MHD", JCP, 208, 315 (2005)                 */
+/*                                                   */  
+/*  A Riemann solver capable of resolving linear     */
+/*  waves, i.e., contact discontinuities and         */
+/*  rotational discontinuities.                      */
+/*---------------------------------------------------*/
+/*  Input :                                          */
+/*  Output :                                         */
+/*****************************************************/
+__host__ __device__
+void roe_ct (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j,
+	     Real bn, Real& normal_wave_speed, State& flux)
+	     
+{
+    
+  Real sn_mag = std::sqrt(get_x(sn)*get_x(sn) + get_y(sn)*get_y(sn));
+  Real sn_mag_inv = Real(1.0)/sn_mag;
+  /* Coordinate normal = (get_x(sn)*sn_mag_inv,get_y(sn)*sn_mag_inv); */
+
+  Real nx = get_x(sn)*sn_mag_inv;
+  Real ny = get_y(sn)*sn_mag_inv;
+  /* Real tx = -ny; */
+  /* Real ty = nx; */
+  Real tx = ny;
+  Real ty = -nx;
+
+  /* point_i */
+  Real di = density_i;
+  Real vxi = get_x(velocity_i);
+  Real vyi = get_y(velocity_i);
+  Real vzi = get_z(velocity_i);
+  Real pgi = pressure_i;
+  Real bxi = get_x(bfield_i);
+  Real byi = get_y(bfield_i);
+  Real bzi = get_z(bfield_i);
+
+  Real di_inv = Real(1.0)/di;
+  Real vni = nx*vxi + ny*vyi;//*sn_mag_inv;
+  Real vti = tx*vxi + ty*vyi;//*sn_mag_inv;
+  /* Real bni = nx*bxi + ny*byi;//\*sn_mag_inv; */
+  Real bti = tx*bxi + ty*byi;//*sn_mag_inv;
+
+  Real csi = std::sqrt(gamma*pgi/di);
+  Real kei = half*(vxi*vxi + vyi*vyi + vzi*vzi);
+  Real bnisq = bn*bn;
+  Real btisq = bti*bti;
+  Real bperpisq = btisq + bzi*bzi;
+  Real pbi = half*(bn*bn + bti*bti + bzi*bzi);
+  Real pti = pgi + pbi;
+  Real eni = pgi/(gamma - Real(1.0)) + di*kei + pbi;
+  Real hi = (eni + pti)*di_inv;
+
+  /* point_j */
+  Real dj = density_j;
+  Real vxj = get_x(velocity_j);
+  Real vyj = get_y(velocity_j);
+  Real vzj = get_z(velocity_j);
+  Real pgj = pressure_j;
+  Real bxj = get_x(bfield_j);
+  Real byj = get_y(bfield_j);
+  Real bzj = get_z(bfield_j);
+
+  Real dj_inv = Real(1.0)/dj;
+  Real vnj = nx*vxj + ny*vyj;//*sn_mag_inv;
+  Real vtj = tx*vxj + ty*vyj;//*sn_mag_inv;
+  /* Real bnj = nx*bxj + ny*byj;//\*sn_mag_inv; */
+  Real btj = tx*bxj + ty*byj;//*sn_mag_inv;
+  Real bnjsq = bn*bn;
+  Real btjsq = btj*btj;
+  Real bperpjsq = btjsq + bzj*bzj;
+  Real csj = std::sqrt(gamma*pgj/dj);
+  Real kej = half*(vxj*vxj + vyj*vyj + vzj*vzj);
+  Real pbj = half*(bn*bn + btj*btj + bzj*bzj);
+  Real ptj = pgj + pbj;
+  Real enj = pgj/(gamma - Real(1.0)) + dj*kej + pbj;
+  Real hj = (enj + ptj)*dj_inv;
+
+  // Roe averages
+  Real RT = sqrtf(dj/di);
+  Real RTp1_inv = Real(1.0)/(Real(1.0) + RT);;
+  Real droe = RT*di;
+  Real vxroe = (vxi + RT*vxj)*RTp1_inv;
+  Real vyroe = (vyi + RT*vyj)*RTp1_inv;
+  Real vzroe = (vzi + RT*vzj)*RTp1_inv;
+  Real keroe = half*(vxroe*vxroe + vyroe*vyroe + vzroe*vzroe);
+  Real hroe  = (hi + RT*hj)*RTp1_inv;
+  Real bxroe = (bxi + RT*bxj)/(Real(1.0) + RT);;
+  Real byroe = (byi + RT*byj)/(Real(1.0) + RT);;
+  Real bzroe = (bzi + RT*bzj)/(Real(1.0) + RT);;
+  Real c0roe = std::sqrt((gamma - Real(1.0))*(hroe - keroe));
+  Real vnroe = vxroe*nx + vyroe*ny;
+  Real vtroe = vxroe*tx + vyroe*ty;
+  Real bnroe = bn;
+  Real btroe = bxroe*tx + byroe*ty;
+
+  Real d_inv = Real(1.0)/droe;
+  Real c0sq = c0roe*c0roe;
+  Real casq = bnroe*bnroe*di_inv;	
+  Real ctsq = (btroe*btroe + bzroe*bzroe)*di_inv;	
+    
+  Real ws_sum = c0sq + casq + ctsq;
+  Real cfsq = Real(0.5)*(ws_sum  
+			 + std::sqrt(ws_sum*ws_sum - Real(4.0)*c0sq*casq));
+  
+  Real cfroe = std::sqrt(cfsq);
+
+};
 
 /*****************************************************/
 /* HLLD Approximate Riemann solver                   */
@@ -44,8 +160,10 @@ void hlld_n (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j,
 
   Real nx = get_x(sn)*sn_mag_inv;
   Real ny = get_y(sn)*sn_mag_inv;
-  Real tx = -ny;
-  Real ty = nx;
+  /* Real tx = -ny; */
+  /* Real ty = nx; */
+  Real tx = ny;
+  Real ty = -nx;
 
   /* point_i */
   Real di = density_i;
@@ -493,8 +611,10 @@ void hlld_ct (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j
 
   Real nx = get_x(sn)*sn_mag_inv;
   Real ny = get_y(sn)*sn_mag_inv;
-  Real tx = -ny;
-  Real ty = nx;
+  /* Real tx = -ny; */
+  /* Real ty = nx; */
+  Real tx = ny;
+  Real ty = -nx;
 
   /* point_i */
   Real di = density_i;
@@ -659,7 +779,7 @@ void hlld_ct (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j
     else
       {
 
-	/* eqs. (44) and (46) of [1]revisted for general geometry */
+	/* eqs. (44) and (46) of [1] revisted for general geometry */
 	/* if (nx,ny) = (1,0), then vx^* = sm and vy^* = vy^* */
 	tmp = bn*(sdi-sdmi)/(di*sdi*sdmi - bn*bn);
 	vxis = vxi - bxi*tmp + sdmi*(pts - pti)*nx/(di*sdi*sdmi - bn*bn);
@@ -909,8 +1029,8 @@ void hlld_ct (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j
     get_y(thr::get<1>(flux)) *= sn_mag;
     get_z(thr::get<1>(flux)) *= sn_mag;
     thr::get<2>(flux)        *= sn_mag;
-    get_x(thr::get<3>(flux)) *= sn_mag*abs(ny);
-    get_y(thr::get<3>(flux)) *= sn_mag*abs(nx);
+    get_x(thr::get<3>(flux)) *= sn_mag*tx;
+    get_y(thr::get<3>(flux)) *= sn_mag*ty;
     get_z(thr::get<3>(flux)) *= sn_mag;
 
 };

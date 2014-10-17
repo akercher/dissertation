@@ -30,13 +30,14 @@
 /*************************************************************************/
 #ifdef MHD
 #define CT
-#define DEBUG_BN
+// #define DEBUG_BN
 // #define DEBUG_EMF
+// #define DEBUG_DIV
 #endif
 
 // #define DEBUG_EDGES
 // #define DEBUG_RESIDUAL
-// #define LINEAR
+#define LINEAR
 
 #define flux_hydro rhll
 
@@ -57,13 +58,14 @@
 #include "problems.h"
 #include "edge_solver.h"
 
+#include "mesh_generate.h"
+#include "coloring.h"
+#include "data_io.h"
+
 #ifdef MHD
 #include "constrained_transport.h"
 #endif
 
-#include "mesh_generate.h"
-#include "coloring.h"
-#include "data_io.h"
 
 int main(int argc, char* argv[]){
 
@@ -299,7 +301,7 @@ int main(int argc, char* argv[]){
 						 Real(5.0),
 						 Vector(Real(0.0),Real(0.0),Real(0.0))));  
   }
-  // else if (prob == Index(1)){
+
   else if (prob.compare("constant_mhd") == Index(0)){
     sprintf(base_name,"bin/constant_output");
     thr::fill_n(state.begin(),state.size(),State(Real(1.0),
@@ -311,7 +313,7 @@ int main(int argc, char* argv[]){
   }
   else if (prob.compare("linear_wave") == Index(0)){
 
-    Real ieigen = Index(2);
+    Real ieigen = Index(1);
     Real vflow = Real(1.0);
     gamma = Real(5.0)/Real(3.0);
     nsteps_out = 20;
@@ -396,6 +398,47 @@ int main(int argc, char* argv[]){
 
     thr::transform_n(state.begin(),state.size(),state.begin(),prim2cons(gamma));
   }
+
+  else if (prob.compare("loop") == Index(0)){
+    gamma = Real(5.0)/Real(3.0);
+    nsteps_out = 100;
+    sprintf(base_name,"bin/field_loop");
+
+    mesh.btype_x = Index(1);
+    mesh.btype_y = Index(1);
+
+    thr::transform_n(make_device_counting_iterator(),
+		     state.size(),
+		     state.begin(),
+		     field_loop_init(mesh.nx,
+				     mesh.dx,
+				     mesh.dy,
+				     mesh.Lx,
+				     mesh.Ly));
+
+#ifdef MHD
+    for(Index i=0; i < offset.ncolors; i++){
+      thr::transform_n(edge_iter,
+		       offset.faces_per_color[i],	    
+		       bn_edge_iter,
+		       field_loop_init_interface(mesh.nx,
+						 mesh.dx,
+						 mesh.dy,
+						 mesh.Lx,
+						 mesh.Ly));
+
+      edge_iter += offset.faces_per_color[i];
+      bn_edge_iter += offset.faces_per_color[i];
+    }
+    // reset iterator
+    edge_iter = edge.begin();
+    bn_edge_iter = bn_edge.begin();
+
+    thr::transform_n(state.begin(),state.size(),state.begin(),prim2cons(gamma));
+
+#endif
+  }
+
   else if (prob.compare("orzag_tang") == Index(0)){
     gamma = Real(5.0)/Real(3.0);
     nsteps_out = 100;
@@ -494,7 +537,7 @@ int main(int argc, char* argv[]){
     edge_iter = edge.begin();
     bn_edge_iter = bn_edge.begin();    
   }
-#ifdef MHD
+
   else if (prob.compare("blast_wave") == Index(0)){
     for(Index i=0; i < offset.ncolors; i++){
       thr::transform_n(edge_iter,
@@ -540,7 +583,7 @@ int main(int argc, char* argv[]){
     edge_iter = edge.begin();
     bn_edge_iter = bn_edge.begin();    
   }
-#endif
+
   else{
     for(Index i=0; i < offset.ncolors; i++){
       thr::for_each_n(thr::make_zip_iterator(thr::make_tuple(edge_iter,
@@ -577,10 +620,15 @@ int main(int argc, char* argv[]){
     				      mesh.btype_y,
     				      state_iter));
   }
-    // for(Index i = 0; i < mesh.nface(); i++){
-    //   printf("bn[%d] = %f\n",i,Real(bn_edge[i]));
-    // }
-#endif  
+
+  /*-----------------------------------------------------------------*/
+  /* Check divergence constraint                                     */
+  /*-----------------------------------------------------------------*/
+  Real max_divb;
+  max_divb = divergence_calc(interior_ncolors, mesh, offset, edge, bn_edge);
+  printf("Maximum div(B) = %f\n",max_divb);
+
+#endif //MHD 
   
   // calculate dual volume at nodes
   thr::transform_n(make_device_counting_iterator(),
@@ -604,25 +652,7 @@ int main(int argc, char* argv[]){
   // reset iterator
   edge_iter = edge.begin();
 
-  // for(Index i = 0; i < mesh.npoin(); i++){
-  //   printf("[%d] %f %f %f %f\n",i,
-  // 	   thr::get<0>(Vector4(lsq_inv[i])),
-  // 	   thr::get<1>(Vector4(lsq_inv[i])),
-  // 	   thr::get<2>(Vector4(lsq_inv[i])),
-  // 	   thr::get<3>(Vector4(lsq_inv[i])));
-  //   // print_states_host(i,state_iter[i]);
-  // }
-
   thr::transform_n(lsq_inv.begin(),lsq_inv.size(),lsq_inv.begin(),least_sq_inv_2x2());
-
-  // for(Index i = 0; i < mesh.npoin(); i++){
-  //   printf("[%d] %f %f %f %f\n",i,
-  // 	   thr::get<0>(Vector4(lsq_inv[i])),
-  // 	   thr::get<1>(Vector4(lsq_inv[i])),
-  // 	   thr::get<2>(Vector4(lsq_inv[i])),
-  // 	   thr::get<3>(Vector4(lsq_inv[i])));
-  //   // print_states_host(i,state_iter[i]);
-  // }
 
   output_count = Index(0);
   Index ksteps = Index(0);
@@ -644,13 +674,20 @@ int main(int argc, char* argv[]){
 
   program_timer.start();
 
-  if(mesh.ncell_x < Index(20)){
+  if(mesh.ncell_x < Index(10)){
     printf("\n");
     printf("step %d\n",Index(0));
     for(Index i = 0; i < mesh.npoin(); i++){
       if(i % mesh.nx == Index(0)) printf("\n");
       print_states_host(i,State(state_iter[i]));
     }
+#ifdef MHD
+    for(Index i = 0; i < mesh.nface(); i++){
+      if(i % mesh.nx == Index(0)) printf("\n");
+      printf("[%d][%d] bn = %f\n",get_x(thr::get<2>(Edge(edge[i]))),
+	     get_y(thr::get<2>(Edge(edge[i]))),Real(bn_edge[i]));
+    }
+#endif
   }
   /*-----------------------------------------------------------------*/
   /* Main loop                                                       */
@@ -684,7 +721,14 @@ int main(int argc, char* argv[]){
       /*-----------------------------------------------------------------*/
       /* Compute Residuals at step n                                     */
       /*-----------------------------------------------------------------*/
-      
+#ifdef DEBUG_DIV        
+      if(istage < Index(2)){
+	printf("\nrk_stage = %d",istage + Index(1));
+	max_divb = divergence_calc(interior_ncolors, mesh, offset, edge, bn_edge);
+	printf("Maximum div(B) = %e\n",max_divb);
+      }
+#endif
+
       rk_coeff = Real(1.0)/(Real(istage) + Real(1.0));
       set_state_const(Real(0.0),residual);
 
@@ -716,21 +760,10 @@ int main(int argc, char* argv[]){
       }
       // reset iterator
       edge_iter = edge.begin();
-
-      //  for(Index i = 0; i < mesh.npoin(); i++){
-      // 	 printf("[%d] %f %f\n",i,get_x(thr::get<1>(get_x(StateGradiant(lsq_grad_iter[i])))),
-      // 	 	get_y(thr::get<1>(get_y(StateGradiant(lsq_grad_iter[i])))));
-      // }
       
       // multiple by precomputed inverse
       thr::transform_n(lsq_inv.begin(),lsq_inv.size(),lsq_grad.begin(),lsq_grad.begin(),
 		       least_sq_grad_inv());
-
-      //  for(Index i = 0; i < mesh.npoin(); i++){
-      // 	 printf("[%d] %f %f\n",i,get_x(thr::get<1>(get_x(StateGradiant(lsq_grad_iter[i])))),
-      // 	 	get_y(thr::get<1>(get_y(StateGradiant(lsq_grad_iter[i])))));
-      // }
-
 
       // interpolate to interface
       interp_states_iter = interp_states.begin();
@@ -795,7 +828,7 @@ int main(int argc, char* argv[]){
       if (mesh.btype_x == Index(1)){
       	// periodic left/right
       	thr::for_each_n(make_device_counting_iterator(),
-      			mesh.ny - Index(2.0),
+      			mesh.ny - Index(2),
       			periodic_bcs(mesh.nx,
       				     mesh.ny,
       				     mesh.nx,
@@ -1126,11 +1159,6 @@ int main(int argc, char* argv[]){
       }
 #endif
 
-    // for(Index i = 0; i < mesh.npoin(); i++){
-    //   if(i % mesh.nx == Index(0)) printf("\n");
-    //   print_states_host(i,State(residual_iter[i]));
-    // }
-
 #ifdef MHD
       /*-----------------------------------------------------------------*/
       /* compute emfs                                                    */
@@ -1176,7 +1204,7 @@ int main(int argc, char* argv[]){
 
       /*-----------------------------------------------------------------*/
       /* Update solution: Two-stage Runge-Kutta                          */
-      /*    1. state = state_n - (dt/vol)*residual(state_n)              */
+      /*    1. state = state^n - (dt/vol)*residual(state^n)              */
       /*    2. state^{n+1} = 0.5*(state^n + state)                       */
       /*                     - 0.5*(dt/vol)*residual(state)              */
       /*-----------------------------------------------------------------*/
@@ -1184,7 +1212,7 @@ int main(int argc, char* argv[]){
       /*-----------------------------------------------------------------*/
       /* compute time step if stage one                                  */
       /*-----------------------------------------------------------------*/  	  	        
-      if(istage < 1){
+      if(istage < Index(1)){
 
 	Real init(MAXIMUM_NUM); // initial value for reduce operation
 
@@ -1200,11 +1228,16 @@ int main(int argc, char* argv[]){
 	time += dt;
 	
 	if((ksteps-Index(1)) % 100 == 0){
-
+#ifdef MHD
+	  max_divb = divergence_calc(interior_ncolors, mesh, offset, edge, bn_edge);
+#endif
 	  std::cout << "ksteps = " << ksteps << " , " 
 		    << "time = " << time << " , "
 	    // << "max_wave_speed = " << field.max_wave_speed << " , " 
 		    << "dt = " << dt << " , " 
+#ifdef MHD
+		    << "div(B) = " << max_divb << " , " 
+#endif
 		    << "cells_per_sec = " << cells_per_wall_sec << " , "  
 		    << "face_per_sec = " << faces_per_wall_sec // << " , "  
 		    << std::endl;
@@ -1235,10 +1268,6 @@ int main(int argc, char* argv[]){
 		       emf_z.begin(),
 		       sum_and_scale_reals(half));
 
-      // 	printf("\n");
-      // for(Index i = 0; i < mesh.ncell(); i++){
-      // 	printf("[%d] %f\n",i,Real(emf_z_iter[i]));
-      // }      
 
 #endif
       }
@@ -1246,10 +1275,6 @@ int main(int argc, char* argv[]){
       /*-----------------------------------------------------------------*/
       /* Time integration                                                */
       /*-----------------------------------------------------------------*/  
-
-      // for(Index i = 0; i < mesh.nface(); i++){
-      // 	printf("[%d] %f\n",i,Real(bn_edge_iter[i]));
-      // }      
       
       thr::transform_n(thr::make_zip_iterator(thr::make_tuple(state.begin(),residual.begin())),
 		       state.size(),
@@ -1298,15 +1323,6 @@ int main(int argc, char* argv[]){
       					state_iter));
 
 #endif      
-
-      // for(Index i = 0; i < mesh.nface(); i++){
-      // 	printf("[%d] %f\n",i,Real(bn_edge_iter[i]));
-      // }
-      // for(Index i = 0; i < mesh.nface(); i++){
-      // 	print_states_host(i,State(residual_iter[i]));
-      // 	// print_states_host(i,get_x(InterpState(interp_states_iter[i])));
-      // }
-
       
     } ////////////// end loop over rk-stages
     face_timer.stop();
@@ -1315,7 +1331,7 @@ int main(int argc, char* argv[]){
     faces_per_wall_sec = mesh.nface()/face_timer.elapsed_wall_time();
     cells_per_wall_sec = mesh.ncell()/cell_timer.elapsed_wall_time();
 
-  if(mesh.ncell_x < Index(20)){
+  if(mesh.ncell_x < Index(10)){
     printf("\n");
     printf("step %d\n",ksteps);
     for(Index i = 0; i < mesh.npoin(); i++){

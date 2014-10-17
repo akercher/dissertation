@@ -121,136 +121,237 @@ struct blast_wave_init : public thr::unary_function<Index,State>
 /* initialize grid state variables for field loop    */
 /*---------------------------------------------------*/
 /*****************************************************/
-struct field_loop_init : public thr::unary_function<Interface,Real>
+struct field_loop_init : public thr::unary_function<Index,State>
 {
-  Index _ncell_x;
+  Index _nx;
   Real _dx;
   Real _dy;
   Real _Lx;
   Real _Ly;
-  StateIterator _state_iter;
 
- field_loop_init(Index ncell_x,
+ field_loop_init(Index nx,
 		 Real dx,
 		 Real dy,
 		 Real Lx,
-		 Real Ly,
-		 StateIterator state_iter)
+		 Real Ly)
 
-   :_ncell_x(ncell_x)
+   :_nx(nx)
     ,_dx(dx)
     ,_dy(dy)
     ,_Lx(Lx)
-    ,_Ly(Ly)
-    ,_state_iter(state_iter) {}
+    ,_Ly(Ly) {}
 
   __host__ __device__
-    Real operator()(const Interface& interface) const
+    State operator()(const Index& index) const
   {
+
+    Real density_ratio = One;
+    Real amp = Real(1.0e-3);
+    Real radius = Real(0.3);
+    Real fuild_vel = Real(1.0);
+    Real diag = sqrtf(this->_Lx*this->_Lx + this->_Ly*this->_Ly);
+
+    Index i = index % this->_nx;
+    Index j = (index - i)/this->_nx;
+
+    Real x = (Real(i))*this->_dx;// + half*this->_dx;
+    Real y = (Real(j))*this->_dy;// + half*this->_dy;
+
+    x -= half*this->_Lx;
+    y -= half*this->_Ly;
+
+    Real d = One;    
+    if((x*x + y*y) < radius*radius){
+      d = density_ratio;
+    }
+
+    Real vx = fuild_vel*this->_Lx/diag;
+    Real vy = fuild_vel*this->_Ly/diag;
+    Real vz = Zero;
+    Real pg = Real(1.0);
+    Real bx = Zero;
+    Real by = Zero;
+    Real bz = Zero;
+
+    Real x1 = x - half*this->_dx;
+    Real x2 = x + half*this->_dx;
+
+    Real y1 = y - half*this->_dy;
+    Real y2 = y + half*this->_dy;
+
+
+    Real Az1,Az2;
+
+    // bx
+    Az1 = Zero;
+    if((x1*x1 + y1*y1) < radius*radius){
+      Az1 = amp*(radius - sqrtf(x1*x1 + y1*y1));
+    }
+
+    Az2 = Zero;
+    if((x1*x1 + y2*y2) < radius*radius){
+      Az2 = amp*(radius - sqrtf(x2*x2 + y2*y2));
+    }    
+    bx += half*(Az2 - Az1)/this->_dy;    
+
+    Az1 = Zero;
+    if((x2*x2 + y1*y1) < radius*radius){
+      Az1 = amp*(radius - sqrtf(x1*x1 + y1*y1));
+    }
+
+    Az2 = Zero;
+    if((x2*x2 + y2*y2) < radius*radius){
+      Az2 = amp*(radius - sqrtf(x2*x2 + y2*y2));
+    }    
+    bx += half*(Az2 - Az1)/this->_dy;    
+
+    // by
+    Az1 = Zero;
+    if((x1*x1 + y1*y1) < radius*radius){
+      Az1 = amp*(radius - sqrtf(x1*x1 + y1*y1));
+    }
+
+    Az2 = Zero;
+    if((x2*x2 + y1*y1) < radius*radius){
+      Az2 = amp*(radius - sqrtf(x2*x2 + y2*y2));
+    }    
+    by -= half*(Az2 - Az1)/this->_dx;    
+
+    Az1 = Zero;
+    if((x1*x1 + y2*y2) < radius*radius){
+      Az1 = amp*(radius - sqrtf(x1*x1 + y1*y1));
+    }
+
+    Az2 = Zero;
+    if((x2*x2 + y2*y2) < radius*radius){
+      Az2 = amp*(radius - sqrtf(x2*x2 + y2*y2));
+    }    
+    by -= half*(Az2 - Az1)/this->_dx;    
+
+    /* printf("[%d] %f %f %f %f %f %f\n",index,x1,y1,x2,y2,bx,by); */
+
+#ifdef CT
+    bx = Zero;
+    by = Zero;
+#endif
+    return State(d,
+		 Vector(vx,vy,vz),
+		 pg,
+		 Vector(bx,by,bz));
+    
+  }
+};
+
+/*****************************************************/
+/* Field Loop at interface                           */
+/*---------------------------------------------------*/
+/*****************************************************/
+struct field_loop_init_interface : public thr::unary_function<Edge,Real>
+{
+
+  Index _nx;
+  Real _dx;
+  Real _dy;
+  Real _Lx;
+  Real _Ly;
+
+ field_loop_init_interface(Index nx,
+			   Real dx,
+			   Real dy,
+			   Real Lx,
+			   Real Ly)
+
+
+   : _nx(nx)
+    ,_dx(dx)
+    ,_dy(dy)
+    ,_Lx(Lx)
+    ,_Ly(Ly) {}
+
+  __host__ __device__
+    Real operator()(const Edge& edge) const
+  {
+
+    // points of edge
+    Index point_i = thr::get<0>(thr::get<2>(Edge(edge)));
+    Index point_j = thr::get<1>(thr::get<2>(Edge(edge)));
+
+    Coordinate edge_vec = thr::get<1>(Edge(edge));
+    Real edge_vec_mag = std::sqrt(get_x(edge_vec)*get_x(edge_vec) 
+				     + get_y(edge_vec)*get_y(edge_vec));
+    Real edge_vec_mag_inv = Real(1.0)/edge_vec_mag;
+
+    Real nx = get_x(edge_vec)*edge_vec_mag_inv;
+    Real ny = get_y(edge_vec)*edge_vec_mag_inv;
+
+    Index i,j;
+
+    i = point_i % this->_nx;
+    j = (point_i - i)/this->_nx;
+
+    Real xi = (Real(i))*this->_dx;
+    Real yi = (Real(j))*this->_dy;
+
+    xi -= half*this->_Lx;
+    yi -= half*this->_Ly;
+
+    i = point_j % this->_nx;
+    j = (point_j - i)/this->_nx;
+
+    Real xj = (Real(i))*this->_dx;
+    Real yj = (Real(j))*this->_dy;
+
+    xj -= half*this->_Lx;
+    yj -= half*this->_Ly;
+
+    /* printf("[%d][%d] %f %f %f %f\n",point_i,point_j,xi,yi,xj,yj); */
+
+    // midpoints of edge
+    Real xm = half*(xj + xi);
+    Real ym = half*(yj + yi);
+
+    Real x1 = xm - half*this->_dx*ny;
+    Real x2 = xm + half*this->_dx*ny;
+
+    // add such that y2 > y1
+    Real y1 = ym - half*this->_dy*nx;
+    Real y2 = ym + half*this->_dy*nx;
+    
+    /* printf("[%d][%d] %f %f %f %f\n",point_i,point_j,xi,yi,xj,yj); */
+    /* printf("[%d][%d] %f %f %f %f\n",point_i,point_j,x1,y1,x2,y2); */
+    
+    Real bn = Real(0.0);
+    Real Az1,Az2;
 
     Real amp = Real(1.0e-3);
     Real radius = Real(0.3);
-    Real fuild_vel = Real(3.0);
-    Real diag = sqrtf(this->_Lx*this->_Lx + this->_Ly*this->_Ly);
 
-    Index index_i = thr::get<0>(thr::get<0>(Interface(interface)));
-    Index index_j = thr::get<1>(thr::get<0>(Interface(interface)));
+    Real bx = Real(0.0);
+    Real by = Real(0.0);
 
-    Index point_i = thr::get<0>(thr::get<2>(Interface(interface)));
-    Index point_j = thr::get<1>(thr::get<2>(Interface(interface)));
-
-    // modify for outflow conditions
-    if (index_i < 0) index_i = index_j;
-    if (index_j < 0) index_j = index_i;    
-
-    State state_i = State(this->_state_iter[index_i]);
-    State state_j = State(this->_state_iter[index_j]);
-
-    Real di = density_i;
-    Real vxi = get_x(momentum_i);
-    Real vyi = get_y(momentum_i);
-    Real vzi = get_z(momentum_i);
-    Real pgi = energy_i;
-    Real bxi = get_x(bfield_i);
-    Real byi = get_y(bfield_i);
-    Real bzi = get_z(bfield_i);
-
-    Real dj = density_j;
-    Real vxj = get_x(momentum_j);
-    Real vyj = get_y(momentum_j);
-    Real vzj = get_z(momentum_j);
-    Real pgj = energy_j;
-    Real bxj = get_x(bfield_j);
-    Real byj = get_y(bfield_j);
-    Real bzj = get_z(bfield_j);
-
-    Coordinate sn = thr::get<1>(Interface(interface));
-    Real sn_mag = sqrtf(get_x(sn)*get_x(sn) + get_y(sn)*get_y(sn));
-    Real sn_mag_inv = Real(1.0)/sn_mag;
-
-    Real nx = get_x(sn)*sn_mag_inv;
-    Real ny = get_y(sn)*sn_mag_inv;
-
-    Index i = index_j % this->_ncell_x;
-    Index j = (index_j - i)/this->_ncell_x;
-
-    Real xi = Real(i)*this->_dx - half*this->_Lx;
-    Real yi = Real(j)*this->_dy - half*this->_Ly;
-
-    Real xj = xi;// + this->_dy;
-    Real yj = yi + this->_dy;
-    
-    if (ny > nx){
-      xj = xi + this->_dx;
-      yj = yi;// + this->_dx;      
+    // bx
+    Az1 = Zero;
+    if((x1*x1 + y1*y1) < radius*radius){
+      Az1 = amp*(radius - sqrtf(x1*x1 + y1*y1));
     }
 
-    /* printf("index_i = %d index_j = %d i = %d j = %d\n",index_i,index_j,i,j); */
-    /* printf("xi = %f yi = %f xj = %f yj = %f\n",xi,yi,xj,yj); */
+    Az2 = Zero;
+    if((x2*x2 + y2*y2) < radius*radius){
+      Az2 = amp*(radius - sqrtf(x2*x2 + y2*y2));
+    }    
 
-    Real azi = Real(0.0);
-    if((xi*xi + yi*yi) < radius*radius){
-      azi = amp*(radius - sqrtf(xi*xi + yi*yi));      
-    }
+    if(fabs(x2 - x1) > Real(0.0)) by = -(Az2 - Az1)/(x2 - x1);
 
-    Real azj = Real(0.0);    
-    if((xj*xj + yj*yj) < radius*radius){
-      azj = amp*(radius - sqrtf(xj*xj + yj*yj));      
-    }
+    if(fabs(y2 - y1) > Real(0.0)) bx = (Az2 - Az1)/(y2 - y1);
+
+    /* printf("[%d][%d] x1 = %f y1 = %f x2 = %f y2 = %f bx = %f by = %f\n",point_i,point_j,x1,y1,x2,y2,bx,by); */
     
-    di = Real(1.0);    
-    vxi = fuild_vel*this->_Lx/diag;
-    vyi = fuild_vel*this->_Ly/diag;
-    vzi = Real(0.0);
-    pgi = Real(1.0);
+    bn = bx*nx + by*ny;
 
-
-    Real bn = (azj - azi)/sn_mag;
-
-    if (ny > nx) bn = -bn;
-
-    Real angle = Real(atan2(ny,nx));
-
-    bxi += half*(Real(cos(angle))*bn);
-    byi += half*(Real(sin(angle))*bn);
-
-    bxj += half*(Real(cos(angle))*bn);
-    byj += half*(Real(sin(angle))*bn);
-
-    this->_state_iter[index_i] = State(di,
-				       Vector(vxi,vyi,vzi),
-				       pgi,
-				       Vector(bxi,byi,bzi));
-    
-    this->_state_iter[index_j] = State(dj,
-				       Vector(vxj,vyj,vzj),
-				       pgj,
-				       Vector(bxj,byj,bzj));
-    
     return bn;
-
   }
 };
+
 
 /*****************************************************/
 /* initialize grid orszag_tang                       */
@@ -360,8 +461,8 @@ struct kh_instability_init : public thr::unary_function<Index,State>
 
 #ifdef MHD
     Real sqrt_two_inv = Real(1.0)/std::sqrt(Two); 
-    Real bx = sqrt_two_inv*std::sqrt(Real(4.0)*Real(M_PI));
-    Real by = sqrt_two_inv*std::sqrt(Real(4.0)*Real(M_PI));
+    Real bx = 0.129;//sqrt_two_inv*std::sqrt(Real(4.0)*Real(M_PI));
+    Real by = Real(0.0);
     Real bz = Real(0.0);
 #else
     Real bx = Real(0.0);
@@ -556,7 +657,6 @@ struct linear_wave_init : public thr::unary_function<Index,State>
     Az2 = vector_potential_lw_z(x2, y2, vdt, angle, kpar, bx0, by0, bz0, dby);
     by -= half*(Az2 - Az1)/this->_dx;
 
-
     Real bz = Real(0.0);
     Ay1 = vector_potential_lw_y(x1, y2, vdt, angle, kpar, bx0, by0, bz0, dbz);
     Ay2 = vector_potential_lw_y(x2, y2, vdt, angle, kpar, bx0, by0, bz0, dbz);
@@ -641,14 +741,14 @@ struct linear_wave_init_interface : public thr::unary_function<Edge,Real>
     i = point_i % this->_nx;
     j = (point_i - i)/this->_nx;
 
-    Real xi = (Real(i))*this->_dx;
-    Real yi = (Real(j))*this->_dy;
+    Real xi = (Real(i))*this->_dx;// + half*this->_dx;
+    Real yi = (Real(j))*this->_dy;// + half*this->_dy;
 
     i = point_j % this->_nx;
     j = (point_j - i)/this->_nx;
 
-    Real xj = (Real(i))*this->_dx;
-    Real yj = (Real(j))*this->_dy;
+    Real xj = (Real(i))*this->_dx;// + half*this->_dx;
+    Real yj = (Real(j))*this->_dy;// + half*this->_dy;
 
     /* printf("[%d][%d] %f %f %f %f\n",point_i,point_j,xi,yi,xj,yj); */
 

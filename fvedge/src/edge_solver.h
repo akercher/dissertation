@@ -574,21 +574,6 @@ struct periodic_bcs : public thr::unary_function<Index,void>
     res_bz = thr::get<2>(thr::get<3>(State(this->_residual_iter[Index(index_i)])))
       + thr::get<2>(thr::get<3>(State(this->_residual_iter[Index(index_j)])));
     
-    /* printf("[%d][%d] res.mxi = %f, res.mxj = %f res_mx = %f\n",index_i,index_j, */
-    /* 	   get_x(thr::get<1>(State(this->_residual_iter[Index(index_i)]))), */
-    /* 	   get_x(thr::get<1>(State(this->_residual_iter[Index(index_j)]))), */
-    /* 	   res_mx); */
-
-    // XXX incorrect for triangles
-    /* res_d *= half; */
-    /* res_mx *= half; */
-    /* res_my *= half; */
-    /* res_mz *= half; */
-    /* res_en *= half; */
-    /* res_bx *= half; */
-    /* res_by *= half; */
-    /* res_bz *= half; */
-    
     this->_residual_iter[Index(index_i)] = State(Real(res_d),
 						 Vector(res_mx,res_my,res_mz),
 						 Real(res_en),
@@ -598,11 +583,6 @@ struct periodic_bcs : public thr::unary_function<Index,void>
 						 Vector(res_mx,res_my,res_mz),
 						 Real(res_en),
 						 Vector(res_bx,res_by,res_bz));
-
-    /* printf("[%d][%d] res.di = %f, res.dj = %f res_d = %f\n",index_i,index_j, */
-    /* 	   thr::get<0>(State(this->_residual_iter[Index(index_i)])), */
-    /* 	   thr::get<0>(State(this->_residual_iter[Index(index_j)])), */
-    /* 	   res_d); */
 
   }
 };

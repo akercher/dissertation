@@ -517,8 +517,8 @@ struct edges_init_2d : public thr::unary_function<Index,Edge>
       }
       point_j = point_i + nx;		
       
-      anx = -this->_dx*area_1;//third;
-      any = this->_dy*area_2;//third*Real(2.0);
+      anx = -this->_dx*area_1;
+      any = this->_dy*area_2;
       
       enx = Real(0.0);
       eny = this->_dy;
@@ -551,16 +551,22 @@ struct edges_init_2d : public thr::unary_function<Index,Edge>
       point_i = nx*j + i;
       point_j = point_i + Index(1);		
 
-      // swap index
+      /* swap index */
       i = point_i;
       point_i = point_j;
       point_j = i;
 
-      anx = -this->_dy*area_2;//third*Real(2.0);
-      any = this->_dx*area_1;//third;
+      anx = -this->_dy*area_2;
+      any = this->_dx*area_1;
 
       enx = -this->_dx;
       eny = Real(0.0);
+
+      /* anx = this->_dy*area_2; */
+      /* any = this->_dx*area_1; */
+
+      /* enx = this->_dx; */
+      /* eny = Real(0.0); */
       
     }
 
@@ -778,8 +784,8 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
 	if(btype == Index(1)){
 	  index_i = index_j + this->_ncell_x - Index(1);
 
-	  anx *= half;
-	  any *= -half;
+	  anx *= Two;
+	  any *= -Two;
 	  eny *= -One;
 
 	  i = point_i;
@@ -794,7 +800,7 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
 	}
 
       }
-      else{ // right boundary first pass
+      else{ // RIGHT boundary first pass
 	
 	index_i = colors_per_pass*half*(index + Index(1))*this->_ncell_x - Index(1);
 	index_j = Real(-1);
@@ -821,23 +827,29 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
 	
 	if(btype == Index(1)){
 	  index_j = index_i - this->_ncell_x + Index(1);
-	  anx *= half;
-	  any *= half;
+	  anx *= Two;
+	  any *= Two;
 
 	  periodic_point_i = point_i - Index(this->_ncell_x);
 	  periodic_point_j = point_j - Index(this->_ncell_x);
 
 	}
-
       }	
+      // for quads
+      if(this->_iedge_d == Index(0)){
+	anx = enx;
+	any = eny;
+	if(btype == Index(1)){
+	  anx *= Two;
+	  any *= Two;	    
+	}
+      }	  	
     }
     
     else if(((this->_color_index - this->_iface_d) % Index(4)) < 2 
 	    && (this->_color_index- this->_iface_d) > Index(5)){
 
       btype = this->_btype_x;
-
-      /* if(this->_btype_x == 0){ // outflow x-faces second pass */
 	
       if(index % Index(2) == 0){ // RIGHT boundary second pass
 	
@@ -867,12 +879,11 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
 	if(btype == Index(1)){
 	  index_j = index_i - this->_ncell_x + Index(1);
 
-	  anx *= half;
-	  any *= half;
+	  anx *= Two;
+	  any *= Two;
 
-	periodic_point_i = point_i - Index(this->_ncell_x);
-	periodic_point_j = point_j - Index(this->_ncell_x);
-
+	  periodic_point_i = point_i - Index(this->_ncell_x);
+	  periodic_point_j = point_j - Index(this->_ncell_x);
 
 	}
 	
@@ -908,8 +919,8 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
 	if(btype == Index(1)){
 	  index_i = index_j + this->_ncell_x - Index(1);
 
-	  anx *= half;
-	  any *= -half;
+	  anx *= Two;
+	  any *= -Two;
 	  eny *= -One;
 
 	  i = point_i;
@@ -923,14 +934,21 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
 
 	}	
       }
+      // for quads
+      if(this->_iedge_d == Index(0)){
+	anx = enx;
+	any = eny;
+	if(btype == Index(1)){
+	  anx *= Two;
+	  any *= Two;	    
+	}
+      }	  	
     }
 	
     else if(((this->_color_index - this->_iface_d)% Index(4)) < 3 
 	    && (this->_color_index - this->_iface_d) > Index(5)){
       
       btype = this->_btype_y;
-
-      /* if(this->_btype_y == 0){ // outflow */
 	
       if (index % Index(2) == Index(0)){ // bottom boundary first pass
 	
@@ -960,8 +978,8 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
 	if(btype == Index(1)){
 	  index_i = index_j + (this->_ncell_y - Index(1))*this->_ncell_x;
 
-	  anx *= -half;
-	  any *= half;
+	  anx *= -Two;
+	  any *= Two;
 	  enx *= -One;
 
 	  i = point_i;
@@ -1004,8 +1022,8 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
 	if(btype == Index(1)){
 	  index_j = index_i - (this->_ncell_y - Index(1))*this->_ncell_x;
 
-	  anx *= half;
-	  any *= half;
+	  anx *= Two;
+	  any *= Two;
 
 	  periodic_point_i = point_i - Index(this->_ncell_y)*nx;
 	  periodic_point_j = point_j - Index(this->_ncell_y)*nx;
@@ -1013,6 +1031,15 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
 	}
 
       }
+      // for quads
+      if(this->_iedge_d == Index(0)){
+	anx = enx;
+	any = eny;
+	if(btype == Index(1)){
+	  anx *= Two;
+	  any *= Two;	    
+	}
+      }	  
     }
     else{ //if((this->_color_index % Index(4)) > 2)
 	  
@@ -1048,8 +1075,8 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
 	  if(btype == Index(1)){
 	    index_i = index_j + (this->_ncell_y - Index(1))*this->_ncell_x;
 	    
-	    anx *= -half;
-	    any *= half;
+	    anx *= -Two;
+	    any *= Two;
 	    enx *= -One;
 	    
 	    i = point_i;
@@ -1091,14 +1118,23 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
 	if(btype == Index(1)){
 	  index_j = index_i - (this->_ncell_y - Index(1))*this->_ncell_x;
 
-	  anx *= half;
-	  any *= half;
+	  anx *= Two;
+	  any *= Two;
 
 	  periodic_point_i = point_i - Index(this->_ncell_y)*nx;
 	  periodic_point_j = point_j - Index(this->_ncell_y)*nx;
 
-	}	
+	}
       }
+      // for quads
+      if(this->_iedge_d == Index(0)){
+	anx = enx;
+	any = eny;
+	if(btype == Index(1)){
+	  anx *= Two;
+	  any *= Two;	    
+	}
+      }	  	
     }
     
     Index bi,bj;
@@ -1157,15 +1193,12 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
 
     /* printf("[%d][%d] bnode[%d] = %d bnode[%d] = %d\n",point_i,point_j,bi,thr::get<1>(BoundaryNode(this->_bnode_iter[bi])),bj,thr::get<1>(BoundaryNode(this->_bnode_iter[bj]))); */
 
-    // for quads
-    if(this->_iedge_d == Index(0)){
-      anx = enx;
-      any = eny;
-    }	  
+
 
     bface = BoundaryFace(Coordinate(snx,sny),IndexPair(bi,bj),
     			 IndexPair(periodic_point_i,periodic_point_j),
     			 Index(belem));
+
     edge = Edge(Coordinate(half*anx,half*any),Coordinate(enx,eny),
 		IndexPair(point_i,point_j),IndexPair(index_i,index_j));
     
