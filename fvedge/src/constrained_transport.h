@@ -92,11 +92,13 @@ struct residual_ct : public thr::binary_function<Tuple,InterpState,State>
     /* Compute flux using HLLD approximations            */
     /*---------------------------------------------------*/
 #ifdef DEBUG_FLUX
-    printf("[%d][%d] di = %f dj = %f\n",point_i,point_j,density_i,density_j);
+    printf("\n");
+    printf("[%d][%d] di = %f dj = %f vxi = %e vxj = %e\n",point_i,point_j,density_i,density_j,
+	   get_x(velocity_i),get_x(velocity_j));
 #endif
 
 #ifdef CT
-    hlld_ct(this->_gamma,Real(0.0),area_vec,state_i,state_j,bn,normal_wave_speed,flux);
+    hlld_ct_rotated(this->_gamma,Real(0.0),area_vec,state_i,state_j,bn,normal_wave_speed,flux);
 #else
     hlld_n(this->_gamma,Real(0.0),area_vec,state_i,state_j,normal_wave_speed,flux);
 #endif
@@ -532,15 +534,16 @@ struct emf_upwind_calc : public thr::unary_function<Tuple,void>
     // cell centered emfs
     if (index_i > -Index(1)){
       Real emf_cc_i = Real(this->_emf_z_iter[Index(index_i)]);
-      this->_emf_z_iter[Index(index_i)] = emf_cc_i + edge_emf_contribution - demf;
+      this->_emf_z_iter[Index(index_i)] = emf_cc_i + edge_emf_contribution;// - demf;
     }
 
     if (index_j > -Index(1)){
       Real emf_cc_j = Real(this->_emf_z_iter[Index(index_j)]);
-      this->_emf_z_iter[Index(index_j)] = emf_cc_j + edge_emf_contribution + demf;
+      this->_emf_z_iter[Index(index_j)] = emf_cc_j + edge_emf_contribution;// + demf;
     }
 #ifdef DEBUG_EMF
-    printf("[%d][%d] %d %d %f %f %f %f %f %f\n",point_i,point_j,index_i,index_j,
+    printf("[%d][%d] %d %d emf_i = %f emf_j = %f emf_edge = %f demf = %f f.bx = %f f.by = %f\n",
+	   point_i,point_j,index_i,index_j,
 	   Real(this->_emf_z_iter[Index(index_i)]),
 	   Real(this->_emf_z_iter[Index(index_j)]),
 	   edge_emf_contribution,demf,flux_bx,flux_by);
@@ -679,17 +682,20 @@ struct emf_upwind_bcs : public thr::unary_function<Tuple,void>
     // cell centered emfs
     if (index_i > -Index(1)){
       Real emf_cc_i = Real(this->_emf_z_iter[Index(index_i)]);
-      this->_emf_z_iter[Index(index_i)] = emf_cc_i + half*edge_emf_contribution - half*demf;
+      this->_emf_z_iter[Index(index_i)] = emf_cc_i + half*edge_emf_contribution ;//- half*demf;
     }
 
     if (index_j > -Index(1)){
       Real emf_cc_j = Real(this->_emf_z_iter[Index(index_j)]);
-      this->_emf_z_iter[Index(index_j)] = emf_cc_j + half*edge_emf_contribution + half*demf;
+      /* this->_emf_z_iter[Index(index_j)] = emf_cc_j + half*edge_emf_contribution + half*demf; */
+      this->_emf_z_iter[Index(index_j)] = emf_cc_j + half*edge_emf_contribution;// + half*demf;
     }
 #ifdef DEBUG_EMF
-    printf("[%d][%d] %d %d %f %f %f %f %f %f\n",point_i,point_j,index_i,index_j,
-	   Real(this->_emf_z_iter[Index(index_i)]),Real(this->_emf_z_iter[Index(index_j)]),
-	   half*edge_emf_contribution,half*demf,flux_bx,flux_by);
+    printf("[%d][%d] %d %d emf_i = %f emf_j = %f emf_edge = %f demf = %f f.bx = %f f.by = %f\n",
+	   point_i,point_j,index_i,index_j,
+	   Real(this->_emf_z_iter[Index(index_i)]),
+	   Real(this->_emf_z_iter[Index(index_j)]),
+	   edge_emf_contribution,demf,flux_bx,flux_by);
 #endif
     
   }

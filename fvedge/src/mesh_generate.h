@@ -62,17 +62,23 @@ struct calc_dual_vol : public thr::unary_function<Index,Real>
   Index _iedge_d;
   Index _nx;
   Index _ny;
+  Index _btype_x;
+  Index _btype_y;
   Real _dx;
   Real _dy;
 
  calc_dual_vol(Index iedge_d,
 	       Index nx,
 	       Index ny,
+	       Index btype_x,
+	       Index btype_y,
 	       Real dx,
 	       Real dy)
    : _iedge_d(iedge_d)
     ,_nx(nx)
     ,_ny(ny)
+    ,_btype_x(btype_x)
+    ,_btype_y(btype_y)
     ,_dx(dx)
     ,_dy(dy) {}
 
@@ -93,22 +99,32 @@ struct calc_dual_vol : public thr::unary_function<Index,Real>
       else if ((index + Index(1)) % (this->_nx) == 0) vol *= half; // right boundary
       else if (index < (this->_nx)) vol *= half; // bottom boundary
       else if (index > (this->_nx*(this->_ny - Index(1)))) vol *= half; // top boundary
-      else if (index == (this->_nx - Index(1))) vol *= half;
-      else if (index == ((this->_ny - Index(1))*this->_nx)) vol *= half;
-      else if (index == (this->_ny*this->_nx - Index(1))) vol *= half;
+      /* else if (index == (this->_nx - Index(1))) vol *= half; */
+      /* else if (index == ((this->_ny - Index(1))*this->_nx)) vol *= half; */
+      /* else if (index == (this->_ny*this->_nx - Index(1))) vol *= half; */
     }
     else{
-      if (index == Index(0)) vol *= (half*half); // bottom left corner
-      else if (index == (this->_nx*(this->_ny - Index(1)))) vol *= (half*half); // top left corner
-      else if (index == (this->_nx - Index(1))) vol *= (half*half); // bottom right corner
-      else if (index == (this->_nx*this->_ny - Index(1))) vol *= half*half; // top right corner
-      else if (index % (this->_nx) == 0) vol *= half; // left boundary
-      else if ((index + Index(1)) % (this->_nx) == 0) vol *= half; // right boundary
-      else if (index < (this->_nx)) vol *= half; // bottom boundary
-      else if (index > (this->_nx*(this->_ny - Index(1)))) vol *= half; // top boundary
-      else if (index == (this->_nx - Index(1))) vol *= half;
-      else if (index == ((this->_ny - Index(1))*this->_nx)) vol *= half;
-      else if (index == (this->_ny*this->_nx - Index(1))) vol *= half;
+      if (this->_btype_x == Index(0)){
+	if (index == Index(0)) vol *= (half); // bottom left corner
+	else if (index == (this->_nx*(this->_ny - Index(1)))) vol *= (half); // top left corner
+	else if (index == (this->_nx - Index(1))) vol *= (half); // bottom right corner
+	else if (index == (this->_nx*this->_ny - Index(1))) vol *= half; // top right corner
+	else if (index % (this->_nx) == 0) vol *= half; // left boundary
+	else if ((index + Index(1)) % (this->_nx) == 0) vol *= half; // right boundary
+	/* else if (index < (this->_nx)) vol *= half; // bottom boundary */
+	/* else if (index > (this->_nx*(this->_ny - Index(1)))) vol *= half; // top boundary */
+      }
+
+      if (this->_btype_y == Index(0)){
+	if (index == Index(0)) vol *= (half); // bottom left corner
+	else if (index == (this->_nx*(this->_ny - Index(1)))) vol *= (half); // top left corner
+	else if (index == (this->_nx - Index(1))) vol *= (half); // bottom right corner
+	else if (index == (this->_nx*this->_ny - Index(1))) vol *= half; // top right corner
+	/* else if (index % (this->_nx) == 0) vol *= half; // left boundary */
+	/* else if ((index + Index(1)) % (this->_nx) == 0) vol *= half; // right boundary */
+	else if (index < (this->_nx)) vol *= half; // bottom boundary
+	else if (index > (this->_nx*(this->_ny - Index(1)))) vol *= half; // top boundary
+      }
     }
 
     return vol;

@@ -274,6 +274,10 @@ struct integrate_time : public thr::binary_function<Tuple,Real,State>
 
     Real vol_inv = Real(1.0)/dual_vol;
 
+#ifdef DEBUG_INTEGRATE
+    printf("d = %f res_d = %f mx = %f res_mx = %f my = %f res_my = %f\n",d,res_d,mx,res_mx,my,res_my);
+#endif
+
     d -= this->_dt*vol_inv*res_d;
     mx -= this->_dt*vol_inv*res_mx;
     my -= this->_dt*vol_inv*res_my;

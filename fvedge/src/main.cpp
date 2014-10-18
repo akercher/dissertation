@@ -37,6 +37,7 @@
 
 // #define DEBUG_EDGES
 // #define DEBUG_RESIDUAL
+// #define DEBUG_FLUX
 #define LINEAR
 
 #define flux_hydro rhll
@@ -455,7 +456,11 @@ int main(int argc, char* argv[]){
   }
   else if (prob.compare("kh_instability") == Index(0)){
     gamma  = 1.4;
+#ifdef MHD
+    nsteps_out = 200;
+#else
     nsteps_out = 500;
+#endif
     sprintf(base_name,"bin/kh_instability");
     mesh.btype_x = Index(1);
     mesh.btype_y = Index(1);
@@ -634,7 +639,13 @@ int main(int argc, char* argv[]){
   thr::transform_n(make_device_counting_iterator(),
 		   dual_vol.size(),
 		   dual_vol.begin(),
-		   calc_dual_vol(offset.iface_d,mesh.nx,mesh.ny,mesh.dx,mesh.dy));
+		   calc_dual_vol(offset.iface_d,
+				 mesh.nx,
+				 mesh.ny,
+				 mesh.btype_x,
+				 mesh.btype_y,
+				 mesh.dx,
+				 mesh.dy));
   
   // calculate inverse least squares matrix
   thr::fill_n(lsq_inv.begin(),lsq_inv.size(),Vector4(Real(0.0),Real(0.0),Real(0.0),Real(0.0)));
@@ -822,13 +833,21 @@ int main(int argc, char* argv[]){
 #endif	
       }
 
+#ifdef DEBUG_RESIDUAL
+      printf("\n 1. Residual:");
+      for(Index i = 0; i < mesh.npoin(); i++){
+	if(i % mesh.nx == Index(0)) printf("\n");
+	print_states_host(i,State(residual_iter[i]));
+      }
+#endif
+
       /*-----------------------------------------------------------------*/
       /* Apply Periodic BCs                                              */
       /*-----------------------------------------------------------------*/
       if (mesh.btype_x == Index(1)){
       	// periodic left/right
       	thr::for_each_n(make_device_counting_iterator(),
-      			mesh.ny - Index(2),
+      			(mesh.ny - Index(2)),
       			periodic_bcs(mesh.nx,
       				     mesh.ny,
       				     mesh.nx,
@@ -838,7 +857,7 @@ int main(int argc, char* argv[]){
       if (mesh.btype_y == Index(1)){
       	// periodic top/bottom
       	thr::for_each_n(make_device_counting_iterator(),
-      			mesh.nx - Index(2),
+      			(mesh.nx - Index(2)),
       			periodic_bcs(mesh.nx,
       				     mesh.ny,
       				     Index(1),
@@ -852,7 +871,127 @@ int main(int argc, char* argv[]){
       /* Boundary edge contribution to residual                          */
       /*-----------------------------------------------------------------*/
 
-      for(Index i=interior_ncolors; i < offset.ncolors; i++){
+  // loop over left/right boundary edges
+  for(Index i=interior_ncolors; i < offset.ncolors - offset.nboun_colors; i++){
+#ifdef MHD
+	thr::transform_n(thr::make_zip_iterator(thr::make_tuple(edge_iter,
+								bn_edge_iter)),
+			 offset.faces_per_color[i],
+			 interp_states_iter,
+			 antidiffusion_iter,
+			 residual_ct<thr::tuple<Edge,Real> >(gamma,
+							     wave_speed_iter,
+							     emf_z_iter,
+							     residual_iter));
+	edge_iter += offset.faces_per_color[i];
+	interp_states_iter += offset.faces_per_color[i];
+	antidiffusion_iter += offset.faces_per_color[i];
+	bn_edge_iter += offset.faces_per_color[i];
+#else
+	thr::transform_n(edge_iter,
+			 offset.faces_per_color[i],
+			 interp_states_iter,
+			 antidiffusion_iter,
+			 residual_op(gamma,
+				     wave_speed_iter,
+				     residual_iter));
+
+	edge_iter += offset.faces_per_color[i];
+	interp_states_iter += offset.faces_per_color[i];
+	antidiffusion_iter += offset.faces_per_color[i];
+#endif	
+      }
+
+#ifdef DEBUG_RESIDUAL
+      printf("\n left/right. Residual:");
+      for(Index i = 0; i < mesh.npoin(); i++){
+	if(i % mesh.nx == Index(0)) printf("\n");
+	print_states_host(i,State(residual_iter[i]));
+      }
+#endif
+
+	State residual_bl_x  = State(Zero,
+				     Vector(Zero,Zero,Zero),
+				     Zero,
+				     Vector(Zero,Zero,Zero));
+	State residual_tl_x  = State(Zero,
+				     Vector(Zero,Zero,Zero),
+				     Zero,
+				     Vector(Zero,Zero,Zero));
+	State residual_br_x  = State(Zero,
+				     Vector(Zero,Zero,Zero),
+				     Zero,
+				     Vector(Zero,Zero,Zero));
+	State residual_tr_x  = State(Zero,
+				     Vector(Zero,Zero,Zero),
+				     Zero,
+				     Vector(Zero,Zero,Zero));
+      if (mesh.btype_y == Index(1)){
+	Index index_i = Index(0);
+      	residual_bl_x = State(thr::get<0>(State(residual[index_i])),
+			      Vector(get_x(thr::get<1>(State(residual[index_i]))),
+				     get_y(thr::get<1>(State(residual[index_i]))),
+				     get_z(thr::get<1>(State(residual[index_i])))),
+			      thr::get<2>(State(residual[index_i])),
+			      Vector(get_x(thr::get<3>(State(residual[index_i]))),
+				     get_y(thr::get<3>(State(residual[index_i]))),
+				     get_z(thr::get<3>(State(residual[index_i])))));
+	
+	residual[index_i] = State(Zero,
+				  Vector(Zero,Zero,Zero),
+				  Zero,
+				  Vector(Zero,Zero,Zero));
+
+	index_i = (mesh.ny - Index(1))*mesh.nx;
+
+     	residual_tl_x = State(thr::get<0>(State(residual[index_i])),
+			      Vector(get_x(thr::get<1>(State(residual[index_i]))),
+				     get_y(thr::get<1>(State(residual[index_i]))),
+				     get_z(thr::get<1>(State(residual[index_i])))),
+			      thr::get<2>(State(residual[index_i])),
+			      Vector(get_x(thr::get<3>(State(residual[index_i]))),
+				     get_y(thr::get<3>(State(residual[index_i]))),
+				     get_z(thr::get<3>(State(residual[index_i])))));
+ 	
+	residual[index_i] = State(Zero,
+				  Vector(Zero,Zero,Zero),
+				  Zero,
+				  Vector(Zero,Zero,Zero));
+
+	index_i = (mesh.nx - Index(1));
+     	residual_br_x = State(thr::get<0>(State(residual[index_i])),
+			      Vector(get_x(thr::get<1>(State(residual[index_i]))),
+				     get_y(thr::get<1>(State(residual[index_i]))),
+				     get_z(thr::get<1>(State(residual[index_i])))),
+			      thr::get<2>(State(residual[index_i])),
+			      Vector(get_x(thr::get<3>(State(residual[index_i]))),
+				     get_y(thr::get<3>(State(residual[index_i]))),
+				     get_z(thr::get<3>(State(residual[index_i])))));
+	
+	residual[index_i] = State(Zero,
+				  Vector(Zero,Zero,Zero),
+				  Zero,
+				  Vector(Zero,Zero,Zero));
+
+	index_i = mesh.nx*mesh.ny - Index(1);
+     	residual_tr_x = State(thr::get<0>(State(residual[index_i])),
+			      Vector(get_x(thr::get<1>(State(residual[index_i]))),
+				     get_y(thr::get<1>(State(residual[index_i]))),
+				     get_z(thr::get<1>(State(residual[index_i])))),
+			      thr::get<2>(State(residual[index_i])),
+			      Vector(get_x(thr::get<3>(State(residual[index_i]))),
+				     get_y(thr::get<3>(State(residual[index_i]))),
+				     get_z(thr::get<3>(State(residual[index_i])))));
+	
+	residual[index_i] = State(Zero,
+				  Vector(Zero,Zero,Zero),
+				  Zero,
+				  Vector(Zero,Zero,Zero));
+      }
+
+
+      // loop over top/bottom boundary edges
+      for(Index i=(offset.ncolors - offset.nboun_colors); i < offset.ncolors; i++){
 #ifdef MHD
 	thr::transform_n(thr::make_zip_iterator(thr::make_tuple(edge_iter,
 								bn_edge_iter)),
@@ -890,161 +1029,427 @@ int main(int argc, char* argv[]){
       bn_edge_iter = bn_edge.begin();
 #endif	
 
+#ifdef DEBUG_RESIDUAL
+      printf("\n top/bottom Residual:");
+      for(Index i = 0; i < mesh.npoin(); i++){
+	if(i % mesh.nx == Index(0)) printf("\n");
+	print_states_host(i,State(residual_iter[i]));
+      }
+#endif
+
+
+	State residual_bl_y  = State(Zero,
+				     Vector(Zero,Zero,Zero),
+				     Zero,
+				     Vector(Zero,Zero,Zero));
+	State residual_tl_y  = State(Zero,
+				     Vector(Zero,Zero,Zero),
+				     Zero,
+				     Vector(Zero,Zero,Zero));
+	State residual_br_y  = State(Zero,
+				     Vector(Zero,Zero,Zero),
+				     Zero,
+				     Vector(Zero,Zero,Zero));
+	State residual_tr_y  = State(Zero,
+				     Vector(Zero,Zero,Zero),
+				     Zero,
+				     Vector(Zero,Zero,Zero));
+      if (mesh.btype_x == Index(1)){
+	Index index_i = Index(0);
+     	residual_bl_y = State(thr::get<0>(State(residual[index_i])),
+			      Vector(get_x(thr::get<1>(State(residual[index_i]))),
+				     get_y(thr::get<1>(State(residual[index_i]))),
+				     get_z(thr::get<1>(State(residual[index_i])))),
+			      thr::get<2>(State(residual[index_i])),
+			      Vector(get_x(thr::get<3>(State(residual[index_i]))),
+				     get_y(thr::get<3>(State(residual[index_i]))),
+				     get_z(thr::get<3>(State(residual[index_i])))));
+
+	index_i = (mesh.ny - Index(1))*mesh.nx;
+     	residual_tl_y = State(thr::get<0>(State(residual[index_i])),
+			      Vector(get_x(thr::get<1>(State(residual[index_i]))),
+				     get_y(thr::get<1>(State(residual[index_i]))),
+				     get_z(thr::get<1>(State(residual[index_i])))),
+			      thr::get<2>(State(residual[index_i])),
+			      Vector(get_x(thr::get<3>(State(residual[index_i]))),
+				     get_y(thr::get<3>(State(residual[index_i]))),
+				     get_z(thr::get<3>(State(residual[index_i])))));
+
+	index_i = (mesh.nx - Index(1));
+     	residual_br_y = State(thr::get<0>(State(residual[index_i])),
+			      Vector(get_x(thr::get<1>(State(residual[index_i]))),
+				     get_y(thr::get<1>(State(residual[index_i]))),
+				     get_z(thr::get<1>(State(residual[index_i])))),
+			      thr::get<2>(State(residual[index_i])),
+			      Vector(get_x(thr::get<3>(State(residual[index_i]))),
+				     get_y(thr::get<3>(State(residual[index_i]))),
+				     get_z(thr::get<3>(State(residual[index_i])))));
+
+	index_i = mesh.nx*mesh.ny - Index(1);
+     	residual_tr_y = State(thr::get<0>(State(residual[index_i])),
+			      Vector(get_x(thr::get<1>(State(residual[index_i]))),
+				     get_y(thr::get<1>(State(residual[index_i]))),
+				     get_z(thr::get<1>(State(residual[index_i])))),
+			      thr::get<2>(State(residual[index_i])),
+			      Vector(get_x(thr::get<3>(State(residual[index_i]))),
+				     get_y(thr::get<3>(State(residual[index_i]))),
+				     get_z(thr::get<3>(State(residual[index_i])))));
+	
+      }
+
+      Real res_d,res_mx,res_my,res_mz,res_en,res_bx,res_by,res_bz;
+      
+      Index index_i = Index(0);
+
+      res_d = thr::get<0>(State(residual[Index(index_i)]))
+	+ thr::get<0>(State(residual_bl_x)) 
+	+ thr::get<0>(State(residual_tl_x))
+	+ thr::get<0>(State(residual_br_y));
+	
+      res_mx = thr::get<0>(thr::get<1>(State(residual[Index(index_i)])))
+	+ thr::get<0>(thr::get<1>(State(residual_bl_x))) 
+	+ thr::get<0>(thr::get<1>(State(residual_tl_x)))
+	+ thr::get<0>(thr::get<1>(State(residual_br_y)));
+
+      res_my = thr::get<1>(thr::get<1>(State(residual[Index(index_i)])))
+	+ thr::get<1>(thr::get<1>(State(residual_bl_x))) 
+	+ thr::get<1>(thr::get<1>(State(residual_tl_x)))
+	+ thr::get<1>(thr::get<1>(State(residual_br_y)));
+
+      res_mz = thr::get<2>(thr::get<1>(State(residual[Index(index_i)])))
+	+ thr::get<2>(thr::get<1>(State(residual_bl_x))) 
+	+ thr::get<2>(thr::get<1>(State(residual_tl_x)))
+	+ thr::get<2>(thr::get<1>(State(residual_br_y)));
+
+      res_en = thr::get<2>(State(residual[Index(index_i)]))
+	+ thr::get<2>(State(residual_bl_x)) 
+	+ thr::get<2>(State(residual_tl_x))
+	+ thr::get<2>(State(residual_br_y));
+	
+      res_bx = thr::get<0>(thr::get<3>(State(residual[Index(index_i)])))
+	+ thr::get<0>(thr::get<3>(State(residual_bl_x))) 
+	+ thr::get<0>(thr::get<3>(State(residual_tl_x)))
+	+ thr::get<0>(thr::get<3>(State(residual_br_y)));
+
+      res_by = thr::get<1>(thr::get<3>(State(residual[Index(index_i)])))
+	+ thr::get<1>(thr::get<3>(State(residual_bl_x))) 
+	+ thr::get<1>(thr::get<3>(State(residual_tl_x)))
+	+ thr::get<1>(thr::get<3>(State(residual_br_y)));
+
+      res_bz = thr::get<2>(thr::get<3>(State(residual[Index(index_i)])))
+	+ thr::get<2>(thr::get<3>(State(residual_bl_x))) 
+	+ thr::get<2>(thr::get<3>(State(residual_tl_x)))
+	+ thr::get<2>(thr::get<3>(State(residual_br_y)));
+      
+      residual[index_i] = State(Real(res_d),
+				Vector(res_mx,res_my,res_mz),
+				Real(res_en),
+				Vector(res_bx,res_by,res_bz));
+
+      index_i = (mesh.ny - Index(1))*mesh.nx;
+      
+      res_d = thr::get<0>(State(residual[Index(index_i)]))
+	+ thr::get<0>(State(residual_tl_x)) 
+	+ thr::get<0>(State(residual_tr_y))
+	+ thr::get<0>(State(residual_bl_x));
+	
+      res_mx = thr::get<0>(thr::get<1>(State(residual[Index(index_i)])))
+	+ thr::get<0>(thr::get<1>(State(residual_tl_x))) 
+	+ thr::get<0>(thr::get<1>(State(residual_tr_y)))
+	+ thr::get<0>(thr::get<1>(State(residual_bl_x)));
+
+      res_my = thr::get<1>(thr::get<1>(State(residual[Index(index_i)])))
+	+ thr::get<1>(thr::get<1>(State(residual_tl_x))) 
+	+ thr::get<1>(thr::get<1>(State(residual_tr_y)))
+	+ thr::get<1>(thr::get<1>(State(residual_bl_x)));
+
+      res_mz = thr::get<2>(thr::get<1>(State(residual[Index(index_i)])))
+	+ thr::get<2>(thr::get<1>(State(residual_tl_x))) 
+	+ thr::get<2>(thr::get<1>(State(residual_tr_y)))
+	+ thr::get<2>(thr::get<1>(State(residual_bl_x)));
+
+      res_en = thr::get<2>(State(residual[Index(index_i)]))
+	+ thr::get<2>(State(residual_tl_x)) 
+	+ thr::get<2>(State(residual_tr_y))
+	+ thr::get<2>(State(residual_bl_x));
+	
+      res_bx = thr::get<0>(thr::get<3>(State(residual[Index(index_i)])))
+	+ thr::get<0>(thr::get<3>(State(residual_tl_x))) 
+	+ thr::get<0>(thr::get<3>(State(residual_tr_y)))
+	+ thr::get<0>(thr::get<3>(State(residual_bl_x)));
+
+      res_by = thr::get<1>(thr::get<3>(State(residual[Index(index_i)])))
+	+ thr::get<1>(thr::get<3>(State(residual_tl_x))) 
+	+ thr::get<1>(thr::get<3>(State(residual_tr_y)))
+	+ thr::get<1>(thr::get<3>(State(residual_bl_x)));
+
+      res_bz = thr::get<2>(thr::get<3>(State(residual[Index(index_i)])))
+	+ thr::get<2>(thr::get<3>(State(residual_tl_x))) 
+	+ thr::get<2>(thr::get<3>(State(residual_tr_y)))
+	+ thr::get<2>(thr::get<3>(State(residual_bl_x)));
+
+      residual[index_i] = State(Real(res_d),
+				Vector(res_mx,res_my,res_mz),
+				Real(res_en),
+				Vector(res_bx,res_by,res_bz));
+	
+      index_i = mesh.nx - Index(1);
+      
+      res_d = thr::get<0>(State(residual[Index(index_i)]))
+	+ thr::get<0>(State(residual_br_x)) 
+	+ thr::get<0>(State(residual_tr_x))
+	+ thr::get<0>(State(residual_bl_y));
+	
+      res_mx = thr::get<0>(thr::get<1>(State(residual[Index(index_i)])))
+	+ thr::get<0>(thr::get<1>(State(residual_br_x))) 
+	+ thr::get<0>(thr::get<1>(State(residual_tr_x)))
+	+ thr::get<0>(thr::get<1>(State(residual_bl_y)));
+
+      res_my = thr::get<1>(thr::get<1>(State(residual[Index(index_i)])))
+	+ thr::get<1>(thr::get<1>(State(residual_br_x))) 
+	+ thr::get<1>(thr::get<1>(State(residual_tr_x)))
+	+ thr::get<1>(thr::get<1>(State(residual_bl_y)));
+
+      res_mz = thr::get<2>(thr::get<1>(State(residual[Index(index_i)])))
+	+ thr::get<2>(thr::get<1>(State(residual_br_x))) 
+	+ thr::get<2>(thr::get<1>(State(residual_tr_x)))
+	+ thr::get<2>(thr::get<1>(State(residual_bl_y)));
+
+      res_en = thr::get<2>(State(residual[Index(index_i)]))
+	+ thr::get<2>(State(residual_br_x)) 
+	+ thr::get<2>(State(residual_tr_x))
+	+ thr::get<2>(State(residual_bl_y));
+	
+      res_bx = thr::get<0>(thr::get<3>(State(residual[Index(index_i)])))
+	+ thr::get<0>(thr::get<3>(State(residual_br_x))) 
+	+ thr::get<0>(thr::get<3>(State(residual_tr_x)))
+	+ thr::get<0>(thr::get<3>(State(residual_bl_y)));
+
+      res_by = thr::get<1>(thr::get<3>(State(residual[Index(index_i)])))
+	+ thr::get<1>(thr::get<3>(State(residual_br_x))) 
+	+ thr::get<1>(thr::get<3>(State(residual_tr_x)))
+	+ thr::get<1>(thr::get<3>(State(residual_bl_y)));
+
+      res_bz = thr::get<2>(thr::get<3>(State(residual[Index(index_i)])))
+	+ thr::get<2>(thr::get<3>(State(residual_br_x))) 
+	+ thr::get<2>(thr::get<3>(State(residual_tr_x)))
+	+ thr::get<2>(thr::get<3>(State(residual_bl_y)));
+
+      residual[index_i] = State(Real(res_d),
+				Vector(res_mx,res_my,res_mz),
+				Real(res_en),
+				Vector(res_bx,res_by,res_bz));
+	
+      index_i = mesh.nx*mesh.ny - Index(1);
+      
+      res_d = thr::get<0>(State(residual[Index(index_i)]))
+	+ thr::get<0>(State(residual_tr_x)) 
+	+ thr::get<0>(State(residual_tl_y))
+	+ thr::get<0>(State(residual_br_x));
+	
+      res_mx = thr::get<0>(thr::get<1>(State(residual[Index(index_i)])))
+	+ thr::get<0>(thr::get<1>(State(residual_tr_x))) 
+	+ thr::get<0>(thr::get<1>(State(residual_tl_y)))
+	+ thr::get<0>(thr::get<1>(State(residual_br_x)));
+
+      res_my = thr::get<1>(thr::get<1>(State(residual[Index(index_i)])))
+	+ thr::get<1>(thr::get<1>(State(residual_tr_x))) 
+	+ thr::get<1>(thr::get<1>(State(residual_tl_y)))
+	+ thr::get<1>(thr::get<1>(State(residual_br_x)));
+
+      res_mz = thr::get<2>(thr::get<1>(State(residual[Index(index_i)])))
+	+ thr::get<2>(thr::get<1>(State(residual_tr_x))) 
+	+ thr::get<2>(thr::get<1>(State(residual_tl_y)))
+	+ thr::get<2>(thr::get<1>(State(residual_br_x)));
+
+      res_en = thr::get<2>(State(residual[Index(index_i)]))
+	+ thr::get<2>(State(residual_tr_x)) 
+	+ thr::get<2>(State(residual_tl_y))
+	+ thr::get<2>(State(residual_br_x));
+	
+      res_bx = thr::get<0>(thr::get<3>(State(residual[Index(index_i)])))
+	+ thr::get<0>(thr::get<3>(State(residual_tr_x))) 
+	+ thr::get<0>(thr::get<3>(State(residual_tl_y)))
+	+ thr::get<0>(thr::get<3>(State(residual_br_x)));
+
+      res_by = thr::get<1>(thr::get<3>(State(residual[Index(index_i)])))
+	+ thr::get<1>(thr::get<3>(State(residual_tr_x))) 
+	+ thr::get<1>(thr::get<3>(State(residual_tl_y)))
+	+ thr::get<1>(thr::get<3>(State(residual_br_x)));
+
+      res_bz = thr::get<2>(thr::get<3>(State(residual[Index(index_i)])))
+	+ thr::get<2>(thr::get<3>(State(residual_tr_x))) 
+	+ thr::get<2>(thr::get<3>(State(residual_tl_y)))
+	+ thr::get<2>(thr::get<3>(State(residual_br_x)));
+
+      residual[index_i] = State(Real(res_d),
+				Vector(res_mx,res_my,res_mz),
+				Real(res_en),
+				Vector(res_bx,res_by,res_bz));
+		
+
+#ifdef DEBUG_RESIDUAL
+      printf("\n 2b. Residual:");
+      for(Index i = 0; i < mesh.npoin(); i++){
+	if(i % mesh.nx == Index(0)) printf("\n");
+	print_states_host(i,State(residual_iter[i]));
+      }
+#endif
 
       /*-----------------------------------------------------------------*/
       /* Fix residual at corners                                         */
       /*-----------------------------------------------------------------*/
-      Index index_i, index_j;
+      // Index index_i, index_j;
       Real wsi, wsj;
       State residual_i, residual_j;
 
-      if (mesh.btype_x == Index(1)){
+      // if (mesh.btype_x == Index(1)){
 
-      	index_i = Zero;
-      	index_j = mesh.nx - One;
+      // 	index_i = Zero;
+      // 	index_j = mesh.nx - One;
 	
-      	wsi = wave_speed[index_i];
-      	wsj = wave_speed[index_j];
-      	residual_i = residual[index_i];
-      	residual_j = residual[index_j];
+      // 	wsi = wave_speed[index_i];
+      // 	wsj = wave_speed[index_j];
+      // 	residual_i = residual[index_i];
+      // 	residual_j = residual[index_j];
 
-      	// printf("[%d][%d]\n",index_i,index_j);
-      	periodic_corners(wsi, wsj,
-      			 residual_i,
-      			 residual_j);
+      // 	// printf("[%d][%d]\n",index_i,index_j);
+      // 	periodic_corners(wsi, wsj,
+      // 			 residual_i,
+      // 			 residual_j);
 
-      	wave_speed[index_i] = wsi;
-      	wave_speed[index_j] = wsj;
+      // 	wave_speed[index_i] = wsi;
+      // 	wave_speed[index_j] = wsj;
 
-      	residual[index_i] = State(thr::get<0>(residual_i),
-      				  Vector(get_x(thr::get<1>(residual_i)),
-      					 get_y(thr::get<1>(residual_i)),
-      					 get_z(thr::get<1>(residual_i))),
-      				  thr::get<2>(residual_i),
-      				  Vector(get_x(thr::get<3>(residual_i)),
-      					 get_y(thr::get<3>(residual_i)),
-      					 get_z(thr::get<3>(residual_i))));
+      // 	residual[index_i] = State(thr::get<0>(residual_i),
+      // 				  Vector(get_x(thr::get<1>(residual_i)),
+      // 					 get_y(thr::get<1>(residual_i)),
+      // 					 get_z(thr::get<1>(residual_i))),
+      // 				  thr::get<2>(residual_i),
+      // 				  Vector(get_x(thr::get<3>(residual_i)),
+      // 					 get_y(thr::get<3>(residual_i)),
+      // 					 get_z(thr::get<3>(residual_i))));
 
-      	residual[index_j] = State(thr::get<0>(residual_i),
-      				  Vector(get_x(thr::get<1>(residual_i)),
-      					 get_y(thr::get<1>(residual_i)),
-      					 get_z(thr::get<1>(residual_i))),
-      				  thr::get<2>(residual_i),
-      				  Vector(get_x(thr::get<3>(residual_i)),
-      					 get_y(thr::get<3>(residual_i)),
-      					 get_z(thr::get<3>(residual_i))));
+      // 	residual[index_j] = State(thr::get<0>(residual_i),
+      // 				  Vector(get_x(thr::get<1>(residual_i)),
+      // 					 get_y(thr::get<1>(residual_i)),
+      // 					 get_z(thr::get<1>(residual_i))),
+      // 				  thr::get<2>(residual_i),
+      // 				  Vector(get_x(thr::get<3>(residual_i)),
+      // 					 get_y(thr::get<3>(residual_i)),
+      // 					 get_z(thr::get<3>(residual_i))));
 
-      	index_i = (mesh.ny - One)*mesh.nx;
-      	index_j = mesh.npoin() - One;
+      // 	index_i = (mesh.ny - One)*mesh.nx;
+      // 	index_j = mesh.npoin() - One;
 
 	
-      	wsi = wave_speed[index_i];
-      	wsj = wave_speed[index_j];
-      	residual_i = residual[index_i];
-      	residual_j = residual[index_j];
+      // 	wsi = wave_speed[index_i];
+      // 	wsj = wave_speed[index_j];
+      // 	residual_i = residual[index_i];
+      // 	residual_j = residual[index_j];
 
-      	// printf("[%d][%d]\n",index_i,index_j);
-      	periodic_corners(wsi, wsj,
-      			 residual_i,
-      			 residual_j);
+      // 	// printf("[%d][%d]\n",index_i,index_j);
+      // 	periodic_corners(wsi, wsj,
+      // 			 residual_i,
+      // 			 residual_j);
 
-      	wave_speed[index_i] = wsi;
-      	wave_speed[index_j] = wsj;
+      // 	wave_speed[index_i] = wsi;
+      // 	wave_speed[index_j] = wsj;
 
-      	residual[index_i] = State(thr::get<0>(residual_i),
-      				  Vector(get_x(thr::get<1>(residual_i)),
-      					 get_y(thr::get<1>(residual_i)),
-      					 get_z(thr::get<1>(residual_i))),
-      				  thr::get<2>(residual_i),
-      				  Vector(get_x(thr::get<3>(residual_i)),
-      					 get_y(thr::get<3>(residual_i)),
-      					 get_z(thr::get<3>(residual_i))));
+      // 	residual[index_i] = State(thr::get<0>(residual_i),
+      // 				  Vector(get_x(thr::get<1>(residual_i)),
+      // 					 get_y(thr::get<1>(residual_i)),
+      // 					 get_z(thr::get<1>(residual_i))),
+      // 				  thr::get<2>(residual_i),
+      // 				  Vector(get_x(thr::get<3>(residual_i)),
+      // 					 get_y(thr::get<3>(residual_i)),
+      // 					 get_z(thr::get<3>(residual_i))));
 
-      	residual[index_j] = State(thr::get<0>(residual_i),
-      				  Vector(get_x(thr::get<1>(residual_i)),
-      					 get_y(thr::get<1>(residual_i)),
-      					 get_z(thr::get<1>(residual_i))),
-      				  thr::get<2>(residual_i),
-      				  Vector(get_x(thr::get<3>(residual_i)),
-      					 get_y(thr::get<3>(residual_i)),
-      					 get_z(thr::get<3>(residual_i))));
+      // 	residual[index_j] = State(thr::get<0>(residual_i),
+      // 				  Vector(get_x(thr::get<1>(residual_i)),
+      // 					 get_y(thr::get<1>(residual_i)),
+      // 					 get_z(thr::get<1>(residual_i))),
+      // 				  thr::get<2>(residual_i),
+      // 				  Vector(get_x(thr::get<3>(residual_i)),
+      // 					 get_y(thr::get<3>(residual_i)),
+      // 					 get_z(thr::get<3>(residual_i))));
 	
-      }
+      // }
 
-      // residual[index_i] = residual_i;
+      // // residual[index_i] = residual_i;
       
-      if (mesh.btype_y == Index(1)){
+      // if (mesh.btype_y == Index(1)){
 
-      	index_i = Zero;
-      	index_j = (mesh.ny - One)*mesh.nx;
+      // 	index_i = Zero;
+      // 	index_j = (mesh.ny - One)*mesh.nx;
 	
-      	wsi = wave_speed[index_i];
-      	wsj = wave_speed[index_j];
-      	residual_i = residual[index_i];
-      	residual_j = residual[index_j];
+      // 	wsi = wave_speed[index_i];
+      // 	wsj = wave_speed[index_j];
+      // 	residual_i = residual[index_i];
+      // 	residual_j = residual[index_j];
 
-      	// printf("[%d][%d]\n",index_i,index_j);
-      	periodic_corners(wsi, wsj,
-      			 residual_i,
-      			 residual_j);
+      // 	// printf("[%d][%d]\n",index_i,index_j);
+      // 	periodic_corners(wsi, wsj,
+      // 			 residual_i,
+      // 			 residual_j);
 
 
-      	wave_speed[index_i] = wsi;
-      	wave_speed[index_j] = wsj;
+      // 	wave_speed[index_i] = wsi;
+      // 	wave_speed[index_j] = wsj;
 
-      	residual[index_i] = State(thr::get<0>(residual_i),
-      				  Vector(get_x(thr::get<1>(residual_i)),
-      					 get_y(thr::get<1>(residual_i)),
-      					 get_z(thr::get<1>(residual_i))),
-      				  thr::get<2>(residual_i),
-      				  Vector(get_x(thr::get<3>(residual_i)),
-      					 get_y(thr::get<3>(residual_i)),
-      					 get_z(thr::get<3>(residual_i))));
+      // 	residual[index_i] = State(thr::get<0>(residual_i),
+      // 				  Vector(get_x(thr::get<1>(residual_i)),
+      // 					 get_y(thr::get<1>(residual_i)),
+      // 					 get_z(thr::get<1>(residual_i))),
+      // 				  thr::get<2>(residual_i),
+      // 				  Vector(get_x(thr::get<3>(residual_i)),
+      // 					 get_y(thr::get<3>(residual_i)),
+      // 					 get_z(thr::get<3>(residual_i))));
 
-      	residual[index_j] = State(thr::get<0>(residual_i),
-      				  Vector(get_x(thr::get<1>(residual_i)),
-      					 get_y(thr::get<1>(residual_i)),
-      					 get_z(thr::get<1>(residual_i))),
-      				  thr::get<2>(residual_i),
-      				  Vector(get_x(thr::get<3>(residual_i)),
-      					 get_y(thr::get<3>(residual_i)),
-      					 get_z(thr::get<3>(residual_i))));
+      // 	residual[index_j] = State(thr::get<0>(residual_i),
+      // 				  Vector(get_x(thr::get<1>(residual_i)),
+      // 					 get_y(thr::get<1>(residual_i)),
+      // 					 get_z(thr::get<1>(residual_i))),
+      // 				  thr::get<2>(residual_i),
+      // 				  Vector(get_x(thr::get<3>(residual_i)),
+      // 					 get_y(thr::get<3>(residual_i)),
+      // 					 get_z(thr::get<3>(residual_i))));
 
-      	index_i = mesh.nx - One;
-      	index_j = mesh.npoin() - One;
+      // 	index_i = mesh.nx - One;
+      // 	index_j = mesh.npoin() - One;
 	
-      	wsi = wave_speed[index_i];
-      	wsj = wave_speed[index_j];
-      	residual_i = residual[index_i];
-      	residual_j = residual[index_j];
+      // 	wsi = wave_speed[index_i];
+      // 	wsj = wave_speed[index_j];
+      // 	residual_i = residual[index_i];
+      // 	residual_j = residual[index_j];
 
-      	// printf("[%d][%d]\n",index_i,index_j);
-      	periodic_corners(wsi, wsj,
-      			 residual_i,
-      			 residual_j);
+      // 	// printf("[%d][%d]\n",index_i,index_j);
+      // 	periodic_corners(wsi, wsj,
+      // 			 residual_i,
+      // 			 residual_j);
 
-      	wave_speed[index_i] = wsi;
-      	wave_speed[index_j] = wsj;
+      // 	wave_speed[index_i] = wsi;
+      // 	wave_speed[index_j] = wsj;
 
-      	residual[index_i] = State(thr::get<0>(residual_i),
-      				  Vector(get_x(thr::get<1>(residual_i)),
-      					 get_y(thr::get<1>(residual_i)),
-      					 get_z(thr::get<1>(residual_i))),
-      				  thr::get<2>(residual_i),
-      				  Vector(get_x(thr::get<3>(residual_i)),
-      					 get_y(thr::get<3>(residual_i)),
-      					 get_z(thr::get<3>(residual_i))));
+      // 	residual[index_i] = State(thr::get<0>(residual_i),
+      // 				  Vector(get_x(thr::get<1>(residual_i)),
+      // 					 get_y(thr::get<1>(residual_i)),
+      // 					 get_z(thr::get<1>(residual_i))),
+      // 				  thr::get<2>(residual_i),
+      // 				  Vector(get_x(thr::get<3>(residual_i)),
+      // 					 get_y(thr::get<3>(residual_i)),
+      // 					 get_z(thr::get<3>(residual_i))));
 
-      	residual[index_j] = State(thr::get<0>(residual_i),
-      				  Vector(get_x(thr::get<1>(residual_i)),
-      					 get_y(thr::get<1>(residual_i)),
-      					 get_z(thr::get<1>(residual_i))),
-      				  thr::get<2>(residual_i),
-      				  Vector(get_x(thr::get<3>(residual_i)),
-      					 get_y(thr::get<3>(residual_i)),
-      					 get_z(thr::get<3>(residual_i))));
+      // 	residual[index_j] = State(thr::get<0>(residual_i),
+      // 				  Vector(get_x(thr::get<1>(residual_i)),
+      // 					 get_y(thr::get<1>(residual_i)),
+      // 					 get_z(thr::get<1>(residual_i))),
+      // 				  thr::get<2>(residual_i),
+      // 				  Vector(get_x(thr::get<3>(residual_i)),
+      // 					 get_y(thr::get<3>(residual_i)),
+      // 					 get_z(thr::get<3>(residual_i))));
 
-      }
+      // }
 
       if (1 == 1){/////////////////////////////////////////////////////////////////////////
 
@@ -1163,6 +1568,9 @@ int main(int argc, char* argv[]){
       /*-----------------------------------------------------------------*/
       /* compute emfs                                                    */
       /*-----------------------------------------------------------------*/  	  	        
+#ifdef DEBUG_EMF
+      printf("\n");
+#endif
        for(Index i=0; i < interior_ncolors; i++){
       	thr::for_each_n(thr::make_zip_iterator(thr::make_tuple(edge_iter,
       							       antidiffusion_iter)),
@@ -1194,6 +1602,7 @@ int main(int argc, char* argv[]){
       antidiffusion_iter = antidiffusion.begin();      
 
 #ifdef DEBUG_EMF
+      printf("\n");
       for(Index i = 0; i < mesh.ncell(); i++){
       	printf("[%d] %f\n",i,Real(emf_z_iter[i]));
       }      
@@ -1229,8 +1638,11 @@ int main(int argc, char* argv[]){
 	
 	if((ksteps-Index(1)) % 100 == 0){
 #ifdef MHD
+	  // store emf and compute divergence
+	  thr::copy(emf_z.begin(),emf_z.end(),emf_z_n.begin());
 	  max_divb = divergence_calc(interior_ncolors, mesh, offset, edge, bn_edge);
 #endif
+
 	  std::cout << "ksteps = " << ksteps << " , " 
 		    << "time = " << time << " , "
 	    // << "max_wave_speed = " << field.max_wave_speed << " , " 
@@ -1283,6 +1695,9 @@ int main(int argc, char* argv[]){
 		       integrate_time<thr::tuple<State,State> >(field.Cour*rk_coeff*dt));
       
 #ifdef CT
+#ifdef DEBUG_BN
+      printf("\n");
+#endif
       for(Index i=0; i < offset.ncolors; i++)
       	{
       	  thr::transform_n(edge_iter,

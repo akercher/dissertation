@@ -97,8 +97,8 @@ struct blast_wave_init : public thr::unary_function<Index,State>
 
 #ifdef MHD
     Real sqrt_two_inv = Real(1.0)/std::sqrt(Two); 
-    Real bx = sqrt_two_inv*std::sqrt(Real(4.0)*Real(M_PI));
-    Real by = sqrt_two_inv*std::sqrt(Real(4.0)*Real(M_PI));
+    Real bx = b0*cos(angle);//sqrt_two_inv;//*std::sqrt(Real(4.0)*Real(M_PI));
+    Real by = b0*sin(angle);//sqrt_two_inv*std::sqrt(Real(4.0)*Real(M_PI));
     Real bz = Real(0.0);
 #else
     Real bx = Real(0.0);
@@ -450,7 +450,7 @@ struct kh_instability_init : public thr::unary_function<Index,State>
     Real d1 = Real(1.0);
     Real d2 = Real(2.0);
     
-    Real v0 = Real(0.5);
+    Real v0 = Real(0.645);//half;
     /* Real vy = -amp*sin(Real(2.0)*Real(M_PI)*x);//amp*Real(rand())/Real(RAND_MAX); */
     Real vy = amp*(uniform_dist(get_rand) - half);
     Real vz = Real(0.0);
@@ -618,7 +618,7 @@ struct linear_wave_init : public thr::unary_function<Index,State>
 
     Real mx = mx0*cosa - my0*sina;
     Real my = mx0*sina + my0*cosa;
-    Real mz = Real(0.0);
+    Real mz = mz0;
 
     /* printf("%f %f %f %f %f\n",x,y,xpar,angle,d); */
 
@@ -879,10 +879,13 @@ struct cpaw_init : public thr::unary_function<Index,State>
     Real y = (Real(j))*this->_dy;
 
     Real angle = Real(atan2(this->_Lx,this->_Ly));
-    
+    angle = Zero;
+
     Real cosa = Real(cos(angle));
     Real sina = Real(sin(angle));
-    Real wavelength = fmin(this->_Lx*cosa,this->_Ly*sina);
+    Real wavelength = this->_Lx*cosa;
+    if (angle > Zero) wavelength = fmin(this->_Lx*cosa,this->_Ly*sina);
+
 
     Real kpar = Real(2.0)*M_PI/wavelength;
 
@@ -911,8 +914,6 @@ struct cpaw_init : public thr::unary_function<Index,State>
     Real bx = Real(0.0); 
     Real by = Real(0.0); 
     Real bz = Real(0.0);//vz; 
-
-
 
     /* printf("[%d] %f %f %f %f %f %f\n",index,x,y,xpar,kpar,cos(xpar),sin(xpar)); */
 
@@ -973,6 +974,7 @@ struct cpaw_init : public thr::unary_function<Index,State>
     by -= half*(Az2 - Az1)/this->_dx;
 
 
+    bz = Real(0.0);
     Ay1 = vector_potential_cpaw_y(x1, y2, vdt, angle, kpar, bpar, bperp);
     Ay2 = vector_potential_cpaw_y(x2, y2, vdt, angle, kpar, bpar, bperp);
     
@@ -1071,10 +1073,12 @@ struct cpaw_init_interface : public thr::unary_function<Edge,Real>
     /* printf("[%d][%d] %f %f %f %f %f %f\n",point_i,point_j,nx,ny,x1,y1,x2,y2); */
     
     Real angle = Real(atan2(this->_Lx,this->_Ly));
+    angle = Zero;
     
     Real cosa = Real(cos(angle));
     Real sina = Real(sin(angle));
-    Real wavelength = fmin(this->_Lx*cosa,this->_Ly*sina);
+    Real wavelength = this->_Lx*cosa;
+    if (angle > Zero) wavelength = fmin(this->_Lx*cosa,this->_Ly*sina);
 
     Real kpar = Real(2.0)*M_PI/wavelength;    
     Real bpar = Real(1.0);
