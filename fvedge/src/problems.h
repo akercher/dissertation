@@ -111,8 +111,6 @@ struct blast_wave_init : public thr::unary_function<Index,State>
 		 Vector(Real(0.0),Real(0.0),Real(0.0)),
 		 pg0,
 		 Vector(bx,by,bz));
-		 /* Vector(b0*sinf(angle),b0*sinf(angle),Real(0.0))); */
-    
 
   }
 };
@@ -154,8 +152,8 @@ struct field_loop_init : public thr::unary_function<Index,State>
     Index i = index % this->_nx;
     Index j = (index - i)/this->_nx;
 
-    Real x = (Real(i))*this->_dx;// + half*this->_dx;
-    Real y = (Real(j))*this->_dy;// + half*this->_dy;
+    Real x = (Real(i))*this->_dx;
+    Real y = (Real(j))*this->_dy;
 
     x -= half*this->_Lx;
     y -= half*this->_Ly;
@@ -359,15 +357,15 @@ struct field_loop_init_interface : public thr::unary_function<Edge,Real>
 /*****************************************************/
 struct orszag_tang_init : public thr::unary_function<Index,State>
 {
-  Index _ncell_x;
+  Index _nx;
   Real _dx;
   Real _dy;
 
- orszag_tang_init(Index ncell_x,
+ orszag_tang_init(Index nx,
 		  Real dx,
 		  Real dy)
 
-   :_ncell_x(ncell_x)
+   :_nx(nx)
     ,_dx(dx)
     ,_dy(dy) {}
 
@@ -375,27 +373,119 @@ struct orszag_tang_init : public thr::unary_function<Index,State>
     State operator()(const Index& index) const
   {
 
-    Index i = index % this->_ncell_x;
-    Index j = (index - i)/this->_ncell_x;
+    Index i = index % this->_nx;
+    Index j = (index - i)/this->_nx;
 
     Real x = Real(i)*this->_dx;
     Real y = Real(j)*this->_dy;
 
-    Real d = Real(25.0)/(Real(36.0)*Real(M_PI));
-    Real vz = Real(0.0);
-    Real bz = Real(0.0);
-    Real pg = Real(5.0)/(Real(12.0)*Real(M_PI));
+    Real d0 = Real(25.0)/(Real(36.0)*PI);
+    Real v0 = One;
+    Real pg0 = Real(5.0)/(Real(12.0)*PI);
 
-    Real vx = -sinf(Real(2.0)*Real(M_PI)*y);
-    Real vy = sinf(Real(2.0)*Real(M_PI)*x);
-    Real bx = -sinf(Real(2.0)*Real(M_PI)*y)/sqrtf(Real(4.0)*Real(M_PI));
-    Real by = sinf(Real(2.0)*Real(M_PI)*x)/sqrtf(Real(4.0)*Real(M_PI));;
+    Real vx = -v0*sinf(Two*PI*y);
+    Real vy = v0*sinf(Two*PI*x);
+    Real vz = Zero;
+    Real bx = Zero;//-sinf(Real(2.0)*Real(M_PI)*y)/sqrtf(Real(4.0)*Real(M_PI));
+    Real by = Zero;//sinf(Real(2.0)*Real(M_PI)*x)/sqrtf(Real(4.0)*Real(M_PI));;
+    Real bz = Zero;
 
-    return State(d,
+    return State(d0,
 		 Vector(vx,vy,vz),
-		 pg,
+		 pg0,
 		 Vector(bx,by,bz));
 
+  }
+};
+
+/*****************************************************/
+/* Orszag-Tang initialize interface                  */
+/*---------------------------------------------------*/
+/*****************************************************/
+struct orszag_tang_init_interface : public thr::unary_function<Edge,Real>
+{
+
+  Index _nx;
+  Real _dx;
+  Real _dy;
+  Real _Lx;
+  Real _Ly;
+  Real _gamma;
+
+ orszag_tang_init_interface(Index nx,
+			    Real dx,
+			    Real dy,
+			    Real Lx,
+			    Real Ly,
+			    Real gamma)
+
+   : _nx(nx)
+    ,_dx(dx)
+    ,_dy(dy)
+    ,_Lx(Lx)
+    ,_Ly(Ly) 
+    ,_gamma(gamma) {}
+
+  __host__ __device__
+    Real operator()(const Edge& edge) const
+  {
+
+    // points of edge
+    Index point_i = thr::get<0>(thr::get<2>(Edge(edge)));
+    Index point_j = thr::get<1>(thr::get<2>(Edge(edge)));
+
+    Coordinate edge_vec = thr::get<1>(Edge(edge));
+    Real edge_vec_mag = std::sqrt(get_x(edge_vec)*get_x(edge_vec) 
+				     + get_y(edge_vec)*get_y(edge_vec));
+    Real edge_vec_mag_inv = Real(1.0)/edge_vec_mag;
+
+    Real nx = get_x(edge_vec)*edge_vec_mag_inv;
+    Real ny = get_y(edge_vec)*edge_vec_mag_inv;
+
+    Index i,j;
+
+    i = point_i % this->_nx;
+    j = (point_i - i)/this->_nx;
+
+    Real xi = (Real(i))*this->_dx;
+    Real yi = (Real(j))*this->_dy;
+
+    i = point_j % this->_nx;
+    j = (point_j - i)/this->_nx;
+
+    Real xj = (Real(i))*this->_dx;
+    Real yj = (Real(j))*this->_dy;
+
+    // midpoints of edge
+    Real xm = half*(xj + xi);
+    Real ym = half*(yj + yi);
+
+    Real x1 = xm - half*this->_dx*ny;
+    Real x2 = xm + half*this->_dx*ny;
+
+    Real y1 = ym - half*this->_dy*nx;
+    Real y2 = ym + half*this->_dy*nx;
+    
+    Real b0 = One/sqrtf(Real(4.0)*PI);
+    Real bn = Zero;
+    Real Az1,Az2;
+
+    Az1 = b0*cosf(Real(4.0)*PI*x1)/(Real(4.0)*PI) + b0*cosf(Real(2.0)*PI*y1)/(Real(2.0)*PI);
+    Az2 = b0*cosf(Real(4.0)*PI*x2)/(Real(4.0)*PI) + b0*cosf(Real(2.0)*PI*y2)/(Real(2.0)*PI);
+    /* printf("[%d][%d] %f %f %f %f %f %f %f %f\n",point_i,point_j,x2,y2,x,y,bperp,bpar,kpar,Az2); */
+
+    Real bx = Real(0.0);
+    Real by = Real(0.0);
+
+    if(fabs(x2 - x1) > Real(0.0)) by = -(Az2 - Az1)/(x2 - x1);
+
+    if(fabs(y2 - y1) > Real(0.0)) bx = (Az2 - Az1)/(y2 - y1);
+    
+    bn = bx*nx + by*ny;
+    
+    /* printf("[%d][%d] Az1 = %f Az2 = %f bx = %f by = %f bn = %f\n",point_i,point_j,Az1, Az2,bx,by,bn); */
+
+    return bn;
   }
 };
 
@@ -543,12 +633,10 @@ struct linear_wave_init : public thr::unary_function<Index,State>
     Real x = (Real(i))*this->_dx;// + half*this->_dx;
     Real y = (Real(j))*this->_dy;// + half*this->_dy;
 
-    /* Real angle      = Zero;//Real(atan2(this->_Lx,this->_Ly)); */
     Real angle      = Real(atan2(this->_Lx,this->_Ly));
     Real cosa       = Real(cos(angle));
     Real sina       = Real(sin(angle));
     Real wavelength = this->_Lx*cosa;//fmin(this->_Lx*cosa,this->_Ly*sina);
-    /* printf("[%d] %f %f\n",index,x,y); */
 
     if(sina > cosa) wavelength = this->_Ly*sina;
 
@@ -606,10 +694,7 @@ struct linear_wave_init : public thr::unary_function<Index,State>
 
 #endif
 
-    /* Index ieigen = Index(0); // eigenvalue of corresponding wave */
     Real xpar = x*cosa + y*sina;
-    /* Real vpar = Real(0.0); */
-    /* Real vperp = amp*Real(sin(xpar)); */
 
     Real d = d0 + amp*Real(sin(kpar*(xpar - vdt)))*rem[0][this->_ieigen];
     Real mx0 = d0*vx0 + amp*Real(sin(kpar*(xpar - vdt)))*rem[1][this->_ieigen];
@@ -741,14 +826,14 @@ struct linear_wave_init_interface : public thr::unary_function<Edge,Real>
     i = point_i % this->_nx;
     j = (point_i - i)/this->_nx;
 
-    Real xi = (Real(i))*this->_dx;// + half*this->_dx;
-    Real yi = (Real(j))*this->_dy;// + half*this->_dy;
+    Real xi = (Real(i))*this->_dx;
+    Real yi = (Real(j))*this->_dy;
 
     i = point_j % this->_nx;
     j = (point_j - i)/this->_nx;
 
-    Real xj = (Real(i))*this->_dx;// + half*this->_dx;
-    Real yj = (Real(j))*this->_dy;// + half*this->_dy;
+    Real xj = (Real(i))*this->_dx;
+    Real yj = (Real(j))*this->_dy;
 
     /* printf("[%d][%d] %f %f %f %f\n",point_i,point_j,xi,yi,xj,yj); */
 
@@ -764,7 +849,6 @@ struct linear_wave_init_interface : public thr::unary_function<Edge,Real>
     
     /* printf("[%d][%d] %f %f %f %f %f %f\n",point_i,point_j,nx,ny,x1,y1,x2,y2); */
     
-    /* Real angle = Zero;//Real(atan2(this->_Lx,this->_Ly)); */
     Real angle = Real(atan2(this->_Lx,this->_Ly));
     
     Real cosa = Real(cos(angle));
@@ -808,19 +892,8 @@ struct linear_wave_init_interface : public thr::unary_function<Edge,Real>
     Real dby = amp*rem[5][this->_ieigen];
     Real dbz = amp*rem[6][this->_ieigen];
 
-    /* Real x = x1*cosa + y1*sina; */
-    /* Real y = -x1*sina + y1*cosa; */
-    
-    /* Az1 = bperp*(Real(cos(kpar*x)))/kpar + bpar*y; */
     Az1 = vector_potential_lw_z(x1, y1, vdt, angle, kpar, bx, by, bz, dby);
-    /* printf("[%d][%d] %f %f %f\n",point_i,point_j,x1,y1,Az1); */
-
-    /* x = x2*cosa + y2*sina; */
-    /* y = -x2*sina + y2*cosa; */
-    
-    /* Az2 = bperp*(Real(cos(kpar*x)))/kpar + bpar*y; */
     Az2 = vector_potential_lw_z(x2, y2, vdt, angle, kpar, bx, by, bz, dby);
-    /* printf("[%d][%d] %f %f %f %f\n",point_i,point_j,(x2-x1),(y2-y1),Az1,Az2); */
 
     bx = Real(0.0);
     by = Real(0.0);
@@ -879,7 +952,7 @@ struct cpaw_init : public thr::unary_function<Index,State>
     Real y = (Real(j))*this->_dy;
 
     Real angle = Real(atan2(this->_Lx,this->_Ly));
-    angle = Zero;
+    /* angle = Zero; */
 
     Real cosa = Real(cos(angle));
     Real sina = Real(sin(angle));
@@ -925,59 +998,25 @@ struct cpaw_init : public thr::unary_function<Index,State>
     Real y1 = y - half*this->_dy;
     Real y2 = y + half*this->_dy;
 
-    /* Real xi = x1*cosa + y1*sina; */
-    /* Real yi = -x1*sina + y1*cosa; */    
-    /* Az1 = bperp*(Real(cos(kpar*xi)))/kpar + bpar*yi; */
     Az1 = vector_potential_cpaw_z(x1, y1, vdt, angle, kpar, bpar, bperp);
-
-    /* xi = x1*cosa + y2*sina; */
-    /* yi = -x1*sina + y2*cosa; */
-    /* Az2 = bperp*(Real(cos(kpar*xi)))/kpar + bpar*yi; */
     Az2 = vector_potential_cpaw_z(x1, y2, vdt, angle, kpar, bpar, bperp);
-
     bx += half*(Az2 - Az1)/this->_dy;
 
-    /* xi = x2*cosa + y1*sina; */
-    /* yi = -x2*sina + y1*cosa; */    
-    /* Az1 = bperp*(Real(cos(kpar*xi)))/kpar + bpar*yi; */
     Az1 = vector_potential_cpaw_z(x2, y1, vdt, angle, kpar, bpar, bperp);
-
-    /* xi = x2*cosa + y2*sina; */
-    /* yi = -x2*sina + y2*cosa; */
-    /* Az2 = bperp*(Real(cos(kpar*xi)))/kpar + bpar*yi; */
     Az2 = vector_potential_cpaw_z(x2, y2, vdt, angle, kpar, bpar, bperp);
-
     bx += half*(Az2 - Az1)/this->_dy;
 
-    /* xi = x1*cosa + y1*sina; */
-    /* yi = -x1*sina + y1*cosa;     */
-    /* Az1 = bperp*(Real(cos(kpar*xi)))/kpar + bpar*yi; */
     Az1 = vector_potential_cpaw_z(x1, y1, vdt, angle, kpar, bpar, bperp);
-
-    /* xi = x2*cosa + y1*sina; */
-    /* yi = -x2*sina + y1*cosa; */
-    /* Az2 = bperp*(Real(cos(kpar*xi)))/kpar + bpar*yi; */
     Az2 = vector_potential_cpaw_z(x2, y1, vdt, angle, kpar, bpar, bperp);
-
     by -= half*(Az2 - Az1)/this->_dx;
 
-    /* xi = x1*cosa + y2*sina; */
-    /* yi = -x1*sina + y2*cosa;     */
-    /* Az1 = bperp*(Real(cos(kpar*xi)))/kpar + bpar*yi; */
     Az1 = vector_potential_cpaw_z(x1, y2, vdt, angle, kpar, bpar, bperp);
-
-    /* xi = x2*cosa + y2*sina; */
-    /* yi = -x2*sina + y2*cosa; */
-    /* Az2 = bperp*(Real(cos(kpar*xi)))/kpar + bpar*yi; */
     Az2 = vector_potential_cpaw_z(x2, y2, vdt, angle, kpar, bpar, bperp);
-
     by -= half*(Az2 - Az1)/this->_dx;
-
 
     bz = Real(0.0);
     Ay1 = vector_potential_cpaw_y(x1, y2, vdt, angle, kpar, bpar, bperp);
     Ay2 = vector_potential_cpaw_y(x2, y2, vdt, angle, kpar, bpar, bperp);
-    
     bz += (Ay2 - Ay1)/this->_dx;
 
     Ax1 = vector_potential_cpaw_x(x2, y1, vdt, angle, kpar, bpar, bperp);
@@ -1058,8 +1097,6 @@ struct cpaw_init_interface : public thr::unary_function<Edge,Real>
     Real xj = (Real(i))*this->_dx;
     Real yj = (Real(j))*this->_dy;
 
-    /* printf("[%d][%d] %f %f %f %f\n",point_i,point_j,xi,yi,xj,yj); */
-
     // midpoints of edge
     Real xm = half*(xj + xi);
     Real ym = half*(yj + yi);
@@ -1070,10 +1107,8 @@ struct cpaw_init_interface : public thr::unary_function<Edge,Real>
     Real y1 = ym - half*this->_dy*nx;
     Real y2 = ym + half*this->_dy*nx;
     
-    /* printf("[%d][%d] %f %f %f %f %f %f\n",point_i,point_j,nx,ny,x1,y1,x2,y2); */
-    
     Real angle = Real(atan2(this->_Lx,this->_Ly));
-    angle = Zero;
+    /* angle = Zero; */
     
     Real cosa = Real(cos(angle));
     Real sina = Real(sin(angle));
@@ -1085,25 +1120,12 @@ struct cpaw_init_interface : public thr::unary_function<Edge,Real>
     Real bperp = Real(0.1);
     Real ca = bpar;
 
-    /* Real tf = Zero;//Real(0.078186); */
     Real vdt = bpar*this->_tf;
-
-    /* printf("[%d][%d] %f %f %f %f %f\n",point_i,point_j,this->_Lx,this->_Ly,angle,wavelength,kpar); */
 
     Real bn = Real(0.0);
     Real Az1,Az2;
 
-    /* Real x = x1*cosa + y1*sina; */
-    /* Real y = -x1*sina + y1*cosa; */
-    
-    /* Az1 = bperp*(Real(cos(kpar*x)))/kpar + bpar*y; */
     Az1 = vector_potential_cpaw_z(x1, y1, vdt, angle, kpar, bpar, bperp);
-    /* printf("[%d][%d] %f %f %f %f %f %f %f %f\n",point_i,point_j,x1,y1,x,y,bperp,bpar,kpar,Az1); */
-
-    /* x = x2*cosa + y2*sina; */
-    /* y = -x2*sina + y2*cosa; */
-    
-    /* Az2 = bperp*(Real(cos(kpar*x)))/kpar + bpar*y; */
     Az2 = vector_potential_cpaw_z(x2, y2, vdt, angle, kpar, bpar, bperp);
     /* printf("[%d][%d] %f %f %f %f %f %f %f %f\n",point_i,point_j,x2,y2,x,y,bperp,bpar,kpar,Az2); */
 

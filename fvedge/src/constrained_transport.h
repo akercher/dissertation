@@ -43,15 +43,18 @@ struct residual_ct : public thr::binary_function<Tuple,InterpState,State>
   Real _gamma;
   RealIterator _wave_speed_iter;
   RealIterator _emf_z_iter;
+  Vector4Iterator _cell_flow_direction_iter;
   StateIterator _residual_iter;
 
  residual_ct(Real gamma,
 	     RealIterator wave_speed_iter,
 	     RealIterator emf_z_iter,
+	     Vector4Iterator cell_flow_direction_iter,
 	     StateIterator residual_iter)
    : _gamma(gamma)
     ,_wave_speed_iter(wave_speed_iter)
     ,_emf_z_iter(emf_z_iter)
+    ,_cell_flow_direction_iter(cell_flow_direction_iter)
     ,_residual_iter(residual_iter) {}
 
   __host__ __device__
@@ -98,19 +101,10 @@ struct residual_ct : public thr::binary_function<Tuple,InterpState,State>
 #endif
 
 #ifdef CT
-    hlld_ct_rotated(this->_gamma,Real(0.0),area_vec,state_i,state_j,bn,normal_wave_speed,flux);
+    flux_mhd(this->_gamma,Real(0.0),area_vec,state_i,state_j,bn,normal_wave_speed,flux);
 #else
     hlld_n(this->_gamma,Real(0.0),area_vec,state_i,state_j,normal_wave_speed,flux);
 #endif
-    /* printf(" area_vec_mag = %f\n",area_vec_mag); */
-    /* printf("[%d][%d] di = %f dj = %f pgi = %f pgj = %f F.d = %f F.en = %f\n",point_i,point_j, */
-    /* 	   density_i,density_j,pressure_i,pressure_j,flux_d,flux_en); */
-    /* printf("[%d][%d] vxi = %f vxj = %f vyi = %f vyj = %f F.mx = %f F.my = %f\n",point_i,point_j, */
-    /* 	   get_x(velocity_i),get_x(velocity_j),get_y(velocity_i),get_y(velocity_j),flux_mx,flux_my); */
-    /* printf("[%d][%d] bn = %f bxi = %f bxj = %f byi = %f byj = %f F.bx = %f F.by = %f\n",point_i,point_j, */
-    /* 	   bn,get_x(bfield_i),get_x(bfield_j),get_y(bfield_i),get_y(bfield_j),flux_bx,flux_by); */
-    /* printf("[%d][%d] vzi = %f vzj = %f bzi = %f bzj = %f F.mz = %f F.bz = %f\n",point_i,point_j, */
-    /* 	   get_z(velocity_i),get_z(velocity_j),get_z(bfield_i),get_z(bfield_j),flux_mz,flux_bz); */
 
     // update wave speeds
     Real wave_speed_i = Real(this->_wave_speed_iter[point_i]) + normal_wave_speed;
@@ -166,7 +160,65 @@ struct residual_ct : public thr::binary_function<Tuple,InterpState,State>
 						 Vector(res_mx,res_my,res_mz),
 						 Real(res_en),
 						 Vector(res_bx,res_by,res_bz));
+
+    /*******************************************************************/
+    /*                                                                 */
+    /*    o---<----------o---<----------o---<----------o               */
+    /*    |              |              |              |               */
+    /*    |             /|\            /|\             |               */
+    /*    |      emf.....|.....emf......|......emf     |               */
+    /*   \|/      .  yi  | yj   .    yi |  yj   .      |               */
+    /*    |       .xi    |      .xi     |       .xi    |               */
+    /*    o---<----------o---<----------o---<----------|               */
+    /*    |       .xj    |      .xj     |       .xj    |               */
+    /*    |       .     /|\     .       |       .      |               */
+    /*    |      emf.....|.....emf......|......emf     |               */
+    /*   \|/      .  yi  |  yj  .    yi |  yj   .      |               */
+    /*    |       .xi    |      .xi     |       .xi    |               */
+    /*    o---<----------o---<----------o---<----------o               */
+    /*    |       .xj    |      .xj     |       .xj    |               */
+    /*    |       .     /|\     .      /|\      .      |               */
+    /*    |      emf.....|.....emf......|......emf     |               */
+    /*   \|/         yi  |  yj     yi   |  yj          |               */
+    /*    |              |              |              |               */
+    /*    0---------->---1---------->---o--------------o               */
+    /*                                                                 */
+    /*******************************************************************/
     
+    // compute flow direction at element centroid
+    /* printf("[%d][%d] i = %d j = %d\n",point_i,point_j,index_i,index_j); */
+
+    if (index_i > -Index(1)){
+      Real xflow_i_dir = Real(thr::get<0>(Vector4(this->_cell_flow_direction_iter[Index(index_i)])));
+      Real xflow_j_dir = Real(thr::get<1>(Vector4(this->_cell_flow_direction_iter[Index(index_i)])));
+      Real yflow_i_dir = Real(thr::get<2>(Vector4(this->_cell_flow_direction_iter[Index(index_i)])));
+      Real yflow_j_dir = Real(thr::get<3>(Vector4(this->_cell_flow_direction_iter[Index(index_i)])));
+
+      if (xflow_j_dir == Zero) xflow_j_dir += abs(get_x(area_normal))*flux_d;
+      
+      if (yflow_j_dir == Zero) yflow_j_dir += abs(get_y(area_normal))*flux_d;
+      
+      this->_cell_flow_direction_iter[(Index(index_i))] = Vector4(xflow_i_dir, xflow_j_dir,
+								  yflow_i_dir, yflow_j_dir);
+
+      /* printf("[%d] xi = %f xj = %f yi = %f yj = %f\n",index_i,xflow_i_dir,xflow_j_dir,yflow_i_dir,yflow_j_dir); */
+    }
+
+
+    if (index_j > -Index(1)){
+      Real xflow_i_dir = Real(thr::get<0>(Vector4(this->_cell_flow_direction_iter[Index(index_j)])));
+      Real xflow_j_dir = Real(thr::get<1>(Vector4(this->_cell_flow_direction_iter[Index(index_j)])));
+      Real yflow_i_dir = Real(thr::get<2>(Vector4(this->_cell_flow_direction_iter[Index(index_j)])));
+      Real yflow_j_dir = Real(thr::get<3>(Vector4(this->_cell_flow_direction_iter[Index(index_j)])));
+      
+      if (xflow_i_dir == Zero) xflow_i_dir += abs(get_x(area_normal))*flux_d;
+      if (yflow_i_dir == Zero) yflow_i_dir += abs(get_y(area_normal))*flux_d;
+      
+      this->_cell_flow_direction_iter[(Index(index_j))] = Vector4(xflow_i_dir, xflow_j_dir,
+								  yflow_i_dir, yflow_j_dir);
+      /* printf("[%d] xi = %f xj = %f yi = %f yj = %f\n",index_j,xflow_i_dir,xflow_j_dir,yflow_i_dir,yflow_j_dir); */
+    } 
+   
     /* scale flux by inverse magnitude of face normal */
     thr::get<0>(flux)        *= area_vec_mag_inv;
     get_x(thr::get<1>(flux)) *= area_vec_mag_inv;
@@ -265,11 +317,9 @@ struct outflow_bcs_ct : public thr::unary_function<Tuple,void>
     prim_state_i = cons2prim_func(this->_gamma,state_i);
     prim_state_j = cons2prim_func(this->_gamma,state_j);
 
-    /* if ((point_i % this->_nx) == Index(0)) bn = -bn; */
-
     // node i
 #ifdef CT
-    hlld_ct(this->_gamma,Real(0.0),area_vec,prim_state_i,prim_state_i,bn,normal_wave_speed,flux_i);
+    flux_mhd(this->_gamma,Real(0.0),area_vec,prim_state_i,prim_state_i,bn,normal_wave_speed,flux_i);
 #else
     hlld_n(this->_gamma,Real(0.0),area_vec,prim_state_i,prim_state_i,normal_wave_speed,flux_i);
 #endif
@@ -280,28 +330,13 @@ struct outflow_bcs_ct : public thr::unary_function<Tuple,void>
 
     // node j
 #ifdef CT
-    hlld_ct(this->_gamma,Real(0.0),area_vec,prim_state_j,prim_state_j,bn,normal_wave_speed,flux_j);
+    flux_mhd(this->_gamma,Real(0.0),area_vec,prim_state_j,prim_state_j,bn,normal_wave_speed,flux_j);
 #else
     hlld_n(this->_gamma,Real(0.0),area_vec,prim_state_i,prim_state_i,normal_wave_speed,flux_i);
 #endif
 
     Real wave_speed_j = Real(this->_wave_speed_iter[point_j]) + normal_wave_speed;
     this->_wave_speed_iter[point_j] = wave_speed_j;
-
-    /* printf("\n"); */
-    /* printf("[%d][%d] mxi = %f mxj = %f res.mxi = %f res.mxj = %f\n",point_i,point_j, */
-    /* 	   get_x(thr::get<1>(state_i)), */
-    /* 	   get_x(thr::get<1>(state_j)), */
-    /* 	   get_x(thr::get<1>(State(this->_residual_iter[Index(point_i)]))), */
-    /* 	   get_x(thr::get<1>(State(this->_residual_iter[Index(point_j)])))); */
-
-    /* printf("\n"); */
-    /* printf("[%d][%d] F.mxi = %f F.mxj = %f area_vec = %f\n", */
-    /* 	   point_i,point_j, */
-    /* 	   get_x(thr::get<1>(flux_i)),//\*area_vec_mag_inv, */
-    /* 	   get_x(thr::get<1>(flux_j)),//\*area_vec_mag_inv, */
-    /* 	   area_vec_mag); */
-
 
     // Update residuals, add contributions to the two nodes (See Nishikawa AIAA2010-5093)
     if(this->_iedge_d > Index(0)){
@@ -413,16 +448,19 @@ struct emf_upwind_calc : public thr::unary_function<Tuple,void>
   Index _nx;
   Index _ny;
   RealIterator _emf_z_iter;
+  Vector4Iterator _cell_flow_dir_iter;
   StateIterator _state_iter;
 
  emf_upwind_calc(Index nx,
 		 Index ny,
 		 RealIterator emf_z_iter,
+		 Vector4Iterator cell_flow_dir_iter,
 		 StateIterator state_iter)
    
    : _nx(nx)
     ,_ny(ny)
     ,_emf_z_iter(emf_z_iter)
+    ,_cell_flow_dir_iter(cell_flow_dir_iter)
     ,_state_iter(state_iter) {}
   
   __host__ __device__
@@ -484,6 +522,63 @@ struct emf_upwind_calc : public thr::unary_function<Tuple,void>
     				     + get_y(area_vec)*get_y(edge_vec));
     Real edge_vec_mag_inv = Real(1.0)/edge_vec_mag;
 
+    // centroid i
+    Real xflow_i_dir = Real(thr::get<0>(Vector4(this->_cell_flow_dir_iter[Index(index_i)])));
+    Real xflow_j_dir = Real(thr::get<1>(Vector4(this->_cell_flow_dir_iter[Index(index_i)])));
+    Real yflow_i_dir = Real(thr::get<2>(Vector4(this->_cell_flow_dir_iter[Index(index_i)])));
+    Real yflow_j_dir = Real(thr::get<3>(Vector4(this->_cell_flow_dir_iter[Index(index_i)])));
+
+    Real emf_xi,emf_xj,emf_yi,emf_yj;
+
+    // x contributions
+    /* if (xflow_j_dir > Zero){ */
+    /*   emf_xj = Zero; */
+    /* } */
+    /* else if (xflow_j_dir < Zero){ */
+    /*   emf_xj = Real(0.25)*(edge_emf_contribution - emf_cc_i); */
+    /* } */
+    /* else { */
+    /*   emf_xj = half*Real(0.25)*(edge_emf_contribution - emf_cc_i); */
+    /* } */
+
+    /* if (xflow_i_dir > Zero){ */
+    /*   emf_xi = Zero; */
+    /* } */
+    /* else if (xflow_i_dir < Zero){ */
+    /*   emf_xi = Real(0.25)*(edge_emf_contribution - emf_cc_i); */
+    /* } */
+    /* else { */
+    /*   emf_xi = half*Real(0.25)*(edge_emf_contribution - emf_cc_i); */
+    /* } */
+
+    /* // y contributions */
+    /* if (yflow_j_dir > Zero){ */
+    /*   emf_yj = Zero; */
+    /* } */
+    /* else if (yflow_j_dir < Zero){ */
+    /*   emf_yj = Real(0.25)*(edge_emf_contribution - emf_cc_i); */
+    /* } */
+    /* else { */
+    /*   emf_yj = half*Real(0.25)*(edge_emf_contribution - emf_cc_i); */
+    /* } */
+
+    /* if (yflow_i_dir > Zero){ */
+    /*   emf_yi = Zero; */
+    /* } */
+    /* else if (yflow_i_dir < Zero){ */
+    /*   emf_yi = Real(0.25)*(edge_emf_contribution - emf_cc_i); */
+    /* } */
+    /* else { */
+    /*   emf_yi = half*Real(0.25)*(edge_emf_contribution - emf_cc_i); */
+    /* } */
+
+
+    // centroid j
+    xflow_i_dir = Real(thr::get<0>(Vector4(this->_cell_flow_dir_iter[Index(index_j)])));
+    xflow_j_dir = Real(thr::get<1>(Vector4(this->_cell_flow_dir_iter[Index(index_j)])));
+    yflow_i_dir = Real(thr::get<2>(Vector4(this->_cell_flow_dir_iter[Index(index_j)])));
+    yflow_j_dir = Real(thr::get<3>(Vector4(this->_cell_flow_dir_iter[Index(index_j)])));
+
     Real demf_i = Real(0.25)*(emf_i - edge_emf_contribution);
     Real demf_j = Real(0.25)*(emf_j - edge_emf_contribution);
     Real demf;
@@ -504,32 +599,6 @@ struct emf_upwind_calc : public thr::unary_function<Tuple,void>
     if (fabs(edge_emf_contribution) < 1.0e-6){
       edge_emf_contribution = Real(0.0);
     }
-
-    /* iout = Index(0); */
-    /* if(index_i == 3) iout = Index(1); */
-    /* else if(index_j == 3) iout = Index(1); */
-    /* else if(index_i == 4) iout = Index(1); */
-    /* else if(index_j == 4) iout = Index(1); */
-    /* /\* else if(index_i == 6) iout = Index(1); *\/ */
-    /* /\* else if(index_j == 6) iout = Index(1); *\/ */
-
-
-    /* if(iout > Index(0)){ */
-      /* if (fabs(edge_emf_contribution) > Real(1.0e-6)){ */
-      /* printf("[%d][%d] i = %d j = %d f.bx = %f, f.by = %f avec_i = %f emf = %f\n", */
-      /* 	     point_i,point_j, */
-      /* 	     index_i,index_j, */
-      /* 	     flux_bx,flux_by, */
-      /* 	     area_vec_mag_inv,edge_emf_contribution); */
-      /* printf("[%d][%d] di = %f dj = %f eni = %f enj = %f\n",point_i,point_j,di,dj,eni,enj); */
-      /* printf("[%d][%d] vxi = %f vxj = %f vyi = %f vyj = %f vzi = %f vzj = %f\n", */
-      /* 	     point_i,point_j,vxi,vxj,vyi,vyj,vzi,vzj); */
-      /* printf("[%d][%d] bxi = %f bxj = %f byi = %f byj = %f bzi = %f bzj = %f\n", */
-      /* 	     point_i,point_j,bxi,bxj,byi,byj,bzi,bzj); */
-    /* } */
-    /* } */
-
-    /* printf("[%d][%d] %d %d %f %f %f %f\n",point_i,point_j,index_i,index_j,Real(this->_emf_z_iter[Index(index_i)]),Real(this->_emf_z_iter[Index(index_j)]),edge_emf_contribution,demf); */
 
     // cell centered emfs
     if (index_i > -Index(1)){
@@ -621,19 +690,8 @@ struct emf_upwind_bcs : public thr::unary_function<Tuple,void>
     Real nx = get_x(area_vec)*area_vec_mag_inv;
     Real ny = get_y(area_vec)*area_vec_mag_inv;
     
-    /* printf("[%d][%d] %d %d\n",point_i,point_j,index_i,index_j); */
-
-    // edge vector
-    /* Coordinate edge_vec = thr::get<1>(Edge(edge)); */
-    /* Real edge_vec_mag = std::sqrt(get_x(edge_vec)*get_x(edge_vec) */
-    /* 				     + get_y(edge_vec)*get_y(edge_vec)); */
-    /* Real edge_vec_mag_inv = Real(1.0)/edge_vec_mag; */
 
     Real edge_emf_contribution = Real(0.0);
-
-    /* if (point_j > point_i){ */
-    /* edge_emf_contribution = Real(0.25)*(flux_by*get_x(area_vec)*area_vec_mag_inv */
-    /* 					+ flux_bx*get_y(area_vec)*area_vec_mag_inv); */
 
     /* edge_emf_contribution = Real(0.25)*(flux_bx*ny - flux_by*nx); */
     edge_emf_contribution = Real(0.25)*(flux_bx + flux_by);
@@ -655,29 +713,6 @@ struct emf_upwind_bcs : public thr::unary_function<Tuple,void>
       demf = Real(0.25)*half*((emf_i - edge_emf_contribution) 
 			      + (emf_j - edge_emf_contribution));
     }
-
-    
-    /* Index iout; */
-
-    /* iout = Index(0); */
-    /* if(index_i == 3) iout = Index(1); */
-    /* else if(index_j == 3) iout = Index(1); */
-    /* else if(index_i == 4) iout = Index(1); */
-    /* else if(index_j == 4) iout = Index(1); */
-    /* else if(index_i == 6) iout = Index(1); */
-    /* else if(index_j == 6) iout = Index(1); */
-
-    /* if(iout > Index(0)){ */
-    /*   if (edge_emf_contribution > Real(1.0e-6)){ */
-    /*   printf("[%d][%d] i = %d j = %d f.bx = %f, f.by = %f avec_i = %f emf = %f\n",point_i,point_j,index_i,index_j,flux_bx,flux_by,area_vec_mag_inv,edge_emf_contribution); */
-    /* /\*         printf("[%d][%d] di = %f dj = %f eni = %f enj = %f\n",point_i,point_j,di,dj,eni,enj); *\/ */
-    /* /\*   printf("[%d][%d] vxi = %f vxj = %f vyi = %f vyj = %f vzi = %f vzj = %f\n", *\/ */
-    /* /\* 	     point_i,point_j,vxi,vxj,vyi,vyj,vzi,vzj); *\/ */
-    /* /\*   printf("[%d][%d] bxi = %f bxj = %f byi = %f byj = %f bzi = %f bzj = %f\n", *\/ */
-    /* /\* 	     point_i,point_j,bxi,bxj,byi,byj,bzi,bzj); *\/ */
-    /* /\* printf("[%d][%d] vxi = %f vxj = %f vyi = %f vyj = %f\n",point_i,point_j,vxi,vxj,vyi,vyj); *\/ */
-    /* } */
-    /* } */
 
     // cell centered emfs
     if (index_i > -Index(1)){
@@ -750,12 +785,6 @@ struct integrate_ct : public thr::binary_function<Interface,Real,Real>
     Real area_vec_mag = std::sqrt(get_x(area_vec)*get_x(area_vec)
     				     + get_y(area_vec)*get_y(area_vec));
     Real area_vec_mag_inv = Real(1.0)/area_vec_mag;
-
-    // directed edge vector
-    /* Coordinate edge_vec = thr::get<1>(Edge(edge)); */
-    /* Real edge_vec_mag = std::sqrt(get_x(edge_vec)*get_x(edge_vec) */
-    /* 				     + get_y(edge_vec)*get_y(edge_vec)); */
-    /* Real edge_vec_mag_inv = Real(1.0)/edge_vec_mag; */
 
     Real emf_i = Real(this->_emf_iter[Index(index_i)]);
     Real emf_j = Real(this->_emf_iter[Index(index_j)]);
@@ -954,14 +983,7 @@ struct bfield_divergence : public thr::unary_function<Tuple,void>
     Index point_i = thr::get<0>(thr::get<2>(Edge(edge)));
     Index point_j = thr::get<1>(thr::get<2>(Edge(edge)));
 
-    // directed area vector
-    Coordinate area_vec = thr::get<0>(Edge(edge));
-    Real area_vec_mag = std::sqrt(get_x(area_vec)*get_x(area_vec)
-    				     + get_y(area_vec)*get_y(area_vec));
-    Real area_vec_mag_inv = Real(1.0)/area_vec_mag;
-    /* Real nx = get_x(area_vec)*area_vec_mag_inv; */
-    /* Real ny = get_y(area_vec)*area_vec_mag_inv; */
-
+    // directed edge vector
     Coordinate edge_vec = thr::get<1>(Edge(edge));
     Real edge_vec_mag = std::sqrt(get_x(edge_vec)*get_x(edge_vec)
     				     + get_y(edge_vec)*get_y(edge_vec));
@@ -1016,7 +1038,7 @@ struct div_periodic_bcs : public thr::unary_function<Index,void>
     Index point_i;
     Index point_j;
     Index ncell_x,ncell_y;
-    Real div_bi,div_bj;
+    /* Real div_bi,div_bj; */
 
     ncell_x = this->_nx - Index(1);
     ncell_y = this->_ny - Index(1);
@@ -1157,6 +1179,215 @@ Real divergence_calc(Index interior_ncolors, Mesh mesh, Offset offset,
   return fmax(fabs(max_divb),fabs(min_divb));
 };
 
+/*******************************************************************/
+/* Current density calculation                                     */
+/*-----------------------------------------------------------------*/
+/*******************************************************************/
+template<typename Tuple>
+struct current_density : public thr::unary_function<Tuple,void>
+{
+  RealIterator _current_iter;
+
+ current_density(RealIterator current_iter)
+   : _current_iter(current_iter) {}
+
+   __host__ __device__
+    void operator()(const Tuple& t) const
+  {
+
+    Edge edge = thr::get<0>(t);
+    Real bn = thr::get<1>(t);
+   
+    Index point_i = thr::get<0>(thr::get<2>(Edge(edge)));
+    Index point_j = thr::get<1>(thr::get<2>(Edge(edge)));
+
+    // directed edge vector
+    Coordinate edge_vec = thr::get<1>(Edge(edge));
+    Real edge_vec_mag = std::sqrt(get_x(edge_vec)*get_x(edge_vec)
+    				     + get_y(edge_vec)*get_y(edge_vec));
+    Real edge_vec_mag_inv = Real(1.0)/edge_vec_mag;
+    Real nx = get_x(edge_vec)*edge_vec_mag_inv;
+    Real ny = get_y(edge_vec)*edge_vec_mag_inv;
+        
+    Real current_i = this->_current_iter[point_i];
+    Real current_j = this->_current_iter[point_j];
+
+    current_i += edge_vec_mag_inv*bn*(nx + ny);
+    current_j -= edge_vec_mag_inv*bn*(nx + ny);
+
+    this->_current_iter[point_i] = current_i;
+    this->_current_iter[point_j] = current_j;
+
+    /* printf("[%d][%d] bni = %f bnj = %f bn = %f ev = %f \n",point_i,point_j,current_i,current_j,bn,edge_vec_mag); */
+
+    
+  }
+};
+
+/*******************************************************************/
+/* Periodic boundary conditions for divergence                     */
+/*-----------------------------------------------------------------*/
+/*******************************************************************/
+struct current_periodic_bcs : public thr::unary_function<Index,void>
+{
+
+  Index _nx;
+  Index _ny;
+  Index _offset;
+  RealIterator _current_iter;
+
+ current_periodic_bcs(Index nx,
+		      Index ny,
+		      Index offset,
+		      RealIterator current_iter)
+   : _nx(nx)
+    ,_ny(ny)
+    ,_offset(offset)
+    ,_current_iter(current_iter) {}
+
+  __host__ __device__
+    void operator()(const Index& index) const
+  {
+   
+    /*---------------------------------------------------*/
+    /* Apply boundary conditions                         */
+    /*---------------------------------------------------*/
+    /* Periodic                                          */
+    /*---------------------------------------------------*/
+
+    Index point_i;
+    Index point_j;
+    Index ncell_x,ncell_y;
+
+    ncell_x = this->_nx - Index(1);
+    ncell_y = this->_ny - Index(1);
+
+    Index point = index;// + Index(1);
+
+    if (this->_offset < Index(2)){// bottom-top boundaries
+      point_i = point*this->_offset;
+      point_j  = point_i + (this->_ny - Index(1))*this->_nx;
+    }
+    else {// left-right boundaries
+      point_i = point*this->_offset;
+      point_j  = point_i + (this->_nx - Index(1));
+    }
+
+    Real current_i = this->_current_iter[point_i];
+    Real current_j = this->_current_iter[point_j];
+
+    this->_current_iter[point_i] += current_j;
+    this->_current_iter[point_j] += current_i;
+    
+
+  }
+};
+
+/*******************************************************************/
+/* Function to compute current density                             */
+/*-----------------------------------------------------------------*/
+/*******************************************************************/
+__host__ __device__
+void current_density_calc(Index interior_ncolors, Mesh mesh, Offset offset,
+			  EdgeArray edge,RealArray bn_edge, RealArray& current)	     
+{
+
+  thr::fill_n(current.begin(),current.size(),Zero);
+
+  EdgeIterator edge_iter(edge.begin());
+  RealIterator bn_edge_iter(bn_edge.begin());
+  RealIterator current_iter(current.begin());
+
+  for(Index i=0; i < interior_ncolors; i++){
+    thr::for_each_n(thr::make_zip_iterator(thr::make_tuple(edge_iter,
+							   bn_edge_iter)),
+		    Index(offset.faces_per_color[i]),	    
+		    current_density<thr::tuple<Edge,Real> >(current_iter));
+    
+    edge_iter += offset.faces_per_color[i];
+    bn_edge_iter += offset.faces_per_color[i];
+  }
+  
+  /*-----------------------------------------------------------------*/
+  /* Apply Periodic BCs for divergence calc                          */
+  /*-----------------------------------------------------------------*/
+  if (mesh.btype_x == Index(1)){
+    // periodic left/right
+    thr::for_each_n(make_device_counting_iterator(),
+		    mesh.ny,
+		    current_periodic_bcs(mesh.nx,
+					 mesh.ny,
+					 mesh.nx,
+					 current_iter));
+  }
+  if (mesh.btype_y == Index(1)){
+    // periodic top/bottom
+    thr::for_each_n(make_device_counting_iterator(),
+		    mesh.nx,
+		    current_periodic_bcs(mesh.nx,
+					 mesh.ny,
+					 Index(1),
+					 current_iter));
+    
+  }
+
+  // loop over left/right boundary edges
+  for(Index i=interior_ncolors; i < offset.ncolors - offset.nboun_colors; i++){
+    thr::for_each_n(thr::make_zip_iterator(thr::make_tuple(edge_iter,
+							   bn_edge_iter)),
+		    Index(offset.faces_per_color[i]),	    
+		    current_density<thr::tuple<Edge,Real> >(current_iter));
+    
+    edge_iter += offset.faces_per_color[i];
+    bn_edge_iter += offset.faces_per_color[i];
+  }
+
+  // fix corners
+  Real current_bl_x = current[Index(0)];
+  Real current_br_x = current[mesh.ncell_x];
+  Real current_tl_x = current[(mesh.ny - Index(1))*mesh.nx];
+  Real current_tr_x = current[mesh.ny*mesh.nx - Index(1)];
+
+  current[Index(0)] = Zero;
+  current[(mesh.ny - Index(1))*mesh.nx] = Zero;
+
+  current[mesh.ncell_x] = Zero;
+  current[mesh.ny*mesh.nx - Index(1)] = Zero;
+
+  // loop over top/bottom boundary edges
+  for(Index i=offset.ncolors - offset.nboun_colors; i < offset.ncolors; i++){
+    thr::for_each_n(thr::make_zip_iterator(thr::make_tuple(edge_iter,
+							   bn_edge_iter)),
+		    Index(offset.faces_per_color[i]),	    
+		    current_density<thr::tuple<Edge,Real> >(current_iter));
+    
+    edge_iter += offset.faces_per_color[i];
+    bn_edge_iter += offset.faces_per_color[i];
+  }
+  // reset iterator
+  edge_iter = edge.begin();
+  bn_edge_iter = bn_edge.begin();
+
+  // fix corners
+  Real current_bl_y = current[Index(0)];
+  Real current_br_y = current[mesh.ncell_x];
+  Real current_tl_y = current[(mesh.ny - Index(1))*mesh.nx];
+  Real current_tr_y = current[mesh.ny*mesh.nx - Index(1)];
+
+  current[Index(0)] += current_bl_x + current_tl_x + current_br_y ;
+  current[(mesh.ny - Index(1))*mesh.nx] += current_tl_x + current_tr_y + current_bl_x;
+
+  current[mesh.ncell_x] += current_br_x + current_bl_y + current_tr_x;
+  current[mesh.ny*mesh.nx - Index(1)] += current_tr_x + current_tl_y + current_br_x;
+
+#ifdef DEBUG_CURRENT  
+  printf("\n");
+  for(Index i = 0; i < mesh.npoin(); i++){
+    printf("current[%d] = %e\n",i,Real(current[i]));
+  }
+#endif
+
+};
 
 /*******************************************************************/
 /* Initialize bfield at points                                     */

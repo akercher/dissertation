@@ -30,6 +30,8 @@
 /*************************************************************************/
 #ifdef MHD
 #define CT
+#define flux_mhd hlld_ct_rotated
+// #define DEBUG_CURRENT
 // #define DEBUG_BN
 // #define DEBUG_EMF
 // #define DEBUG_DIV
@@ -41,6 +43,7 @@
 #define LINEAR
 
 #define flux_hydro rhll
+
 
 #include "thrust_wrapper.h"
 #include "defs.h"
@@ -205,6 +208,8 @@ int main(int argc, char* argv[]){
   RealArray emf_z_poin; // electromotive force at points
   RealArray bn_edge; // normal B at interface
   RealArray bn_edge_n; // normal B at interface at time n
+  RealArray current; // current density
+  Vector4Array cell_flow_direction;
 
   emf_z.resize(mesh.ncell());
   thr::fill_n(emf_z.begin(),emf_z.size(),Real(0.0));
@@ -221,10 +226,17 @@ int main(int argc, char* argv[]){
   bn_edge_n.resize(mesh.nface());
   thr::fill_n(bn_edge_n.begin(),bn_edge_n.size(),Real(0.0));
 
+  current.resize(mesh.npoin());
+  thr::fill_n(current.begin(),current.size(),Real(0.0));
+
+  cell_flow_direction.resize(mesh.ncell());
+  thr::fill_n(cell_flow_direction.begin(),cell_flow_direction.size(),
+	      Vector4(Real(0.0),Real(0.0),Real(0.0),Real(0.0)));
 
   RealIterator emf_z_iter(emf_z.begin());
   RealIterator emf_z_poin_iter(emf_z_poin.begin());
   RealIterator bn_edge_iter(bn_edge.begin());    
+  Vector4Iterator cell_flow_direction_iter(cell_flow_direction.begin());    
 #endif //MHD
 
   // create offset for coloring algorithm
@@ -259,7 +271,6 @@ int main(int argc, char* argv[]){
 
   for(Index color_index = interior_ncolors; color_index < offset.ncolors; color_index++)
     {
-      // printf("faces_per_color[%d] = %d\n",color_index,Index(offset.faces_per_color[color_index]));
       thr::transform_n(make_device_counting_iterator(),
 		       offset.faces_per_color[color_index],
 		       thr::make_zip_iterator(thr::make_tuple(edge_iter,
@@ -285,9 +296,7 @@ int main(int argc, char* argv[]){
 
 #ifdef DEBUG_EDGES
   for (Index i=0; i<mesh.nface();i++){
-  // for (Index i=0; i<12;i++){
     print_edges_host(i,edge[i]);
-    // printf("[%d] pi = %d pj = %d\n",i,get_x(thr::get<2>(Edge(edge[i]))),get_y(thr::get<2>(Edge(edge[i]))));
   }
 #endif
 
@@ -440,19 +449,39 @@ int main(int argc, char* argv[]){
 #endif
   }
 
-  else if (prob.compare("orzag_tang") == Index(0)){
+  else if (prob.compare("orszag_tang") == Index(0)){
     gamma = Real(5.0)/Real(3.0);
     nsteps_out = 100;
-    sprintf(base_name,"bin/orzag_tang");
+    sprintf(base_name,"bin/orszag_tang");
     mesh.btype_x = Index(1);
     mesh.btype_y = Index(1);
     thr::transform_n(make_device_counting_iterator(),
 		     state.size(),
 		     state.begin(),
-		     orszag_tang_init(mesh.ncell_x,
+		     orszag_tang_init(mesh.nx,
 				      mesh.dx,
 				      mesh.dy));
-    thr::transform_n(state.begin(),state.size(),state.begin(),prim2cons(gamma));
+
+#ifdef MHD
+    for(Index i=0; i < offset.ncolors; i++){
+      thr::transform_n(edge_iter,
+		       offset.faces_per_color[i],	    
+		       bn_edge_iter,
+		       orszag_tang_init_interface(mesh.nx,
+						  mesh.dx,
+						  mesh.dy,
+						  mesh.Lx,
+						  mesh.Ly,
+						  gamma));
+
+      edge_iter += offset.faces_per_color[i];
+      bn_edge_iter += offset.faces_per_color[i];
+    }
+    // reset iterator
+    edge_iter = edge.begin();
+    bn_edge_iter = bn_edge.begin();
+#endif
+
   }
   else if (prob.compare("kh_instability") == Index(0)){
     gamma  = 1.4;
@@ -624,6 +653,10 @@ int main(int argc, char* argv[]){
     				      Index(1), //offset
     				      mesh.btype_y,
     				      state_iter));
+
+    if (prob.compare("orszag_tang") == Index(0)){    
+      thr::transform_n(state.begin(),state.size(),state.begin(),prim2cons(gamma));
+    }
   }
 
   /*-----------------------------------------------------------------*/
@@ -698,6 +731,11 @@ int main(int argc, char* argv[]){
       printf("[%d][%d] bn = %f\n",get_x(thr::get<2>(Edge(edge[i]))),
 	     get_y(thr::get<2>(Edge(edge[i]))),Real(bn_edge[i]));
     }
+
+#ifdef DEBUG_CURRENT
+    printf("\n");
+    current_density_calc(interior_ncolors, mesh, offset, edge, bn_edge,current);
+#endif
 #endif
   }
   /*-----------------------------------------------------------------*/
@@ -745,6 +783,8 @@ int main(int argc, char* argv[]){
 
 #ifdef MHD
       thr::fill_n(emf_z.begin(),emf_z.size(),Real(0.0));
+      thr::fill_n(cell_flow_direction.begin(),cell_flow_direction.size(),
+		  Vector4(Real(0.0),Real(0.0),Real(0.0),Real(0.0)));
 #endif      
 
       // set gradiants to zero
@@ -813,6 +853,7 @@ int main(int argc, char* argv[]){
 			 residual_ct<thr::tuple<Edge,Real> >(gamma,
 							     wave_speed_iter,
 							     emf_z_iter,
+							     cell_flow_direction_iter,
 							     residual_iter));
 	edge_iter += offset.faces_per_color[i];
 	interp_states_iter += offset.faces_per_color[i];
@@ -882,6 +923,7 @@ int main(int argc, char* argv[]){
 			 residual_ct<thr::tuple<Edge,Real> >(gamma,
 							     wave_speed_iter,
 							     emf_z_iter,
+							     cell_flow_direction_iter,
 							     residual_iter));
 	edge_iter += offset.faces_per_color[i];
 	interp_states_iter += offset.faces_per_color[i];
@@ -1001,6 +1043,7 @@ int main(int argc, char* argv[]){
 			 residual_ct<thr::tuple<Edge,Real> >(gamma,
 							     wave_speed_iter,
 							     emf_z_iter,
+							     cell_flow_direction_iter,
 							     residual_iter));
 	edge_iter += offset.faces_per_color[i];
 	interp_states_iter += offset.faces_per_color[i];
@@ -1296,161 +1339,6 @@ int main(int argc, char* argv[]){
       }
 #endif
 
-      /*-----------------------------------------------------------------*/
-      /* Fix residual at corners                                         */
-      /*-----------------------------------------------------------------*/
-      // Index index_i, index_j;
-      Real wsi, wsj;
-      State residual_i, residual_j;
-
-      // if (mesh.btype_x == Index(1)){
-
-      // 	index_i = Zero;
-      // 	index_j = mesh.nx - One;
-	
-      // 	wsi = wave_speed[index_i];
-      // 	wsj = wave_speed[index_j];
-      // 	residual_i = residual[index_i];
-      // 	residual_j = residual[index_j];
-
-      // 	// printf("[%d][%d]\n",index_i,index_j);
-      // 	periodic_corners(wsi, wsj,
-      // 			 residual_i,
-      // 			 residual_j);
-
-      // 	wave_speed[index_i] = wsi;
-      // 	wave_speed[index_j] = wsj;
-
-      // 	residual[index_i] = State(thr::get<0>(residual_i),
-      // 				  Vector(get_x(thr::get<1>(residual_i)),
-      // 					 get_y(thr::get<1>(residual_i)),
-      // 					 get_z(thr::get<1>(residual_i))),
-      // 				  thr::get<2>(residual_i),
-      // 				  Vector(get_x(thr::get<3>(residual_i)),
-      // 					 get_y(thr::get<3>(residual_i)),
-      // 					 get_z(thr::get<3>(residual_i))));
-
-      // 	residual[index_j] = State(thr::get<0>(residual_i),
-      // 				  Vector(get_x(thr::get<1>(residual_i)),
-      // 					 get_y(thr::get<1>(residual_i)),
-      // 					 get_z(thr::get<1>(residual_i))),
-      // 				  thr::get<2>(residual_i),
-      // 				  Vector(get_x(thr::get<3>(residual_i)),
-      // 					 get_y(thr::get<3>(residual_i)),
-      // 					 get_z(thr::get<3>(residual_i))));
-
-      // 	index_i = (mesh.ny - One)*mesh.nx;
-      // 	index_j = mesh.npoin() - One;
-
-	
-      // 	wsi = wave_speed[index_i];
-      // 	wsj = wave_speed[index_j];
-      // 	residual_i = residual[index_i];
-      // 	residual_j = residual[index_j];
-
-      // 	// printf("[%d][%d]\n",index_i,index_j);
-      // 	periodic_corners(wsi, wsj,
-      // 			 residual_i,
-      // 			 residual_j);
-
-      // 	wave_speed[index_i] = wsi;
-      // 	wave_speed[index_j] = wsj;
-
-      // 	residual[index_i] = State(thr::get<0>(residual_i),
-      // 				  Vector(get_x(thr::get<1>(residual_i)),
-      // 					 get_y(thr::get<1>(residual_i)),
-      // 					 get_z(thr::get<1>(residual_i))),
-      // 				  thr::get<2>(residual_i),
-      // 				  Vector(get_x(thr::get<3>(residual_i)),
-      // 					 get_y(thr::get<3>(residual_i)),
-      // 					 get_z(thr::get<3>(residual_i))));
-
-      // 	residual[index_j] = State(thr::get<0>(residual_i),
-      // 				  Vector(get_x(thr::get<1>(residual_i)),
-      // 					 get_y(thr::get<1>(residual_i)),
-      // 					 get_z(thr::get<1>(residual_i))),
-      // 				  thr::get<2>(residual_i),
-      // 				  Vector(get_x(thr::get<3>(residual_i)),
-      // 					 get_y(thr::get<3>(residual_i)),
-      // 					 get_z(thr::get<3>(residual_i))));
-	
-      // }
-
-      // // residual[index_i] = residual_i;
-      
-      // if (mesh.btype_y == Index(1)){
-
-      // 	index_i = Zero;
-      // 	index_j = (mesh.ny - One)*mesh.nx;
-	
-      // 	wsi = wave_speed[index_i];
-      // 	wsj = wave_speed[index_j];
-      // 	residual_i = residual[index_i];
-      // 	residual_j = residual[index_j];
-
-      // 	// printf("[%d][%d]\n",index_i,index_j);
-      // 	periodic_corners(wsi, wsj,
-      // 			 residual_i,
-      // 			 residual_j);
-
-
-      // 	wave_speed[index_i] = wsi;
-      // 	wave_speed[index_j] = wsj;
-
-      // 	residual[index_i] = State(thr::get<0>(residual_i),
-      // 				  Vector(get_x(thr::get<1>(residual_i)),
-      // 					 get_y(thr::get<1>(residual_i)),
-      // 					 get_z(thr::get<1>(residual_i))),
-      // 				  thr::get<2>(residual_i),
-      // 				  Vector(get_x(thr::get<3>(residual_i)),
-      // 					 get_y(thr::get<3>(residual_i)),
-      // 					 get_z(thr::get<3>(residual_i))));
-
-      // 	residual[index_j] = State(thr::get<0>(residual_i),
-      // 				  Vector(get_x(thr::get<1>(residual_i)),
-      // 					 get_y(thr::get<1>(residual_i)),
-      // 					 get_z(thr::get<1>(residual_i))),
-      // 				  thr::get<2>(residual_i),
-      // 				  Vector(get_x(thr::get<3>(residual_i)),
-      // 					 get_y(thr::get<3>(residual_i)),
-      // 					 get_z(thr::get<3>(residual_i))));
-
-      // 	index_i = mesh.nx - One;
-      // 	index_j = mesh.npoin() - One;
-	
-      // 	wsi = wave_speed[index_i];
-      // 	wsj = wave_speed[index_j];
-      // 	residual_i = residual[index_i];
-      // 	residual_j = residual[index_j];
-
-      // 	// printf("[%d][%d]\n",index_i,index_j);
-      // 	periodic_corners(wsi, wsj,
-      // 			 residual_i,
-      // 			 residual_j);
-
-      // 	wave_speed[index_i] = wsi;
-      // 	wave_speed[index_j] = wsj;
-
-      // 	residual[index_i] = State(thr::get<0>(residual_i),
-      // 				  Vector(get_x(thr::get<1>(residual_i)),
-      // 					 get_y(thr::get<1>(residual_i)),
-      // 					 get_z(thr::get<1>(residual_i))),
-      // 				  thr::get<2>(residual_i),
-      // 				  Vector(get_x(thr::get<3>(residual_i)),
-      // 					 get_y(thr::get<3>(residual_i)),
-      // 					 get_z(thr::get<3>(residual_i))));
-
-      // 	residual[index_j] = State(thr::get<0>(residual_i),
-      // 				  Vector(get_x(thr::get<1>(residual_i)),
-      // 					 get_y(thr::get<1>(residual_i)),
-      // 					 get_z(thr::get<1>(residual_i))),
-      // 				  thr::get<2>(residual_i),
-      // 				  Vector(get_x(thr::get<3>(residual_i)),
-      // 					 get_y(thr::get<3>(residual_i)),
-      // 					 get_z(thr::get<3>(residual_i))));
-
-      // }
-
       if (1 == 1){/////////////////////////////////////////////////////////////////////////
 
       /*-----------------------------------------------------------------*/
@@ -1578,6 +1466,7 @@ int main(int argc, char* argv[]){
       			emf_upwind_calc<thr::tuple<Edge,State> >(mesh.nx,
       								 mesh.ny,
       								 emf_z_iter,
+								 cell_flow_direction_iter,
       								 state_iter));
 	
       	edge_iter += offset.faces_per_color[i];
@@ -1755,13 +1644,18 @@ int main(int argc, char* argv[]){
     }
   }
 
-    if((ksteps-Index(1)) % nsteps_out == 0){
-
-      sprintf(file_name,"%s_%05d.vtk",base_name,output_count);
-      output.open(file_name);
-      output_vtk_legacy(output, mesh, gamma, state);
-      output_count += Index(1);
-    }
+  // write solution to file
+  if((ksteps-Index(1)) % nsteps_out == 0){
+    sprintf(file_name,"%s_%05d.vtk",base_name,output_count);
+    output.open(file_name);
+#ifdef MHD
+    current_density_calc(interior_ncolors, mesh, offset, edge, bn_edge,current);
+    output_vtk_legacy(output, mesh, gamma, state, current);
+#else
+    output_vtk_legacy(output, mesh, gamma, state);
+#endif  
+    output_count += Index(1);
+  }
     
   }  // end time integration
   
@@ -1772,8 +1666,6 @@ int main(int argc, char* argv[]){
 
   face_cycles_per_cpu_sec = Real(ksteps)*Real(mesh.nface())/program_timer.elapsed_cpu_time();
   face_cycles_per_wall_sec = Real(ksteps)*Real(mesh.nface())/program_timer.elapsed_wall_time();
-
-  // std::cout << mesh.dx << " , " << mesh.dy*mesh.dx << std::endl;
 
   // -----------------------------------------------------------------
   std::cout << " " << std::endl;
@@ -1787,16 +1679,8 @@ int main(int argc, char* argv[]){
       print_states_host(i,State(state_iter[i]));
     }
   }
-  // for(Index i = 0; i < mesh.nface(); i++){
-  //   printf("interface_bn[%d] = %f\n",i,Real(interface_bn[i]));
-  // }
-
 
   std::cout << "ksteps = " << ksteps << " , " << "time = " << time << " , "
-	    // << "max_wave_speed = " << field.max_wave_speed << " , " 
-	    // << "dt = " << dt << " , " 
-	    // << "cells_per_sec = " << cells_per_sec << " , " 
-	    // << "face_per_sec = " << faces_per_sec //<< " , " 
 	    << std::endl;
 
   std::cout << " " << std::endl;
@@ -1813,17 +1697,14 @@ int main(int argc, char* argv[]){
 	    << std::endl;
   std::cout << " " << std::endl;
 
-  // for(Index i = 0; i < mesh.npoin(); i++){
-  //   print_states_host(i,State(state_iter[i]));
-  //   // print_states_host(i,get_x(InterpState(interp_states_iter[i])));
-  // }
-
-  // output.open("bin/output.dat");
-  // output_states(output, mesh.ncell_x, mesh.ncell_y, state);
-
   // output.open("dat/kh_instability.vtk");
   sprintf(file_name,"%s_%05d.vtk",base_name,output_count);
   output.open(file_name);
-  output_vtk_legacy(output, mesh, gamma, state);
+#ifdef MHD
+    current_density_calc(interior_ncolors, mesh, offset, edge, bn_edge,current);
+    output_vtk_legacy(output, mesh, gamma, state, current);
+#else
+    output_vtk_legacy(output, mesh, gamma, state);
+#endif  
 
 }

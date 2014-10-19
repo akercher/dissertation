@@ -366,9 +366,25 @@ In Section~\ref{sec:shared_memory} performance enhancing techniques such as oper
 \figSpace
 \end{figure}
 
-The Kelvin-Helmholtz instability \citep{hydro_stability} considers a slip surface, i.e., a discontinuity between oppositely directed flows.  The version of the test considered here is identical to the version given by \citet{url:athena}.  The simulation is performed on a square domain, $[0,1] \times [0,1]$, with periodic boundaries everywhere.  The flow speed is $0.5$; it is in the $-x$ direction for $ y < 0.25$ and $y > 0.75$, where $\rho = 1$, and in the $x$ direction for $0.25 \le y \le 0.75$, where $\rho = 2$.  The gas pressure is initially $2.5$ everywhere and the ratio of specific heats is $\gamma = 1.4$.  The instability is produced by adding random perturbations with a peak amplitude of $0.01$ to both the $x$ and $y$ velocities. 
+The Kelvin-Helmholtz instability \citep{hydro_stability} considers a slip surface, i.e., a discontinuity between oppositely directed flows.  The version of the test considered here is identical to the version given by \citet{url:athena}.  The simulation is performed on a square domain, $[0,1] \times [0,1]$, with periodic boundaries everywhere.  The flow speed is $0.5$; it is in the $-x$ direction for $ y < 0.25$ and $y > 0.75$, where $\rho = 1$, and in the $x$ direction for $0.25 \le y \le 0.75$, where $\rho = 2$.  The gas pressure is initially $2.5$ everywhere and the ratio of specific heats is $\gamma = 1.4$.  The instability is produced by adding random perturbations with a peak amplitude of $0.01$ to both the $x$ and $y$ velocities.  In the case of ideal MHD, the initial magnetic field is $B_x/\sqrt{4\pi} = 0.5$.
 
 The density at times $t=1$ and $t=5$ is shown in the top and bottom panels of Figure~\ref{fig:kh_instability} respectively.  The initial conditions are shown in Figure~\ref{fig:kh_instability_ics} of Appendix~\ref{app:kh_instability_ics}.  The boundary between the two fluids is well resolved at later times.  This indicates numerical diffusion is not excessive.  If excessive numerical diffusion were present, the instability would be suppressed \citep{url:athena}. 
+
+%----------------------------------------------------------------
+% KH-instability MHD
+%-----------------------------------------------------------------
+\begin{figure}[htbp]\figSpace
+\begin{center} 
+\begin{tabular}{c}
+%% \includegraphics[width=0.25\textheight]{fig/kh0.jpg} \\ 
+\includegraphics[width=0.4\textheight]{fig/kh_mhd_d_3.jpg} \\ 
+\includegraphics[width=0.4\textheight]{fig/kh_mhd_bmag_3.jpg} 
+\end{tabular}
+\caption{The MHD Kelvin-Helmoltz instability, $\rho$ (top) and $|\mbf{B}|$ (bottom) at $t=3$.  Simulation performed on a $400 \times 400$ grid of quadrilateral elements with code written for this dissertation available at: \protect\gitrepo.}
+\end{center} 
+\label{fig:kh_instability_mhd}
+\figSpace
+\end{figure}
 
 %----------------------------------------------------------------
 % Spherical Blast waves

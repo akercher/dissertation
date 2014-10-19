@@ -4,7 +4,12 @@
 /* Output states                                     */
 /*---------------------------------------------------*/
 /*****************************************************/
+#ifdef MHD
+void output_vtk_legacy(std::ofstream& output, Mesh mesh, Real gamma, 
+		       StateArray state_array, RealArray current)
+#else
 void output_vtk_legacy(std::ofstream& output, Mesh mesh, Real gamma, StateArray state_array)
+#endif
 {
 
   Index i,j,k;
@@ -12,7 +17,11 @@ void output_vtk_legacy(std::ofstream& output, Mesh mesh, Real gamma, StateArray 
   State prim_state;
 
   output << "# vtk DataFile Version 4.2" <<"\n";
+#ifdef MHD
+  output << "Ideal MHD" <<"\n";
+#else
   output << "Compressible Euler" <<"\n";
+#endif
   output << "ASCII" <<"\n";
   output << " " <<"\n";
   output << "DATASET UNSTRUCTURED_GRID" <<"\n";
@@ -58,8 +67,19 @@ void output_vtk_legacy(std::ofstream& output, Mesh mesh, Real gamma, StateArray 
   	state = state_array[k];
   	output << density << "\n";
 
-	/* state = prim2cons_func(gamma,State(state_array[k])); */
-  	/* output << pressure << "\n"; */
+    }
+  }
+
+  output << "SCALARS pressure DOUBLE" <<"\n";
+  output << "LOOKUP_TABLE default" <<"\n";
+  for(j = 0; j < mesh.ny ; j++){
+    for(i = 0; i < mesh.nx; i++){
+
+  	k = mesh.nx*j + i;
+
+  	state = state_array[k];
+  	state = prim2cons_func(gamma,State(state_array[k]));
+  	output << pressure << "\n";
 
     }
   }
@@ -94,6 +114,18 @@ void output_vtk_legacy(std::ofstream& output, Mesh mesh, Real gamma, StateArray 
 
     }
   }
+
+  output << "SCALARS current DOUBLE" <<"\n";
+  output << "LOOKUP_TABLE default" <<"\n";
+  for(j = 0; j < mesh.ny ; j++){
+    for(i = 0; i < mesh.nx; i++){
+
+  	k = mesh.nx*j + i;
+  	output << current[k] << "\n";
+
+    }
+  }
+
 #endif
 
   output << " " <<"\n";

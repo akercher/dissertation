@@ -353,9 +353,6 @@ struct residual_op : public thr::binary_function<Edge,InterpState,State>
     state_i = prim2cons_func(this->_gamma,prim_state_i);
     state_j = prim2cons_func(this->_gamma,prim_state_j);
 
-    /* printf("[%d][%d] %f %f\n",point_i,point_j,get_x(thr::get<1>(State(prim_state_i))), */
-    /* 	   get_y(thr::get<1>(State(prim_state_j)))); */
-
     /*---------------------------------------------------*/
     /* Build Residual                                    */
     /*---------------------------------------------------*/
@@ -363,12 +360,6 @@ struct residual_op : public thr::binary_function<Edge,InterpState,State>
     /*---------------------------------------------------*/
 
     flux_hydro(this->_gamma,Real(0.0),area_vec,prim_state_i,prim_state_j,normal_wave_speed,flux);
-
-    /* printf(" area_vec_mag = %f\n",area_vec_mag); */
-    /* printf("[%d][%d] di = %f dj = %f pgi = %f pgj = %f F.d = %f F.en = %f\n",point_i,point_j, */
-    /* 	   density_i,density_j,pressure_i,pressure_j,flux_d,flux_en); */
-    /* printf("[%d][%d] vxi = %f vxj = %f vyi = %f vyj = %f F.mx = %f F.my = %f\n",point_i,point_j, */
-    /* 	   get_x(velocity_i),get_x(velocity_j),get_y(velocity_i),get_y(velocity_j),flux_mx,flux_my); */
 
     // update wave speeds
     Real wave_speed_i = Real(this->_wave_speed_iter[point_i]) + normal_wave_speed;
