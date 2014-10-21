@@ -1156,6 +1156,8 @@ struct cons2prim : public thr::unary_function<State,State>
     pg = thr::max(PRESSURE_MIN,
 		  ((this->_gamma - Real(1.0))*(en - d*ke - pb)));
 
+  if(pg == PRESSURE_MIN) printf("WARNING: MINIMUM PRESSURE in Unary: d = %f vx = %f vy = %f vz = %f en = %f bx = %f by = %f bz = %f\n",d,vx,vy,vz,en,bx,by,bz);
+
     wprim = State(d,
 		  Vector(vx, vy, vz),
 		  Real(pg),

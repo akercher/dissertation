@@ -94,14 +94,34 @@ struct residual_ct : public thr::binary_function<Tuple,InterpState,State>
     /*---------------------------------------------------*/
     /* Compute flux using HLLD approximations            */
     /*---------------------------------------------------*/
+    Index debug_par = Index(0);
 #ifdef DEBUG_FLUX
+    /* if(point_i == Index(1338)){ */
+    /*   debug_par = Index(1); */
+    /* }   if(point_i == Index(2820)){ */
+    /*   debug_par = Index(1); */
+    /* } */
+    /* if(point_j == Index(1338)){ */
+    /*   debug_par = Index(1); */
+    /* }   if(point_j == Index(2820)){ */
+    /*   debug_par = Index(1); */
+    /* } */
+
+    /* if (pressure_i > Real(2.0)){ */
+    /*   debug_par = Index(1); */
+    /* } */
+    /* if (pressure_j > Real(2.0)){ */
+      debug_par = Index(1);
+    /* } */
+    if(debug_par  > Index(0)){
     printf("\n");
     printf("[%d][%d] di = %f dj = %f vxi = %e vxj = %e\n",point_i,point_j,density_i,density_j,
 	   get_x(velocity_i),get_x(velocity_j));
+    }
 #endif
 
 #ifdef CT
-    flux_mhd(this->_gamma,Real(0.0),area_vec,state_i,state_j,bn,normal_wave_speed,flux);
+    flux_mhd(this->_gamma,Real(0.0),area_vec,state_i,state_j,bn,normal_wave_speed,flux,debug_par);
 #else
     hlld_n(this->_gamma,Real(0.0),area_vec,state_i,state_j,normal_wave_speed,flux);
 #endif
@@ -194,9 +214,9 @@ struct residual_ct : public thr::binary_function<Tuple,InterpState,State>
       Real yflow_i_dir = Real(thr::get<2>(Vector4(this->_cell_flow_direction_iter[Index(index_i)])));
       Real yflow_j_dir = Real(thr::get<3>(Vector4(this->_cell_flow_direction_iter[Index(index_i)])));
 
-      if (xflow_j_dir == Zero) xflow_j_dir += get_x(area_normal)*flux_d;
+      if (xflow_j_dir == Zero) xflow_j_dir += area_vec_mag_inv*fabs(get_x(area_normal))*flux_d;
       
-      if (yflow_j_dir == Zero) yflow_j_dir += get_y(area_normal)*flux_d;
+      if (yflow_j_dir == Zero) yflow_j_dir += area_vec_mag_inv*fabs(get_y(area_normal))*flux_d;
       
       this->_cell_flow_direction_iter[(Index(index_i))] = Vector4(xflow_i_dir, xflow_j_dir,
 								  yflow_i_dir, yflow_j_dir);
@@ -211,8 +231,8 @@ struct residual_ct : public thr::binary_function<Tuple,InterpState,State>
       Real yflow_i_dir = Real(thr::get<2>(Vector4(this->_cell_flow_direction_iter[Index(index_j)])));
       Real yflow_j_dir = Real(thr::get<3>(Vector4(this->_cell_flow_direction_iter[Index(index_j)])));
       
-      if (xflow_i_dir == Zero) xflow_i_dir += get_x(area_normal)*flux_d;
-      if (yflow_i_dir == Zero) yflow_i_dir += get_y(area_normal)*flux_d;
+      if (xflow_i_dir == Zero) xflow_i_dir += area_vec_mag_inv*fabs(get_x(area_normal))*flux_d;
+      if (yflow_i_dir == Zero) yflow_i_dir += area_vec_mag_inv*fabs(get_y(area_normal))*flux_d;
       
       this->_cell_flow_direction_iter[(Index(index_j))] = Vector4(xflow_i_dir, xflow_j_dir,
 								  yflow_i_dir, yflow_j_dir);
@@ -319,7 +339,7 @@ struct outflow_bcs_ct : public thr::unary_function<Tuple,void>
 
     // node i
 #ifdef CT
-    flux_mhd(this->_gamma,Real(0.0),area_vec,prim_state_i,prim_state_i,bn,normal_wave_speed,flux_i);
+    flux_mhd(this->_gamma,Real(0.0),area_vec,prim_state_i,prim_state_i,bn,normal_wave_speed,flux_i,Index(0));
 #else
     hlld_n(this->_gamma,Real(0.0),area_vec,prim_state_i,prim_state_i,normal_wave_speed,flux_i);
 #endif
@@ -330,7 +350,7 @@ struct outflow_bcs_ct : public thr::unary_function<Tuple,void>
 
     // node j
 #ifdef CT
-    flux_mhd(this->_gamma,Real(0.0),area_vec,prim_state_j,prim_state_j,bn,normal_wave_speed,flux_j);
+    flux_mhd(this->_gamma,Real(0.0),area_vec,prim_state_j,prim_state_j,bn,normal_wave_speed,flux_j,Index(0));
 #else
     hlld_n(this->_gamma,Real(0.0),area_vec,prim_state_i,prim_state_i,normal_wave_speed,flux_i);
 #endif
@@ -545,15 +565,26 @@ struct emf_upwind_calc : public thr::unary_function<Tuple,void>
 
     // x contributions
     if (x1_dir_i > Zero){
-      demf_i += Zero;
+      demf_i += etx*(edge_emf_contribution - emf_i);
     }
     else if (x1_dir_i < Zero){
-      demf_i += etx*(edge_emf_contribution - emf_i);
+      demf_i += Zero;
     }
     else {
       demf_i += etx*half*(edge_emf_contribution - emf_i);
     }
 
+    if (x2_dir_i > Zero){
+      demf_i += etx*(edge_emf_contribution - emf_j);
+    }
+    else if (x2_dir_i < Zero){
+      demf_i += Zero;
+    }
+    else {
+      demf_i += etx*half*(edge_emf_contribution - emf_j);
+    }
+
+    /* printf("[%d][%d] x1_dir_i = %f demf_j = %f\n",point_i,point_j,x1_dir_i,demf_i); */
     // y contributions
     if (y1_dir_i > Zero){
       demf_i += Zero;
@@ -564,6 +595,18 @@ struct emf_upwind_calc : public thr::unary_function<Tuple,void>
     else {
       demf_i += ety*half*(edge_emf_contribution - emf_j);
     }
+
+    if (y2_dir_i > Zero){
+      demf_i += Zero;
+    }
+    else if (y2_dir_i < Zero){
+      demf_i += ety*(edge_emf_contribution - emf_i);
+    }
+    else {
+      demf_i += ety*half*(edge_emf_contribution - emf_i);
+    }
+
+    /* printf("[%d][%d] y1_dir_i = %f demf_j = %f\n",point_i,point_j,y1_dir_i,demf_i); */
 
     // centroid j
     Real x1_dir_j = Real(thr::get<0>(Vector4(this->_cell_flow_dir_iter[Index(index_j)])));
@@ -579,15 +622,28 @@ struct emf_upwind_calc : public thr::unary_function<Tuple,void>
 
     // x contributions
     if (x1_dir_j > Zero){
-      demf_j += etx*(edge_emf_contribution - emf_j);
+      demf_j += Zero;
     }
     else if (x1_dir_j < Zero){
+      demf_j += etx*(edge_emf_contribution - emf_i);
+    }
+    else {
+      demf_j += etx*half*(edge_emf_contribution - emf_i);
+    }
+
+    printf("[%d][%d] x1_dir_j = %f demf_j = %f\n",point_i,point_j,x1_dir_j,demf_j);
+
+    if (x2_dir_j > Zero){
       demf_j += Zero;
+    }
+    else if (x2_dir_j < Zero){
+      demf_j += etx*(edge_emf_contribution - emf_j);
     }
     else {
       demf_j += etx*half*(edge_emf_contribution - emf_j);
     }
 
+    printf("[%d][%d] x2_dir_j = %f demf_j = %f\n",point_i,point_j,x2_dir_j,demf_j);
     // y contributions
     if (y1_dir_j > Zero){
       demf_j += ety*(edge_emf_contribution - emf_j);
@@ -599,6 +655,20 @@ struct emf_upwind_calc : public thr::unary_function<Tuple,void>
       demf_j += ety*half*(edge_emf_contribution - emf_j);
     }
 
+    printf("[%d][%d] y1_dir_j = %f demf_j = %f\n",point_i,point_j,y1_dir_j,demf_j);
+    if (y2_dir_j > Zero){
+      demf_j += ety*(edge_emf_contribution - emf_i);
+    }
+    else if (y2_dir_j < Zero){
+      demf_j += Zero;
+    }
+    else {
+      demf_j += ety*half*(edge_emf_contribution - emf_i);
+    }
+    printf("[%d][%d] y2_dir_j = %f demf_j = %f\n",point_i,point_j,y2_dir_j,demf_j);
+
+    /* demf_i = Zero; */
+    /* demf_j = Zero; */
     // cell centered emfs
     if (index_i > -Index(1)){
       Real emf_cc_i = Real(this->_emf_z_iter[Index(index_i)]);
@@ -618,7 +688,10 @@ struct emf_upwind_calc : public thr::unary_function<Tuple,void>
     printf("[%d][%d] %d %d f.d = %f f.bx = %f f.by = %f emf_i = %f emf_j = %f demf_i = %f demf_j = %f\n",
     	   point_i,point_j,index_i,index_j,
     	   flux_d,flux_bx,flux_by,
-    	   emf_i,emf_j,demf_i,demf_j);
+    /* 	   Real(this->_emf_z_iter[Index(index_i)]), */
+    /* 	   Real(this->_emf_z_iter[Index(index_j)]), */
+    	   emf_i,emf_j,
+	   demf_i,demf_j);
 #endif
   }
 };
@@ -732,15 +805,26 @@ struct emf_upwind_bcs : public thr::unary_function<Tuple,void>
 
     // x contributions
     if (x1_dir_i > Zero){
-      demf_i += Zero;
+      demf_i += etx*(edge_emf_contribution - emf_i);
     }
     else if (x1_dir_i < Zero){
-      demf_i += etx*(edge_emf_contribution - emf_i);
+      demf_i += Zero;
     }
     else {
       demf_i += etx*half*(edge_emf_contribution - emf_i);
     }
 
+    if (x2_dir_i > Zero){
+      demf_i += etx*(edge_emf_contribution - emf_j);
+    }
+    else if (x2_dir_i < Zero){
+      demf_i += Zero;
+    }
+    else {
+      demf_i += etx*half*(edge_emf_contribution - emf_j);
+    }
+
+    /* printf("[%d][%d] x1_dir_i = %f demf_j = %f\n",point_i,point_j,x1_dir_i,demf_i); */
     // y contributions
     if (y1_dir_i > Zero){
       demf_i += Zero;
@@ -752,6 +836,17 @@ struct emf_upwind_bcs : public thr::unary_function<Tuple,void>
       demf_i += ety*half*(edge_emf_contribution - emf_j);
     }
 
+    if (y2_dir_i > Zero){
+      demf_i += Zero;
+    }
+    else if (y2_dir_i < Zero){
+      demf_i += ety*(edge_emf_contribution - emf_i);
+    }
+    else {
+      demf_i += ety*half*(edge_emf_contribution - emf_i);
+    }
+
+    /* printf("[%d][%d] y1_dir_i = %f demf_j = %f\n",point_i,point_j,y1_dir_i,demf_i); */
     // centroid j
     Real x1_dir_j = Real(thr::get<0>(Vector4(this->_cell_flow_dir_iter[Index(index_j)])));
     Real x2_dir_j = Real(thr::get<1>(Vector4(this->_cell_flow_dir_iter[Index(index_j)])));
@@ -766,15 +861,26 @@ struct emf_upwind_bcs : public thr::unary_function<Tuple,void>
 
     // x contributions
     if (x1_dir_j > Zero){
-      demf_j += etx*(edge_emf_contribution - emf_j);
+      demf_j += Zero;
     }
     else if (x1_dir_j < Zero){
+      demf_j += etx*(edge_emf_contribution - emf_i);
+    }
+    else {
+      demf_j += etx*half*(edge_emf_contribution - emf_i);
+    }
+
+    if (x2_dir_j > Zero){
       demf_j += Zero;
+    }
+    else if (x2_dir_j < Zero){
+      demf_j += etx*(edge_emf_contribution - emf_j);
     }
     else {
       demf_j += etx*half*(edge_emf_contribution - emf_j);
     }
 
+    /* printf("[%d][%d] x1_dir_j = %f demf_j = %f\n",point_i,point_j,x1_dir_j,demf_j); */
     // y contributions
     if (y1_dir_j > Zero){
       demf_j += ety*(edge_emf_contribution - emf_j);
@@ -785,6 +891,21 @@ struct emf_upwind_bcs : public thr::unary_function<Tuple,void>
     else {
       demf_j += ety*half*(edge_emf_contribution - emf_j);
     }
+
+    if (y2_dir_j > Zero){
+      demf_j += ety*(edge_emf_contribution - emf_i);
+    }
+    else if (y2_dir_j < Zero){
+      demf_j += Zero;
+    }
+    else {
+      demf_j += ety*half*(edge_emf_contribution - emf_i);
+    }
+
+    /* printf("[%d][%d] y1_dir_j = %f demf_j = %f\n",point_i,point_j,y1_dir_j,demf_j); */
+
+    /* demf_i = Zero; */
+    /* demf_j = Zero; */
 
     // cell centered emfs
     if (index_i > -Index(1)){
@@ -805,9 +926,9 @@ struct emf_upwind_bcs : public thr::unary_function<Tuple,void>
     printf("[%d][%d] %d %d f.d = %f f.bx = %f f.by = %f emf_i = %f emf_j = %f demf_i = %f demf_j = %f\n",
     	   point_i,point_j,index_i,index_j,
     	   flux_d,flux_bx,flux_by,
-    	   Real(this->_emf_z_iter[Index(index_i)]),
-    	   Real(this->_emf_z_iter[Index(index_j)]),
-    	   /* emf_i,emf_j, */
+    	   /* Real(this->_emf_z_iter[Index(index_i)]), */
+    	   /* Real(this->_emf_z_iter[Index(index_j)]), */
+    	   emf_i,emf_j,
 	   demf_i,demf_j);
 #endif
     

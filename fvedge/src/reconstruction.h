@@ -63,11 +63,19 @@ struct gradiant_reconstruction : public thr::unary_function<Edge,InterpState>
     state_i = cons2prim_func(this->_gamma,cons_state_i);
     state_j = cons2prim_func(this->_gamma,cons_state_j);
 
+    
     // gradiants at state i
     grad_x = get_x(StateGradiant(this->_lsq_grad_iter[index_i]));
     grad_y = get_y(StateGradiant(this->_lsq_grad_iter[index_i]));
 
     /* printf("[%d][%d] %f %f\n",index_i,index_j,get_x(thr::get<1>(grad_x)),get_x(thr::get<1>(grad_y))); */
+
+    /* if (pressure_i == PRESSURE_MIN) printf("\n",index_i,index_j); */
+    /* if(density_i > Real(1.9)) printf("[%d][%d] d = %f vx = %f vy = %f vz = %f pg = %f bx = %f by = %f bz = %f\n" */
+    /* 				     ,index_i,index_j,density_i, */
+    /* 				     get_x(velocity_i),get_y(velocity_i),get_z(velocity_i), */
+    /* 				     pressure_i, */
+    /* 				     get_x(bfield_i),get_y(bfield_i),get_z(bfield_i)); */
 
 
     ddi = half*edge_vec_mag*(thr::get<0>(grad_x)*get_x(normal) + thr::get<0>(grad_y)*get_y(normal));
@@ -172,7 +180,7 @@ struct gradiant_reconstruction : public thr::unary_function<Edge,InterpState>
 
     // if negative pressure use constant interp.
 #ifdef LINEAR
-    if((pressure_i + da[4]) <= Real(0.0)){
+    if((pressure_i + da[4]) <= PRESSURE_MIN){
 #endif
       for(i=0;i<Index(8);i++){
 	da[i] = Real(0.0);
@@ -202,7 +210,7 @@ struct gradiant_reconstruction : public thr::unary_function<Edge,InterpState>
 
     // if negative pressure use constant interp.
 #ifdef LINEAR
-    if((pressure_j + da[4]) <= Real(0.0)){
+    if((pressure_j + da[4]) <= PRESSURE_MIN){
 #endif
       for(i=0;i<Index(8);i++){
 	da[i] = Real(0.0);
@@ -219,12 +227,7 @@ struct gradiant_reconstruction : public thr::unary_function<Edge,InterpState>
     get_x(thr::get<3>(interp_state_j)) = get_x(bfield_j) + da[5];
     get_y(thr::get<3>(interp_state_j)) = get_y(bfield_j) + da[6];
     get_z(thr::get<3>(interp_state_j)) = get_z(bfield_j) + da[7];
-
     
-
-    /* printf("[%d][%d] intp_di = %f intp_dj = %f\n",index_i,index_j, */
-    /* 	   thr::get<0>(interp_state_i),thr::get<0>(interp_state_j)); */
-
     return InterpState(State(interp_state_i),State(interp_state_j));
 
   }
@@ -668,336 +671,6 @@ struct state_differences : public thr::unary_function<Interface,void>
 };
 
 /*****************************************************/
-/* Piece-wise linear reconstruction for              */
-/*      structured grids.                            */
-/*                                                   */
-/*  References:                                      */
-/*    [1] J. Stone, T. Gardiner, P. Teuben,          */
-/*        J. Hawley, & J. Simon "Athena: A new code  */
-/*        for astrophysical MHD", ApJS, (2008).      */
-/*                                                   */  
-/*---------------------------------------------------*/
-/*  Input : left/right states                        */
-/*  Output : interpolated left/right states          */
-/*****************************************************/
-/* struct interp_plm : public thr::unary_function<Interface,void> */
-/* { */
-/*   Index _neigen; */
-/*   Real _gamma; */
-/*   StateIterator _state_iter; */
-/*   StateIterator _state_diff_iter; */
-/*   InterpStateIterator _interp_states_iter; */
-
-/*  interp_plm(Index neigen, */
-/* 	    Real gamma, */
-/* 	    StateIterator state_iter, */
-/* 	    StateIterator state_diff_iter, */
-/* 	    InterpStateIterator interp_states_iter) */
-
-/*    : _neigen(neigen)  */
-/*     ,_gamma(gamma) */
-/*     ,_state_iter(state_iter) */
-/*     ,_state_diff_iter(state_diff_iter) */
-/*     ,_interp_states_iter(interp_states_iter) {} */
-
-/*   __host__ __device__ */
-/*     void operator()(const Interface& interface) const */
-/*   { */
-
-/*     Index i,j; */
-/*     Real a, a_sq; */
-/*     Real ev[this->_neigen],rem[this->_neigen][this->_neigen],lem[this->_neigen][this->_neigen]; */
-/*     Real dwc[this->_neigen],dwl[this->_neigen]; */
-/*     Real dwr[this->_neigen],dwg[this->_neigen]; */
-/*     Real dac[this->_neigen],dal[this->_neigen];   */
-/*     Real dar[this->_neigen],dag[this->_neigen],da[this->_neigen]; */
-/*     Real wlv[this->_neigen],wrv[this->_neigen]; */
-/*     Real dw[this->_neigen],dwm[this->_neigen]; */
-
-/*     // calculate left, right, and center differences */
-/*     Index index_i = thr::get<0>(thr::get<0>(Interface(interface))); */
-/*     Index index_j = thr::get<1>(thr::get<0>(Interface(interface))); */
-
-/*     // modify for outflow conditions */
-/*     if (index_i < 0) index_i = index_j; */
-/*     if (index_j < 0) index_j = index_i;     */
-
-/*     State state_i = State(this->_state_diff_iter[index_i]); */
-/*     State state_j = State(this->_state_diff_iter[index_j]); */
-
-/*     // left difference for state_i is stored at index_i */
-/*     dwl[0] = density_i; */
-/*     dwl[1] = get_x(velocity_i); */
-/*     dwl[2] = get_y(velocity_i); */
-/*     dwl[3] = get_z(velocity_i); */
-/*     dwl[4] = pressure_i; */
-/*     /\* dwl[5] = get_x(bfield_i); *\/ */
-/*     /\* dwl[6] = get_y(bfield_i); *\/ */
-/*     /\* dwl[7] = get_z(bfield_i); *\/ */
-
-/*     // right difference for state_i is stored at index_j */
-/*     dwr[0] = density_j; */
-/*     dwr[1] = get_x(velocity_j); */
-/*     dwr[2] = get_y(velocity_j); */
-/*     dwr[3] = get_z(velocity_j); */
-/*     dwr[4] = pressure_j; */
-/*     /\* dwr[5] = get_x(bfield_j); *\/ */
-/*     /\* dwr[6] = get_y(bfield_j); *\/ */
-/*     /\* dwr[7] = get_z(bfield_j); *\/ */
-
-
-/*     state_i = State(this->_state_iter[index_i]); */
-/*     state_j = State(this->_state_iter[index_j]); */
-
-/*     Real di = density_i; */
-/*     Real vxi = get_x(velocity_i); */
-/*     Real vyi = get_y(velocity_i); */
-/*     Real vzi = get_z(velocity_i); */
-/*     Real pgi = pressure_i; */
-/*     Real bxi = get_x(bfield_i); */
-/*     Real byi = get_y(bfield_i); */
-/*     Real bzi = get_z(bfield_i); */
-
-/*     Real dj = density_j; */
-/*     Real vxj = get_x(velocity_j); */
-/*     Real vyj = get_y(velocity_j); */
-/*     Real vzj = get_z(velocity_j); */
-/*     Real pgj = pressure_j; */
-/*     Real bxj = get_x(bfield_j); */
-/*     Real byj = get_y(bfield_j); */
-/*     Real bzj = get_z(bfield_j); */
-
-/*     // center difference calculated from left and right differences */
-/*     dwc[0] = dwr[0] - dwl[0] + Real(2.0)*di; */
-/*     dwc[1] = dwr[1] - dwl[1] + Real(2.0)*vxi; */
-/*     dwc[2] = dwr[2] - dwl[2] + Real(2.0)*vyi; */
-/*     dwc[3] = dwr[3] - dwl[3] + Real(2.0)*vzi; */
-/*     dwc[4] = dwr[4] - dwl[4] + Real(2.0)*pgi; */
-/*     /\* dwc[5] = dwr[5] - dwl[5] + Real(2.0)*bxi; *\/ */
-/*     /\* dwc[6] = dwr[6] - dwl[6] + Real(2.0)*byi; *\/ */
-/*     /\* dwc[7] = dwr[7] - dwl[7] + Real(2.0)*bzi; *\/ */
-
-/*     for(i=0; i<this->_neigen; i++){ */
-/*       dwg[i] = 0.0; */
-/*       if (dwl[i]*dwr[i] > Real(0.0)) { */
-/*         dwg[i] = Real(2.0)*dwl[i]*dwr[i]/(dwl[i]+dwr[i]); */
-/*       }  */
-/*     } */
-
-/*     // set left and right eigenmatrix to zero. */
-/*     for (i=0; i<this->_neigen; i++) { */
-/*       for (j=0; j<this->_neigen; j++) { */
-/* 	rem[i][j] = Real(0.0); */
-/* 	lem[i][j] = Real(0.0); */
-/*       } */
-/*     } */
-
-/*     a_sq = this->_gamma*pgi/di; */
-/*     a = std::sqrt(a); */
-
-/*     /\* Compute eigenvalues (eq. A2) *\/ */
-/*     ev[0] = vxi - a; */
-/*     ev[1] = vxi; */
-/*     ev[2] = vxi; */
-/*     ev[3] = vxi; */
-/*     ev[4] = vxi + a; */
-    
-/*     /\* Right-eigenvectors, stored as COLUMNS (eq. A3) *\/     */
-/*     rem[0][0] = Real(1.0); */
-/*     rem[1][0] = -a/di; */
-/*     /\*rem[2][0] = 0.0; *\/ */
-/*     /\*rem[3][0] = 0.0; *\/ */
-/*     rem[4][0] = a_sq; */
-    
-/*     rem[0][1] = Real(1.0); */
-/*     /\*rem[1][1] = 0.0; *\/ */
-/*     /\*rem[2][1] = 0.0; *\/ */
-/*     /\*rem[3][1] = 0.0; *\/ */
-/*     /\*rem[4][1] = 0.0; *\/ */
-    
-/*     /\*rem[0][2] = 0.0; *\/ */
-/*     /\*rem[1][2] = 0.0; *\/ */
-/*     rem[2][2] = Real(1.0); */
-/*     /\*rem[3][2] = 0.0; *\/ */
-/*     /\*rem[4][2] = 0.0; *\/ */
-    
-/*     /\*rem[0][3] = 0.0; *\/ */
-/*     /\*rem[1][3] = 0.0; *\/ */
-/*     /\*rem[2][3] = 0.0; *\/ */
-/*     rem[3][3] = Real(1.0); */
-/*     /\*rem[4][3] = 0.0; *\/ */
-    
-/*     rem[0][4] = Real(1.0); */
-/*     rem[1][4] = -rem[1][0]; */
-/*     /\*rem[2][4] = 0.0; *\/ */
-/*     /\*rem[3][4] = 0.0; *\/ */
-/*     rem[4][4] = a_sq; */
-    
-/*     /\* Left-eigenvectors, stored as ROWS (eq. A4) *\/     */
-/*     /\*lem[0][0] = 0.0; *\/ */
-/*     lem[0][1] = -half*di/a; */
-/*     /\*lem[0][2] = 0.0; *\/ */
-/*     /\*lem[0][3] = 0.0; *\/ */
-/*     lem[0][4] = half/a_sq; */
-    
-/*     lem[1][0] = Real(1.0); */
-/*     /\*lem[1][1] = 0.0; *\/ */
-/*     /\*lem[1][2] = 0.0; *\/ */
-/*     /\*lem[1][3] = 0.0; *\/ */
-/*     lem[1][4] = -Real(1.0)/a_sq; */
-    
-/*     /\*lem[2][0] = 0.0; *\/ */
-/*     /\*lem[2][1] = 0.0; *\/ */
-/*     lem[2][2] = Real(1.0); */
-/*     /\*lem[2][3] = 0.0; *\/ */
-/*     /\*lem[2][4] = 0.0; *\/ */
-    
-/*     /\*lem[3][0] = 0.0; *\/ */
-/*     /\*lem[3][1] = 0.0; *\/ */
-/*     /\*lem[3][2] = 0.0; *\/ */
-/*     lem[3][3] = Real(1.0); */
-/*     /\*lem[3][4] = 0.0; *\/ */
-    
-/*     /\*lem[4][0] = 0.0; *\/ */
-/*     lem[4][1] = -lem[0][1]; */
-/*     /\*lem[4][2] = 0.0; *\/ */
-/*     /\*lem[4][3] = 0.0; *\/ */
-/*     lem[4][4] = lem[0][4]; */
-    
-/*     // differences in terms of characteristic variables */
-/*     for (i=0; i<this->_neigen; i++) { */
-/*       dac[i] = lem[i][0]*dwc[0]; */
-/*       dal[i] = lem[i][0]*dwl[0]; */
-/*       dar[i] = lem[i][0]*dwr[0]; */
-/*       dag[i] = lem[i][0]*dwg[0]; */
-/*       for (j=1; j<this->_neigen; j++) { */
-/* 	dac[i] += lem[i][j]*dwc[j]; */
-/* 	dal[i] += lem[i][j]*dwl[j]; */
-/* 	dar[i] += lem[i][j]*dwr[j]; */
-/* 	dag[i] += lem[i][j]*dwg[j]; */
-/*       } */
-/*     } */
-    
-/*     /\* Apply monotonicity constraints to characteristic differences *\/ */
-/*     Real lim_slope1, lim_slope2, sgn_dac; */
-/*     for (i=0; i<this->_neigen; i++) { */
-/*       da[i] = Real(0.0); */
-/*       if (dal[i]*dar[i] > Real(0.0)){ */
-/* 	sgn_dac = dac[i]/std::abs(dac[i]); */
-/*         lim_slope1 = fmin(    std::fabs(dal[i]),std::fabs(dar[i])); */
-/*         lim_slope2 = fmin(half*std::fabs(dac[i]),std::fabs(dag[i])); */
-/*         da[i] = sgn_dac*fmin(Real(2.0)*lim_slope1,lim_slope2); */
-/*       } */
-/*     } */
-
-/*     // Project monotonic slopes in characteristic back to primitive variables  */
-/*     for (i=0; i<this->_neigen; i++){ */
-/*       dwm[i] = da[0]*rem[i][0]; */
-/*       for (j=1; j<this->_neigen; j++){ */
-/*         dwm[i] += da[j]*rem[i][j]; */
-/*       } */
-/*     } */
-
-/*     // ensure interpolated values are bounded by neighboring cells */
-/*     wlv[0] = di - half*dwm[0]; */
-/*     wlv[1] = vxi - half*dwm[1]; */
-/*     wlv[2] = vyi - half*dwm[2]; */
-/*     wlv[3] = vzi - half*dwm[3]; */
-/*     wlv[4] = pgi - half*dwm[4]; */
-/*     /\* wlv[5] = bxi - half*dwm[5]; *\/ */
-/*     /\* wlv[6] = byi - half*dwm[6]; *\/ */
-/*     /\* wlv[7] = bzi - half*dwm[7]; *\/ */
-
-/*     wrv[0] = di + half*dwm[0]; */
-/*     wrv[1] = vxi + half*dwm[1]; */
-/*     wrv[2] = vyi + half*dwm[2]; */
-/*     wrv[3] = vzi + half*dwm[3]; */
-/*     wrv[4] = pgi + half*dwm[4]; */
-/*     /\* wrv[5] = bxi + half*dwm[5]; *\/ */
-/*     /\* wrv[6] = byi + half*dwm[6]; *\/ */
-/*     /\* wrv[7] = bzi + half*dwm[7]; *\/ */
-
-/*     Real C; */
-
-/*     C = wrv[0] + wlv[0]; */
-/*     wrv[0] = fmax(fmin(di,dj),wrv[0]); */
-/*     wrv[0] = fmin(fmax(di,dj),wrv[0]); */
-/*     wlv[0] = C - wrv[0]; */
-
-/*     C = wrv[1] + wlv[1]; */
-/*     wrv[1] = fmax(fmin(vxi,vxj),wrv[1]); */
-/*     wrv[1] = fmin(fmax(vxi,vxj),wrv[1]); */
-/*     wlv[1] = C - wrv[1]; */
-
-/*     C = wrv[2] + wlv[2]; */
-/*     wrv[2] = fmax(fmin(vyi,vyj),wrv[2]); */
-/*     wrv[2] = fmin(fmax(vyi,vyj),wrv[2]); */
-/*     wlv[2] = C - wrv[2]; */
-
-/*     C = wrv[3] + wlv[3]; */
-/*     wrv[3] = fmax(fmin(vzi,vzj),wrv[3]); */
-/*     wrv[3] = fmin(fmax(vzi,vzj),wrv[3]); */
-/*     wlv[3] = C - wrv[3]; */
-
-/*     C = wrv[4] + wlv[4]; */
-/*     wrv[4] = fmax(fmin(pgi,pgj),wrv[4]); */
-/*     wrv[4] = fmin(fmax(pgi,pgj),wrv[4]); */
-/*     wlv[4] = C - wrv[4]; */
-
-/*     C = wrv[5] + wlv[5]; */
-/*     wrv[5] = fmax(fmin(bxi,bxj),wrv[5]); */
-/*     wrv[5] = fmin(fmax(bxi,bxj),wrv[5]); */
-/*     wlv[5] = C - wrv[5]; */
-
-/*     C = wrv[6] + wlv[6]; */
-/*     wrv[6] = fmax(fmin(byi,byj),wrv[6]); */
-/*     wrv[6] = fmin(fmax(byi,byj),wrv[6]); */
-/*     wlv[6] = C - wrv[6]; */
-
-/*     C = wrv[7] + wlv[7]; */
-/*     wrv[7] = fmax(fmin(bzi,bzj),wrv[7]); */
-/*     wrv[7] = fmin(fmax(bzi,bzj),wrv[7]); */
-/*     wlv[7] = C - wrv[7]; */
-
-
-
-/*     wlv[0] = fmax(fmin(di,di),wlv[0]); */
-
-/*     /\* for (i=0; i<this->_neigen; i++){ *\/ */
-/*     /\*   C = wrv[n] + wlv[n]; *\/ */
-/*     /\*   wlv[n] = fmax(fmin(pW[i][n],pW[i-1][n]),wlv[i]); *\/ */
-/*     /\*   wlv[n] = fmin(fmax(pW[i][n],pW[i-1][n]),wlv[i]); *\/ */
-/*     /\*   wrv[n] = C - wlv[n]; *\/ */
-
-/*     /\*   wrv[n] = fmax(fmin(pW[i][n],pW[i+1][n]),wrv[i]); *\/ */
-/*     /\*   wrv[n] = fmin(fmax(pW[i][n],pW[i+1][n]),wrv[i]); *\/ */
-/*     /\*   wlv[n] = C - wrv[i]; *\/ */
-/*     /\* } *\/ */
-
-/*     /\* for (i=0; i<this->_neigen; i++){ *\/ */
-/*     /\*   dw[i] = wrv[i] - wlv[i]; *\/ */
-/*     /\* }     *\/ */
-
-/*     printf("wlv[0] = %f wrv[0] = %f\n",wlv[0],wrv[0]); */
-
-/*     State interp_state_i = State(wlv[0], */
-/* 				 Vector(wlv[1],wlv[2],wlv[3]), */
-/* 				 wlv[4], */
-/* 				 Vector(Real(0.0),Real(0.0),Real(0.0))); */
-/* 				 /\* Vector(wlv[5],wlv[6],wlv[7])); *\/ */
-
-/*     State interp_state_j = State(wrv[0], */
-/* 				 Vector(wrv[1],wrv[2],wrv[3]), */
-/* 				 wrv[4], */
-/* 				 Vector(Real(0.0),Real(0.0),Real(0.0))); */
-/* 				 /\* Vector(wrv[5],wrv[6],wrv[7])); *\/ */
-
-/*     this->_interp_states_iter[index_i] = InterpState(State(interp_state_j),State(interp_state_i)); */
-    
-/*   } */
-/* }; */
-
-/*****************************************************/
 /* Convert to primitive variables                    */
 /*---------------------------------------------------*/
 /* Input : State ucons : tuple of cons. variables    */
@@ -1023,7 +696,9 @@ State cons2prim_func (Real gamma, State state)
   
   pg = thr::max(PRESSURE_MIN,
 		((gamma - Real(1.0))*(en - d*ke - pb)));
-  
+
+  /* if(pg == PRESSURE_MIN) printf("WARNING: MINIMUM PRESSURE: d = %f vx = %f vy = %f vz = %f en = %f bx = %f by = %f bz = %f\n",d,vx,vy,vz,en,bx,by,bz); */
+
   return State(d,
 	       Vector(vx, vy, vz),
 	       Real(pg),

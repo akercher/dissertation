@@ -8,7 +8,7 @@
 __host__ __device__ void hlld_ct (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j,
 				  Real bn, Real& normal_wave_speed,State& flux);
 __host__ __device__ void hlld_ct_rotated (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j,
-					  Real bn, Real& normal_wave_speed,State& flux);
+					  Real bn, Real& normal_wave_speed,State& flux,Index debug_par);
 __host__ __device__ void hlld_n (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j,
 				 Real& normal_wave_speed,State& flux);
 __host__ __device__ void rhll (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j,
@@ -490,7 +490,7 @@ void hlld_ct (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j
 /*****************************************************/
 __host__ __device__
 void hlld_ct_rotated (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j,
-		      Real bn, Real& normal_wave_speed, State& flux)
+		      Real bn, Real& normal_wave_speed, State& flux, Index debug_par)
 	     
 {
     
@@ -879,6 +879,11 @@ void hlld_ct_rotated (Real gamma, Real Minf, Coordinate sn, State state_i, State
 			    (vnj*btj - vtj*bn - sfj*btj - tmp*btjs + saj*btjss), 
 			    vnj*bzj - vzj*bn - sfj*bzj - tmp*bzjs + saj*bzjss));
 
+	/* State(Zero, */
+	/*       Vector(Zero,Zero,Zero), */
+	/*       Zero, */
+	/*       Vector(Zero,Zero,Zero)); */
+
 	/* printf("djs =%f vyjs = %f byis = %f byjs = %f\n",djs, vyjs, byi, byjs); */
     }
     else{ 
@@ -894,6 +899,7 @@ void hlld_ct_rotated (Real gamma, Real Minf, Coordinate sn, State state_i, State
 		     Vector(Zero,//(vnj*bn - vnj*bn + sfj*(bn - bn)), 
 			    (vnj*btj - vtj*bn + sfj*(btjs - btj)), 
 			    vnj*bzj - vzj*bn + sfj*(bzjs - bzj)));
+
       }
 
 	/* printf("di =%f vni = %f vxi = %f pti =%f bxi = %f bn = %f\n",di,vni,vxi,pti,bxi,bn); */
@@ -905,7 +911,7 @@ void hlld_ct_rotated (Real gamma, Real Minf, Coordinate sn, State state_i, State
     normal_wave_speed = sn_mag*half*(fabs(vnroe) + fabs(vtroe) + cfroe);
 
 #ifdef DEBUG_FLUX
-
+    if (debug_par > Index(0)){
     printf("sfi =%f sai = %f sm = %f saj = %f sfj = %f\n",sfi,sai,sm,saj,sfj);
     /* printf("vxis =%f vxjs = %f bxis =%f bxjs = %f\n",vxis,vxjs,bxis,bxjs); */
     if (sm >= Real(0.0))
@@ -930,6 +936,7 @@ void hlld_ct_rotated (Real gamma, Real Minf, Coordinate sn, State state_i, State
     	printf("byj = %f byjs = %f byjss = %f  f.by = %f\n",btj,btjs,btjss,get_y(thr::get<3>(flux)));
     	printf("bzj = %f bzjs = %f bzjss = %f  f.bz = %f\n",bzj,bzjs,bzjss,get_z(thr::get<3>(flux)));
       }
+    }
 #endif
 
     // rotate magnetic and velocity fields back to original coordinate system
@@ -951,10 +958,12 @@ void hlld_ct_rotated (Real gamma, Real Minf, Coordinate sn, State state_i, State
     get_y(thr::get<3>(flux)) = -f_bn*tx + f_bt*ty;
 
 #ifdef DEBUG_FLUX
+    if (debug_par > Index(0)){
     printf("f.mx = %f f.my = %f f.mz = %f\n",get_x(thr::get<1>(flux)),
     	   get_y(thr::get<1>(flux)),get_z(thr::get<1>(flux)));
     printf("f.bx = %f f.by = %f f.bz = %f\n",get_x(thr::get<3>(flux)),
     	   get_y(thr::get<3>(flux)),get_z(thr::get<3>(flux)));
+    }
 #endif
 
     /* scale flux by magnitude of face normal */

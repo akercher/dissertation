@@ -52,7 +52,7 @@ struct connectivity : public thr::unary_function<Index,Quad>
 };
 
 /*******************************************************************/
-/* Residual and antidiffusive flux calculation                     */
+/* Dual volume calculation                                         */
 /*-----------------------------------------------------------------*/
 /*******************************************************************/
 /* template<typename Tuple> */
@@ -129,6 +129,45 @@ struct calc_dual_vol : public thr::unary_function<Index,Real>
 
     return vol;
 
+    
+  }
+};
+
+/*******************************************************************/
+/* Directed area sum                                               */
+/*-----------------------------------------------------------------*/
+/*******************************************************************/
+/* template<typename Tuple> */
+struct directed_area_sum : public thr::unary_function<Edge,void>
+{
+
+  RealIterator _sum_iter;
+
+ directed_area_sum(RealIterator sum_iter)
+   
+   : _sum_iter(sum_iter) {}
+  
+  __host__ __device__
+    void operator()(const Edge& edge) const
+  {
+   
+    Index point_i = thr::get<0>(thr::get<2>(Edge(edge)));
+    Index point_j = thr::get<1>(thr::get<2>(Edge(edge)));
+    
+    // directed area vector
+    Coordinate area_vec = thr::get<0>(Edge(edge));
+    Real area_vec_mag = std::sqrt(get_x(area_vec)*get_x(area_vec)
+				  + get_y(area_vec)*get_y(area_vec));
+    Real area_vec_mag_inv = Real(1.0)/area_vec_mag;
+
+    Real area_sum_i = this->_sum_iter[point_i];
+    Real area_sum_j = this->_sum_iter[point_j];
+
+    area_sum_i += area_vec_mag;
+    area_sum_j -= area_vec_mag;
+
+    this->_sum_iter[point_i] = area_sum_i;
+    this->_sum_iter[point_j] = area_sum_j;
     
   }
 };

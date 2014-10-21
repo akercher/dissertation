@@ -33,14 +33,14 @@
 #define flux_mhd hlld_ct_rotated
 // #define DEBUG_CURRENT
 // #define DEBUG_BN
-// #define DEBUG_EMF
+#define DEBUG_EMF
 // #define DEBUG_DIV
 #endif
 
 // #define DEBUG_EDGES
 // #define DEBUG_RESIDUAL
-// #define DEBUG_FLUX
-#define LINEAR
+#define DEBUG_FLUX
+// #define LINEAR
 
 #define flux_hydro rhll
 
@@ -300,6 +300,32 @@ int main(int argc, char* argv[]){
   }
 #endif
 
+  // check mesh
+  RealArray area_sum;
+
+  area_sum.resize(mesh.npoin());
+  thr::fill_n(area_sum.begin(),area_sum.size(),Zero);
+
+  RealIterator area_sum_iter(area_sum.begin());
+
+  for(Index color_index = 0; color_index < interior_ncolors; color_index++)
+    {
+      thr::for_each_n(edge_iter,
+  		       offset.faces_per_color[color_index],
+  		       directed_area_sum(area_sum_iter));
+      
+      edge_iter += offset.faces_per_color[color_index];
+    }
+  // reset iterator
+  edge_iter = edge.begin();
+  
+  // for (Index i=0;i<mesh.npoin();i++){
+  //   if (Real(area_sum[i]) > Zero){
+  //     printf("[%d] %f\n",i,Real(area_sum[i]));
+  //   }
+  // }
+
+  
   /*-----------------------------------------------------------------*/
   /* Initialize node centered consevative state variables            */
   /*-----------------------------------------------------------------*/  
@@ -845,16 +871,9 @@ int main(int argc, char* argv[]){
       edge_iter = edge.begin();
       interp_states_iter = interp_states.begin();
 
-      //  for(Index i = 0; i < mesh.nface(); i++){
-      // 	 printf("[%d][%d] %f %f\n",get_x(thr::get<2>(Edge(edge[i]))),get_y(thr::get<2>(Edge(edge[i]))),
-      // 		get_x(thr::get<1>(get_x(InterpState(interp_states_iter[i])))),
-      // 	 	get_y(thr::get<1>(get_y(InterpState(interp_states_iter[i])))));
-      // }
-
       /*-----------------------------------------------------------------*/
       /* Build Residual                                                  */
       /*-----------------------------------------------------------------*/
-      // for(Index i=0; i < offset.ncolors; i++){
       for(Index i=0; i < interior_ncolors; i++){
 #ifdef MHD
 	thr::transform_n(thr::make_zip_iterator(thr::make_tuple(edge_iter,
