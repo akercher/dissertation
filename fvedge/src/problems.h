@@ -472,12 +472,12 @@ struct orszag_tang_init_interface : public thr::unary_function<Edge,Real>
 
     Az1 = b0*cosf(Real(4.0)*PI*x1)/(Real(4.0)*PI) + b0*cosf(Real(2.0)*PI*y1)/(Real(2.0)*PI);
     Az2 = b0*cosf(Real(4.0)*PI*x2)/(Real(4.0)*PI) + b0*cosf(Real(2.0)*PI*y2)/(Real(2.0)*PI);
-    /* printf("[%d][%d] %f %f %f %f %f %f %f %f\n",point_i,point_j,x2,y2,x,y,bperp,bpar,kpar,Az2); */
+    /* printf("[%d][%d] x1 = %f y1 = %f x2 = %f y2 = %f Az1 = %f Az2 = %f\n",point_i,point_j,x1,y1,x2,y2,Az1,Az2); */
 
     Real bx = Real(0.0);
     Real by = Real(0.0);
 
-    if(fabs(x2 - x1) > Real(0.0)) by = -(Az2 - Az1)/(x2 - x1);
+    if(fabs(x2 - x1) > Real(0.0)) by = (Az2 - Az1)/(x2 - x1);
 
     if(fabs(y2 - y1) > Real(0.0)) bx = (Az2 - Az1)/(y2 - y1);
     
@@ -634,6 +634,7 @@ struct linear_wave_init : public thr::unary_function<Index,State>
     Real y = (Real(j))*this->_dy;// + half*this->_dy;
 
     Real angle      = Real(atan2(this->_Lx,this->_Ly));
+    /* angle = Zero; */
     Real cosa       = Real(cos(angle));
     Real sina       = Real(sin(angle));
     Real wavelength = this->_Lx*cosa;//fmin(this->_Lx*cosa,this->_Ly*sina);
@@ -850,7 +851,8 @@ struct linear_wave_init_interface : public thr::unary_function<Edge,Real>
     /* printf("[%d][%d] %f %f %f %f %f %f\n",point_i,point_j,nx,ny,x1,y1,x2,y2); */
     
     Real angle = Real(atan2(this->_Lx,this->_Ly));
-    
+    /* angle = Zero; */
+
     Real cosa = Real(cos(angle));
     Real sina = Real(sin(angle));
     Real wavelength = this->_Lx*cosa;//fmin(this->_Lx*cosa,this->_Ly*sina);

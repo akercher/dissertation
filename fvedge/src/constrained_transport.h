@@ -194,9 +194,9 @@ struct residual_ct : public thr::binary_function<Tuple,InterpState,State>
       Real yflow_i_dir = Real(thr::get<2>(Vector4(this->_cell_flow_direction_iter[Index(index_i)])));
       Real yflow_j_dir = Real(thr::get<3>(Vector4(this->_cell_flow_direction_iter[Index(index_i)])));
 
-      if (xflow_j_dir == Zero) xflow_j_dir += abs(get_x(area_normal))*flux_d;
+      if (xflow_j_dir == Zero) xflow_j_dir += get_x(area_normal)*flux_d;
       
-      if (yflow_j_dir == Zero) yflow_j_dir += abs(get_y(area_normal))*flux_d;
+      if (yflow_j_dir == Zero) yflow_j_dir += get_y(area_normal)*flux_d;
       
       this->_cell_flow_direction_iter[(Index(index_i))] = Vector4(xflow_i_dir, xflow_j_dir,
 								  yflow_i_dir, yflow_j_dir);
@@ -211,8 +211,8 @@ struct residual_ct : public thr::binary_function<Tuple,InterpState,State>
       Real yflow_i_dir = Real(thr::get<2>(Vector4(this->_cell_flow_direction_iter[Index(index_j)])));
       Real yflow_j_dir = Real(thr::get<3>(Vector4(this->_cell_flow_direction_iter[Index(index_j)])));
       
-      if (xflow_i_dir == Zero) xflow_i_dir += abs(get_x(area_normal))*flux_d;
-      if (yflow_i_dir == Zero) yflow_i_dir += abs(get_y(area_normal))*flux_d;
+      if (xflow_i_dir == Zero) xflow_i_dir += get_x(area_normal)*flux_d;
+      if (yflow_i_dir == Zero) yflow_i_dir += get_y(area_normal)*flux_d;
       
       this->_cell_flow_direction_iter[(Index(index_j))] = Vector4(xflow_i_dir, xflow_j_dir,
 								  yflow_i_dir, yflow_j_dir);
@@ -511,111 +511,114 @@ struct emf_upwind_calc : public thr::unary_function<Tuple,void>
     Real nx = get_x(area_vec)*area_vec_mag_inv;
     Real ny = get_y(area_vec)*area_vec_mag_inv;
 
-    /* Real edge_emf_contribution = Real(0.25)*(flux_by*get_x(area_vec)*area_vec_mag_inv */
-    /* 					     + flux_bx*get_y(area_vec)*area_vec_mag_inv); */
-    Real edge_emf_contribution = Real(0.25)*(flux_bx + flux_by);
-
-
-    // edge normal
+    // directed edge vector
     Coordinate edge_vec = thr::get<1>(Edge(edge));
     Real edge_vec_mag = std::sqrt(get_x(edge_vec)*get_x(edge_vec)
-    				     + get_y(area_vec)*get_y(edge_vec));
+    				     + get_y(edge_vec)*get_y(edge_vec));
     Real edge_vec_mag_inv = Real(1.0)/edge_vec_mag;
+    Real enx = get_x(edge_vec)*edge_vec_mag_inv;
+    Real eny = get_y(edge_vec)*edge_vec_mag_inv;
+
+    Real etx = -eny;
+    Real ety = enx;
+
+    /* Real edge_emf_contribution = Real(0.25)*(flux_by*get_x(area_vec)*area_vec_mag_inv */
+    /* 					     + flux_bx*get_y(area_vec)*area_vec_mag_inv); */
+    Real edge_emf_contribution = (flux_bx + flux_by);
 
     // centroid i
-    Real xflow_i_dir = Real(thr::get<0>(Vector4(this->_cell_flow_dir_iter[Index(index_i)])));
-    Real xflow_j_dir = Real(thr::get<1>(Vector4(this->_cell_flow_dir_iter[Index(index_i)])));
-    Real yflow_i_dir = Real(thr::get<2>(Vector4(this->_cell_flow_dir_iter[Index(index_i)])));
-    Real yflow_j_dir = Real(thr::get<3>(Vector4(this->_cell_flow_dir_iter[Index(index_i)])));
+    Real x1_dir_i = Real(thr::get<0>(Vector4(this->_cell_flow_dir_iter[Index(index_i)])));
+    Real x2_dir_i = Real(thr::get<1>(Vector4(this->_cell_flow_dir_iter[Index(index_i)])));
+    Real y1_dir_i = Real(thr::get<2>(Vector4(this->_cell_flow_dir_iter[Index(index_i)])));
+    Real y2_dir_i = Real(thr::get<3>(Vector4(this->_cell_flow_dir_iter[Index(index_i)])));
 
-    Real emf_xi,emf_xj,emf_yi,emf_yj;
+    Real emf_x1,emf_x2,emf_y1,emf_y2;
+
+    // direction of edge
+    /* x1_dir_i *= (enx + eny); */
+    /* x2_dir_i *= (enx + eny); */
+    /* y1_dir_i *= (enx + eny); */
+    /* y2_dir_i *= (enx + eny); */
+
+    Real demf_i = Zero;
+    Real demf_j = Zero;
 
     // x contributions
-    /* if (xflow_j_dir > Zero){ */
-    /*   emf_xj = Zero; */
-    /* } */
-    /* else if (xflow_j_dir < Zero){ */
-    /*   emf_xj = Real(0.25)*(edge_emf_contribution - emf_cc_i); */
-    /* } */
-    /* else { */
-    /*   emf_xj = half*Real(0.25)*(edge_emf_contribution - emf_cc_i); */
-    /* } */
+    if (x1_dir_i > Zero){
+      demf_i += Zero;
+    }
+    else if (x1_dir_i < Zero){
+      demf_i += etx*(edge_emf_contribution - emf_i);
+    }
+    else {
+      demf_i += etx*half*(edge_emf_contribution - emf_i);
+    }
 
-    /* if (xflow_i_dir > Zero){ */
-    /*   emf_xi = Zero; */
-    /* } */
-    /* else if (xflow_i_dir < Zero){ */
-    /*   emf_xi = Real(0.25)*(edge_emf_contribution - emf_cc_i); */
-    /* } */
-    /* else { */
-    /*   emf_xi = half*Real(0.25)*(edge_emf_contribution - emf_cc_i); */
-    /* } */
-
-    /* // y contributions */
-    /* if (yflow_j_dir > Zero){ */
-    /*   emf_yj = Zero; */
-    /* } */
-    /* else if (yflow_j_dir < Zero){ */
-    /*   emf_yj = Real(0.25)*(edge_emf_contribution - emf_cc_i); */
-    /* } */
-    /* else { */
-    /*   emf_yj = half*Real(0.25)*(edge_emf_contribution - emf_cc_i); */
-    /* } */
-
-    /* if (yflow_i_dir > Zero){ */
-    /*   emf_yi = Zero; */
-    /* } */
-    /* else if (yflow_i_dir < Zero){ */
-    /*   emf_yi = Real(0.25)*(edge_emf_contribution - emf_cc_i); */
-    /* } */
-    /* else { */
-    /*   emf_yi = half*Real(0.25)*(edge_emf_contribution - emf_cc_i); */
-    /* } */
-
+    // y contributions
+    if (y1_dir_i > Zero){
+      demf_i += Zero;
+    }
+    else if (y1_dir_i < Zero){
+      demf_i += ety*(edge_emf_contribution - emf_j);
+    }
+    else {
+      demf_i += ety*half*(edge_emf_contribution - emf_j);
+    }
 
     // centroid j
-    xflow_i_dir = Real(thr::get<0>(Vector4(this->_cell_flow_dir_iter[Index(index_j)])));
-    xflow_j_dir = Real(thr::get<1>(Vector4(this->_cell_flow_dir_iter[Index(index_j)])));
-    yflow_i_dir = Real(thr::get<2>(Vector4(this->_cell_flow_dir_iter[Index(index_j)])));
-    yflow_j_dir = Real(thr::get<3>(Vector4(this->_cell_flow_dir_iter[Index(index_j)])));
+    Real x1_dir_j = Real(thr::get<0>(Vector4(this->_cell_flow_dir_iter[Index(index_j)])));
+    Real x2_dir_j = Real(thr::get<1>(Vector4(this->_cell_flow_dir_iter[Index(index_j)])));
+    Real y1_dir_j = Real(thr::get<2>(Vector4(this->_cell_flow_dir_iter[Index(index_j)])));
+    Real y2_dir_j = Real(thr::get<3>(Vector4(this->_cell_flow_dir_iter[Index(index_j)])));
 
-    Real demf_i = Real(0.25)*(emf_i - edge_emf_contribution);
-    Real demf_j = Real(0.25)*(emf_j - edge_emf_contribution);
-    Real demf;
+    // direction of edge
+    /* x1_dir_j *= (enx + eny); */
+    /* x2_dir_j *= (enx + eny); */
+    /* y1_dir_j *= (enx + eny); */
+    /* y2_dir_j *= (enx + eny); */
 
-    if (flux_d > Zero){
-      demf = Real(0.25)*(emf_i - edge_emf_contribution);
+    // x contributions
+    if (x1_dir_j > Zero){
+      demf_j += etx*(edge_emf_contribution - emf_j);
     }
-    else if (flux_d < Zero){
-      demf = Real(0.25)*(emf_j - edge_emf_contribution);
+    else if (x1_dir_j < Zero){
+      demf_j += Zero;
     }
-    else{
-      demf = Real(0.25)*half*((emf_i - edge_emf_contribution) 
-			      + (emf_j - edge_emf_contribution));
+    else {
+      demf_j += etx*half*(edge_emf_contribution - emf_j);
     }
 
-    Index iout;
-
-    if (fabs(edge_emf_contribution) < 1.0e-6){
-      edge_emf_contribution = Real(0.0);
+    // y contributions
+    if (y1_dir_j > Zero){
+      demf_j += ety*(edge_emf_contribution - emf_j);
+    }
+    else if (y1_dir_j < Zero){
+      demf_j += Zero;
+    }
+    else {
+      demf_j += ety*half*(edge_emf_contribution - emf_j);
     }
 
     // cell centered emfs
     if (index_i > -Index(1)){
       Real emf_cc_i = Real(this->_emf_z_iter[Index(index_i)]);
-      this->_emf_z_iter[Index(index_i)] = emf_cc_i + edge_emf_contribution;// - demf;
+      this->_emf_z_iter[Index(index_i)] = emf_cc_i + Real(0.25)*(edge_emf_contribution - demf_i);
     }
 
     if (index_j > -Index(1)){
       Real emf_cc_j = Real(this->_emf_z_iter[Index(index_j)]);
-      this->_emf_z_iter[Index(index_j)] = emf_cc_j + edge_emf_contribution;// + demf;
+      this->_emf_z_iter[Index(index_j)] = emf_cc_j + Real(0.25)*(edge_emf_contribution - demf_j);
     }
 #ifdef DEBUG_EMF
-    printf("[%d][%d] %d %d emf_i = %f emf_j = %f emf_edge = %f demf = %f f.bx = %f f.by = %f\n",
-	   point_i,point_j,index_i,index_j,
-	   Real(this->_emf_z_iter[Index(index_i)]),
-	   Real(this->_emf_z_iter[Index(index_j)]),
-	   edge_emf_contribution,demf,flux_bx,flux_by);
+    /* printf("[%d][%d] %d %d emf_i = %f emf_j = %f emf_edge = %f demf_i = %f demf_j = %f f.bx = %f f.by = %f\n", */
+    /* 	   point_i,point_j,index_i,index_j, */
+    /* 	   Real(this->_emf_z_iter[Index(index_i)]), */
+    /* 	   Real(this->_emf_z_iter[Index(index_j)]), */
+    /* 	   edge_emf_contribution,demf_i,demf_j,flux_bx,flux_by); */
+    printf("[%d][%d] %d %d f.d = %f f.bx = %f f.by = %f emf_i = %f emf_j = %f demf_i = %f demf_j = %f\n",
+    	   point_i,point_j,index_i,index_j,
+    	   flux_d,flux_bx,flux_by,
+    	   emf_i,emf_j,demf_i,demf_j);
 #endif
   }
 };
@@ -630,16 +633,19 @@ struct emf_upwind_bcs : public thr::unary_function<Tuple,void>
   Index _nx;
   Index _ny;
   RealIterator _emf_z_iter;
+  Vector4Iterator _cell_flow_dir_iter;
   StateIterator _state_iter;
 
  emf_upwind_bcs(Index nx,
 		Index ny,
 		RealIterator emf_z_iter,
+		Vector4Iterator cell_flow_dir_iter,
 		StateIterator state_iter)
    
    : _nx(nx)
     ,_ny(ny)
     ,_emf_z_iter(emf_z_iter)
+    ,_cell_flow_dir_iter(cell_flow_dir_iter)
     ,_state_iter(state_iter) {}
   
   __host__ __device__
@@ -690,47 +696,119 @@ struct emf_upwind_bcs : public thr::unary_function<Tuple,void>
     Real nx = get_x(area_vec)*area_vec_mag_inv;
     Real ny = get_y(area_vec)*area_vec_mag_inv;
     
+    // directed edge vector
+    Coordinate edge_vec = thr::get<1>(Edge(edge));
+    Real edge_vec_mag = std::sqrt(get_x(edge_vec)*get_x(edge_vec)
+    				     + get_y(edge_vec)*get_y(edge_vec));
+    Real edge_vec_mag_inv = Real(1.0)/edge_vec_mag;
+    Real enx = get_x(edge_vec)*edge_vec_mag_inv;
+    Real eny = get_y(edge_vec)*edge_vec_mag_inv;
+
+    Real etx = -eny;
+    Real ety = enx;
 
     Real edge_emf_contribution = Real(0.0);
 
     /* edge_emf_contribution = Real(0.25)*(flux_bx*ny - flux_by*nx); */
-    edge_emf_contribution = Real(0.25)*(flux_bx + flux_by);
+    edge_emf_contribution = (flux_bx + flux_by);
 
-    /* } */
+    // centroid i
+    Real x1_dir_i = Real(thr::get<0>(Vector4(this->_cell_flow_dir_iter[Index(index_i)])));
+    Real x2_dir_i = Real(thr::get<1>(Vector4(this->_cell_flow_dir_iter[Index(index_i)])));
+    Real y1_dir_i = Real(thr::get<2>(Vector4(this->_cell_flow_dir_iter[Index(index_i)])));
+    Real y2_dir_i = Real(thr::get<3>(Vector4(this->_cell_flow_dir_iter[Index(index_i)])));
 
-    if (fabs(edge_emf_contribution) < 1.0e-6){
-      edge_emf_contribution = Real(0.0);
+    Real emf_x1,emf_x2,emf_y1,emf_y2;
+
+    // direction of edge
+    /* x1_dir_i *= (enx + eny); */
+    /* x2_dir_i *= (enx + eny); */
+    /* y1_dir_i *= (enx + eny); */
+    /* y2_dir_i *= (enx + eny); */
+
+    Real demf = (edge_emf_contribution - emf_i);
+    Real demf_i = Zero;
+    Real demf_j = Zero;
+
+    // x contributions
+    if (x1_dir_i > Zero){
+      demf_i += Zero;
+    }
+    else if (x1_dir_i < Zero){
+      demf_i += etx*(edge_emf_contribution - emf_i);
+    }
+    else {
+      demf_i += etx*half*(edge_emf_contribution - emf_i);
     }
 
-    Real demf;
-    if (flux_d > Zero){
-      demf = Real(0.25)*(emf_i - edge_emf_contribution);
+    // y contributions
+    if (y1_dir_i > Zero){
+      demf_i += Zero;
     }
-    else if (flux_d < Zero){
-      demf = Real(0.25)*(emf_j - edge_emf_contribution);
+    else if (y1_dir_i < Zero){
+      demf_i += ety*(edge_emf_contribution - emf_j);
     }
-    else{
-      demf = Real(0.25)*half*((emf_i - edge_emf_contribution) 
-			      + (emf_j - edge_emf_contribution));
+    else {
+      demf_i += ety*half*(edge_emf_contribution - emf_j);
+    }
+
+    // centroid j
+    Real x1_dir_j = Real(thr::get<0>(Vector4(this->_cell_flow_dir_iter[Index(index_j)])));
+    Real x2_dir_j = Real(thr::get<1>(Vector4(this->_cell_flow_dir_iter[Index(index_j)])));
+    Real y1_dir_j = Real(thr::get<2>(Vector4(this->_cell_flow_dir_iter[Index(index_j)])));
+    Real y2_dir_j = Real(thr::get<3>(Vector4(this->_cell_flow_dir_iter[Index(index_j)])));
+
+    // direction of edge
+    /* x1_dir_j *= (enx + eny); */
+    /* x2_dir_j *= (enx + eny); */
+    /* y1_dir_j *= (enx + eny); */
+    /* y2_dir_j *= (enx + eny); */
+
+    // x contributions
+    if (x1_dir_j > Zero){
+      demf_j += etx*(edge_emf_contribution - emf_j);
+    }
+    else if (x1_dir_j < Zero){
+      demf_j += Zero;
+    }
+    else {
+      demf_j += etx*half*(edge_emf_contribution - emf_j);
+    }
+
+    // y contributions
+    if (y1_dir_j > Zero){
+      demf_j += ety*(edge_emf_contribution - emf_j);
+    }
+    else if (y1_dir_j < Zero){
+      demf_j += Zero;
+    }
+    else {
+      demf_j += ety*half*(edge_emf_contribution - emf_j);
     }
 
     // cell centered emfs
     if (index_i > -Index(1)){
       Real emf_cc_i = Real(this->_emf_z_iter[Index(index_i)]);
-      this->_emf_z_iter[Index(index_i)] = emf_cc_i + half*edge_emf_contribution ;//- half*demf;
+      this->_emf_z_iter[Index(index_i)] = emf_cc_i + Real(0.25)*half*(edge_emf_contribution - demf_i);
     }
 
     if (index_j > -Index(1)){
       Real emf_cc_j = Real(this->_emf_z_iter[Index(index_j)]);
-      /* this->_emf_z_iter[Index(index_j)] = emf_cc_j + half*edge_emf_contribution + half*demf; */
-      this->_emf_z_iter[Index(index_j)] = emf_cc_j + half*edge_emf_contribution;// + half*demf;
+      this->_emf_z_iter[Index(index_j)] = emf_cc_j + Real(0.25)*half*(edge_emf_contribution - demf_j);
     }
 #ifdef DEBUG_EMF
-    printf("[%d][%d] %d %d emf_i = %f emf_j = %f emf_edge = %f demf = %f f.bx = %f f.by = %f\n",
-	   point_i,point_j,index_i,index_j,
-	   Real(this->_emf_z_iter[Index(index_i)]),
-	   Real(this->_emf_z_iter[Index(index_j)]),
-	   edge_emf_contribution,demf,flux_bx,flux_by);
+    /* printf("[%d][%d] %d %d emf_i = %f emf_j = %f emf_edge = %f demf_i = %f demf_j = %f f.bx = %f f.by = %f\n", */
+    /* 	   point_i,point_j,index_i,index_j, */
+    /* 	   Real(this->_emf_z_iter[Index(index_i)]), */
+    /* 	   Real(this->_emf_z_iter[Index(index_j)]), */
+    /* 	   edge_emf_contribution,demf_i,demf_j,flux_bx,flux_by); */
+    printf("[%d][%d] %d %d f.d = %f f.bx = %f f.by = %f emf_i = %f emf_j = %f demf_i = %f demf_j = %f\n",
+    	   point_i,point_j,index_i,index_j,
+    	   flux_d,flux_bx,flux_by,
+    	   Real(this->_emf_z_iter[Index(index_i)]),
+    	   Real(this->_emf_z_iter[Index(index_j)]),
+    	   /* emf_i,emf_j, */
+	   demf_i,demf_j);
 #endif
     
   }

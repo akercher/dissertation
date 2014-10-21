@@ -738,6 +738,18 @@ int main(int argc, char* argv[]){
 #endif
 #endif
   }
+
+  // write initial conditions to output
+  sprintf(file_name,"%s_%05d.vtk",base_name,output_count);
+  output.open(file_name);
+#ifdef MHD
+  current_density_calc(interior_ncolors, mesh, offset, edge, bn_edge,current);
+  output_vtk_legacy(output, mesh, gamma, state, current);
+#else
+  output_vtk_legacy(output, mesh, gamma, state);
+#endif  
+  output_count += Index(1);
+
   /*-----------------------------------------------------------------*/
   /* Main loop                                                       */
   /*-----------------------------------------------------------------*/
@@ -1479,9 +1491,10 @@ int main(int argc, char* argv[]){
 							       antidiffusion_iter)),
 			offset.faces_per_color[i],
 			emf_upwind_bcs<thr::tuple<Edge,State> >(mesh.nx,
-								 mesh.ny,
-								 emf_z_iter,
-								 state_iter));
+								mesh.ny,
+								emf_z_iter,
+								cell_flow_direction_iter,
+								state_iter));
 	
 	edge_iter += offset.faces_per_color[i];
 	antidiffusion_iter += offset.faces_per_color[i];
@@ -1491,7 +1504,7 @@ int main(int argc, char* argv[]){
       antidiffusion_iter = antidiffusion.begin();      
 
 #ifdef DEBUG_EMF
-      printf("\n");
+      printf("\n EMF: \n");
       for(Index i = 0; i < mesh.ncell(); i++){
       	printf("[%d] %f\n",i,Real(emf_z_iter[i]));
       }      
@@ -1645,7 +1658,7 @@ int main(int argc, char* argv[]){
   }
 
   // write solution to file
-  if((ksteps-Index(1)) % nsteps_out == 0){
+  if((ksteps % nsteps_out) == 0){
     sprintf(file_name,"%s_%05d.vtk",base_name,output_count);
     output.open(file_name);
 #ifdef MHD

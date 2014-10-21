@@ -698,6 +698,7 @@ void hlld_ct_rotated (Real gamma, Real Minf, Coordinate sn, State state_i, State
 	/* eqs. (44) and (46) of [1] revisted for general geometry */
 	/* if (nx,ny) = (1,0), then vx^* = sm and vy^* = vy^* */
 	tmp = bn*(sdi-sdmi)/(di*sdi*sdmi - bn*bn);
+	/* printf("tmp = %f\n",tmp); */
 	/* vnis = vni - bn*tmp;// + sdmi*(pts - pti)*nx/(di*sdi*sdmi - bn*bn); */
 	vtis = vti - bti*tmp; //+ sdmi*(pts - pti)*ny/(di*sdi*sdmi - bn*bn);
 	vzis = vzi - bzi*tmp;	

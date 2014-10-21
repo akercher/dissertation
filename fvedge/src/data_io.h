@@ -78,7 +78,7 @@ void output_vtk_legacy(std::ofstream& output, Mesh mesh, Real gamma, StateArray 
   	k = mesh.nx*j + i;
 
   	state = state_array[k];
-  	state = prim2cons_func(gamma,State(state_array[k]));
+  	state = cons2prim_func(gamma,State(state_array[k]));
   	output << pressure << "\n";
 
     }
@@ -91,7 +91,7 @@ void output_vtk_legacy(std::ofstream& output, Mesh mesh, Real gamma, StateArray 
   	k = mesh.nx*j + i;
 
   	/* state = state_array[k]; */
-	state = prim2cons_func(gamma,State(state_array[k]));
+	state = cons2prim_func(gamma,State(state_array[k]));
 
   	output << get_x(velocity) << " " << get_y(velocity)
   	       << " " << get_z(velocity) << "\n";
@@ -106,8 +106,8 @@ void output_vtk_legacy(std::ofstream& output, Mesh mesh, Real gamma, StateArray 
 
   	k = mesh.nx*j + i;
 
-  	/* state = state_array[k]; */
-	state = prim2cons_func(gamma,State(state_array[k]));
+  	state = state_array[k];
+	/* state = cons2prim_func(gamma,State(state_array[k])); */
 
   	output << get_x(bfield) << " " << get_y(bfield)
   	       << " " << get_z(bfield) << "\n";
