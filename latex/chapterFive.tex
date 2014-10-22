@@ -377,10 +377,10 @@ The density at times $t=1$ and $t=5$ is shown in the top and bottom panels of Fi
 \begin{center} 
 \begin{tabular}{c}
 %% \includegraphics[width=0.25\textheight]{fig/kh0.jpg} \\ 
-\includegraphics[width=0.4\textheight]{fig/kh_mhd_d_3.jpg} \\ 
-\includegraphics[width=0.4\textheight]{fig/kh_mhd_bmag_3.jpg} 
+\includegraphics[width=0.4\textheight]{fig/kh_mhd_d_0275.jpg} \\ 
+\includegraphics[width=0.4\textheight]{fig/kh_mhd_bmag_0275.jpg} 
 \end{tabular}
-\caption{The MHD Kelvin-Helmoltz instability, $\rho$ (top) and $|\mbf{B}|$ (bottom) at $t=3$.  Simulation performed on a $400 \times 400$ grid of quadrilateral elements with code written for this dissertation available at: \protect\gitrepo.}
+\caption{The MHD Kelvin-Helmoltz instability, $\rho$ (top) and $|\mbf{B}|$ (bottom) at $t=2.75$.  Simulation performed on a $400 \times 400$ grid of quadrilateral elements with code written for this dissertation available at: \protect\gitrepo.}
 \end{center} 
 \label{fig:kh_instability_mhd}
 \figSpace
@@ -403,7 +403,22 @@ For the second case, a spherical blast wave is simulated on a rectangular domain
 
 The density at times $t = 0.2$ and $t = 1.5$ is shown in the left and right panels of Figure~\ref{fig:blast_waves} respectively.  The blast wave is initially spherical as there are no effects due to grid alignment.  As the blast reaches the boundaries, complex interactions between linear and nonlinear waves are produced and solution remains symmetric across the $x$ and $y$ axis.  
 
-The Orszag-Tang vortex \citep{Orszag:1979} has been extensively studied and used for comparisons to previous results.  The simulation is performed on a square domain, $[0,1] \times [0,1]$, with periodic boundaries everywhere.  The density, $\rho = 25/(36\pi)$ and pressure, $5/(12\pi)$ are constant throughout the domain.  The initial velocities are $v_x = -\sin{(2\pi y)}$ and $v_y = \sin{(2\pi x)}$; the initial magnetic field is defined in terms of the magnetic vector potential, $A_z = B_0\left(\cos{(4\pi x)}/(4\pi) + \cos{(2\pi x)}/(2\pi)\right)$, where $B_0 = 1/\sqrt{4\pi}$; the ratio  of specific heats is $\gamma = 5/3$.
+%----------------------------------------------------------------
+% Spherical Blast waves
+%-----------------------------------------------------------------
+\begin{figure}[htbp]\figSpace 
+\begin{center}
+\begin{tabular}{c}
+\includegraphics[width=0.5\textwidth]{fig/orszag_tang_010.jpg} \\
+\includegraphics[width=0.5\textwidth]{fig/orszag_tang_015.jpg} 
+\end{tabular}
+\caption{Orszag-Tang vortex: $t=1.0$ (left) and $t=1.5$ (right).  Simulation performed on a $400 \times 400$ grid of quadrilateral elements with code written for this dissertation available at: \protect\gitrepo.}
+\end{center}
+\label{fig:orszag_tang}
+\figSpace
+\end{figure}
+
+The Orszag-Tang vortex \citep{Orszag:1979} has been extensively studied and used for comparisons to previous results.  The simulation is performed on a square domain, $[0,1] \times [0,1]$, with periodic boundaries everywhere.  The density, $\rho = 25/(36\pi)$ and pressure, $5/(12\pi)$ are constant throughout the domain.  The initial velocities are $v_x = -\sin{(2\pi y)}$ and $v_y = \sin{(2\pi x)}$; the initial magnetic field is defined in terms of the magnetic vector potential, $A_z = B_0\left(\cos{(4\pi x)}/(4\pi) + \cos{(2\pi x)}/(2\pi)\right)$, where $B_0 = 1/\sqrt{4\pi}$; the ratio  of specific heats is $\gamma = 5/3$.  The solution at $t=1.0$ and $t=1.5$ is shown in Figure~\ref{fig:orszag-tang}.
 
 
 %-----------------------------------------------------------------

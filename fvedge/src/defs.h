@@ -14,3 +14,6 @@
 #define One Real(1.0)
 #define Two Real(2.0)
 #define PI Real(3.14159265358979)
+
+// GLOBAL
+static Real Machine_Zero;

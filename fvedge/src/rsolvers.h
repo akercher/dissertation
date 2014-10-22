@@ -863,6 +863,8 @@ void hlld_ct_rotated (Real gamma, Real Minf, Coordinate sn, State state_i, State
 			    (vni*bti - vti*bn - sfi*bti - tmp*btis + sai*btiss),
 			    vni*bzi - vzi*bn - sfi*bzi - tmp*bzis + sai*bziss));
 
+	/* printf("di*vni =%e sfi*di = %e tmp*dis= %e sai*diss = %e\n",di*vni,sfi*di,tmp*dis,sai*diss); */
+	/* printf("di*vni + sfi*di + tmp*dis + sai*diss = %e\n",di*vni+sfi*di + tmp*dis+sai*diss); */
     }
     else if (saj >= Real(0.0)){
 	tmp = saj - sfj;
@@ -912,29 +914,29 @@ void hlld_ct_rotated (Real gamma, Real Minf, Coordinate sn, State state_i, State
 
 #ifdef DEBUG_FLUX
     if (debug_par > Index(0)){
-    printf("sfi =%f sai = %f sm = %f saj = %f sfj = %f\n",sfi,sai,sm,saj,sfj);
+    printf("sfi =%e sai = %e sm = %e saj = %e sfj = %e\n",sfi,sai,sm,saj,sfj);
     /* printf("vxis =%f vxjs = %f bxis =%f bxjs = %f\n",vxis,vxjs,bxis,bxjs); */
     if (sm >= Real(0.0))
       {
-    	printf("di = %f dis = %f diss = %f  f.d = %f\n",di,dis,diss,thr::get<0>(flux));
-    	printf("vxi = %f vxis = %f vxiss = %f  f.mx = %f\n",vni,sm,sm,get_x(thr::get<1>(flux)));
-    	printf("vyi = %f vyis = %f vyiss = %f  f.my = %f\n",vti,vtis,vtiss,get_y(thr::get<1>(flux)));
-    	printf("vzi = %f vzis = %f vziss = %f  f.mz = %f\n",vzi,vzis,vziss,get_z(thr::get<1>(flux)));
-    	printf("eni = %f enis = %f eniss = %f  f.en = %f\n",eni,enis,eniss,thr::get<2>(flux));
-    	printf("bxi = %f bxis = %f bxiss = %f  f.bx = %f\n",bn,bn,bn,get_x(thr::get<3>(flux)));
-    	printf("byi = %f byis = %f byiss = %f  f.by = %f\n",bti,btis,btiss,get_y(thr::get<3>(flux)));
-    	printf("bzi = %f bzis = %f bziss = %f  f.bz = %f\n",bzi,bzis,bziss,get_z(thr::get<3>(flux)));
+    	printf("di = %e dis = %e diss = %e  f.d = %e\n",di,dis,diss,thr::get<0>(flux));
+    	printf("vxi = %e vxis = %e vxiss = %e  f.mx = %e\n",vni,sm,sm,get_x(thr::get<1>(flux)));
+    	printf("vyi = %e vyis = %e vyiss = %e  f.my = %e\n",vti,vtis,vtiss,get_y(thr::get<1>(flux)));
+    	printf("vzi = %e vzis = %e vziss = %e  f.mz = %e\n",vzi,vzis,vziss,get_z(thr::get<1>(flux)));
+    	printf("eni = %e enis = %e eniss = %e  f.en = %e\n",eni,enis,eniss,thr::get<2>(flux));
+    	printf("bxi = %e bxis = %e bxiss = %e  f.bx = %e\n",bn,bn,bn,get_x(thr::get<3>(flux)));
+    	printf("byi = %e byis = %e byiss = %e  f.by = %e\n",bti,btis,btiss,get_y(thr::get<3>(flux)));
+    	printf("bzi = %e bzis = %e bziss = %e  f.bz = %e\n",bzi,bzis,bziss,get_z(thr::get<3>(flux)));
       }
     else
       {
-    	printf("dj = %f djs = %f djss = %f  f.d = %f\n",dj,djs,djss,thr::get<0>(flux));
-    	printf("vxj = %f vxjs = %f vxss = %f  f.mx = %f\n",vnj,sm,sm,get_x(thr::get<1>(flux)));
-    	printf("vyj = %f vyjs = %f vyjss = %f  f.my = %f\n",vtj,vtjs,vtjss,get_y(thr::get<1>(flux)));
-    	printf("vzj = %f vzjs = %f vzjss = %f  f.mz = %f\n",vzj,vzjs,vzjss,get_z(thr::get<1>(flux)));
-    	printf("enj = %f enjs = %f enjss = %f  f.en = %f\n",enj,enjs,enjss,thr::get<2>(flux));
-    	printf("bxj = %f bxjs = %f bxjss = %f  f.bx = %f\n",bn,bn,bn,get_x(thr::get<3>(flux)));
-    	printf("byj = %f byjs = %f byjss = %f  f.by = %f\n",btj,btjs,btjss,get_y(thr::get<3>(flux)));
-    	printf("bzj = %f bzjs = %f bzjss = %f  f.bz = %f\n",bzj,bzjs,bzjss,get_z(thr::get<3>(flux)));
+    	printf("dj = %e djs = %e djss = %e  f.d = %e\n",dj,djs,djss,thr::get<0>(flux));
+    	printf("vxj = %e vxjs = %e vxss = %e  f.mx = %e\n",vnj,sm,sm,get_x(thr::get<1>(flux)));
+    	printf("vyj = %e vyjs = %e vyjss = %e  f.my = %e\n",vtj,vtjs,vtjss,get_y(thr::get<1>(flux)));
+    	printf("vzj = %e vzjs = %e vzjss = %e  f.mz = %e\n",vzj,vzjs,vzjss,get_z(thr::get<1>(flux)));
+    	printf("enj = %e enjs = %e enjss = %e  f.en = %e\n",enj,enjs,enjss,thr::get<2>(flux));
+    	printf("bxj = %e bxjs = %e bxjss = %e  f.bx = %e\n",bn,bn,bn,get_x(thr::get<3>(flux)));
+    	printf("byj = %e byjs = %e byjss = %e  f.by = %e\n",btj,btjs,btjss,get_y(thr::get<3>(flux)));
+    	printf("bzj = %e bzjs = %e bzjss = %e  f.bz = %e\n",bzj,bzjs,bzjss,get_z(thr::get<3>(flux)));
       }
     }
 #endif
@@ -959,9 +961,9 @@ void hlld_ct_rotated (Real gamma, Real Minf, Coordinate sn, State state_i, State
 
 #ifdef DEBUG_FLUX
     if (debug_par > Index(0)){
-    printf("f.mx = %f f.my = %f f.mz = %f\n",get_x(thr::get<1>(flux)),
+    printf("f.mx = %e f.my = %e f.mz = %e\n",get_x(thr::get<1>(flux)),
     	   get_y(thr::get<1>(flux)),get_z(thr::get<1>(flux)));
-    printf("f.bx = %f f.by = %f f.bz = %f\n",get_x(thr::get<3>(flux)),
+    printf("f.bx = %e f.by = %e f.bz = %e\n",get_x(thr::get<3>(flux)),
     	   get_y(thr::get<3>(flux)),get_z(thr::get<3>(flux)));
     }
 #endif
@@ -975,6 +977,10 @@ void hlld_ct_rotated (Real gamma, Real Minf, Coordinate sn, State state_i, State
     get_x(thr::get<3>(flux)) *= sn_mag;
     get_y(thr::get<3>(flux)) *= sn_mag;
     get_z(thr::get<3>(flux)) *= sn_mag;
+
+    if(fabs(thr::get<0>(flux)) <= Machine_Zero){
+      thr::get<0>(flux) = Real(0.0);
+    }
 
 };
 

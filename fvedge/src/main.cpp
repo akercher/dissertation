@@ -33,14 +33,14 @@
 #define flux_mhd hlld_ct_rotated
 // #define DEBUG_CURRENT
 // #define DEBUG_BN
-#define DEBUG_EMF
+// #define DEBUG_EMF
 // #define DEBUG_DIV
 #endif
 
 // #define DEBUG_EDGES
 // #define DEBUG_RESIDUAL
-#define DEBUG_FLUX
-// #define LINEAR
+// #define DEBUG_FLUX
+#define LINEAR
 
 #define flux_hydro rhll
 
@@ -69,7 +69,6 @@
 #ifdef MHD
 #include "constrained_transport.h"
 #endif
-
 
 int main(int argc, char* argv[]){
 
@@ -112,6 +111,18 @@ int main(int argc, char* argv[]){
   std::ofstream output;
   std::ifstream input;
   std::ifstream mesh_data;
+
+  Real temp;
+  // Define Machine Zero
+  Index i = Index(0);
+  while (temp != One){
+    i = i + Index(1);
+    temp = One + Real(pow(Two,Real(-i)));
+  }
+
+  Machine_Zero = Real(pow(Two,Real(-i)));
+
+  printf("Machine Zero = %e\n",Machine_Zero);
 
   input.open(argv[1]); // <-- opens input file
   
@@ -531,7 +542,7 @@ int main(int argc, char* argv[]){
   }
   else if (prob.compare("blast_wave") == Index(0)){
     gamma = Real(5.0)/Real(3.0);
-    nsteps_out = 100;
+    nsteps_out = 1;
     sprintf(base_name,"bin/blast_wave");
     mesh.btype_x = Index(1);
     mesh.btype_y = Index(1);

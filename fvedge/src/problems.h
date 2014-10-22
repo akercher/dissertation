@@ -87,7 +87,7 @@ struct blast_wave_init : public thr::unary_function<Index,State>
     Real pg0 = Real(0.1);
     Real b0 = Real(1.0);
     Real radius = Real(0.3);
-    Real angle = Real(M_PI)/Real(4.0);
+    Real angle = (Zero);//Real(M_PI)/Real(4.0);
 
     Index i = index % this->_nx;
     Index j = (index - i)/this->_nx;
