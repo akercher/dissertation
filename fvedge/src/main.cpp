@@ -30,7 +30,7 @@
 /*************************************************************************/
 #ifdef MHD
 #define CT
-#define flux_mhd hlld_ct_rotated
+#define flux_mhd roe_ct
 // #define DEBUG_CURRENT
 // #define DEBUG_BN
 // #define DEBUG_EMF
@@ -542,7 +542,7 @@ int main(int argc, char* argv[]){
   }
   else if (prob.compare("blast_wave") == Index(0)){
     gamma = Real(5.0)/Real(3.0);
-    nsteps_out = 1;
+    nsteps_out = 100;
     sprintf(base_name,"bin/blast_wave");
     mesh.btype_x = Index(1);
     mesh.btype_y = Index(1);

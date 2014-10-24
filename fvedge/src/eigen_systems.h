@@ -29,7 +29,7 @@ __host__ __device__ void get_eigen_system_hd (const Real gamma, const Real vx, c
 __host__ __device__ void get_eigen_system_mhd (const Real gamma, const Real d, const Real vx, const Real vy, 
 					       const Real vz, const Real h, const Real bx, const Real by,
 					       const Real bz, const Real xfac, const Real yfac, 
-					       Real ev[7], Real rem[7][7]);
+					       Real ev[7], Real lem[7][7], Real rem[7][7]);
 
 /*****************************************************/
 /* Eigenvector and right eigenmatrix for adiabatic   */
@@ -88,18 +88,18 @@ void get_eigen_system_hd (const Real gamma, const Real vx, const Real vy, const 
 }
 
 /*****************************************************/
-/* Eigenvector and right eigenmatrix for adiabatic   */
+/* Eigenvector and eigenmatrix of left/right         */
+/* eigenvectors using Roe averages for adiabatic     */
 /* magnetohydrodynamics.                             */
 /*                                                   */
 /*---------------------------------------------------*/
 /*  Input :                                          */
 /*  Output :                                         */
 /*****************************************************/
-
 __host__ __device__
 void get_eigen_system_mhd (const Real gamma, const Real d, const Real vx, const Real vy, const Real vz, 
 			   const Real h, const Real bx, const Real by, const Real bz,
-			   const Real xfac, const Real yfac,Real ev[7], Real rem[7][7])
+			   const Real xfac, const Real yfac,Real ev[7], Real lem[][7], Real rem[][7])
 			   
 			   
 {
@@ -183,6 +183,7 @@ void get_eigen_system_mhd (const Real gamma, const Real d, const Real vx, const 
   Real aspbb = as_prime*btstar*betast_sq;
  
   /* right eigenvectors, stored as COLUMNS eq. B21 of [1] */
+  /* right eigenvectors are grouped as rows for efficient memory access. */
   rem[0][0] = alpha_f;
   rem[0][1] = Zero;
   rem[0][2] = alpha_s;
@@ -247,5 +248,82 @@ void get_eigen_system_mhd (const Real gamma, const Real d, const Real vx, const 
   rem[6][5] = rem[6][1];
   rem[6][6] = rem[6][0];
 
+  /* left eigenvectors, stored as ROWS eq. B29 of [1] */
+  /* normalized by 1/(2*c0^2)                         */
+
+  Real norm = half/twid_asq;
+  Real cff = norm*alpha_f*cf;
+  Real css = norm*alpha_s*cs;
+  qf *= norm;
+  qs *= norm;
+  Real af  = norm*af_prime*d;
+  Real as  = norm*as_prime*d;
+  Real afpb = norm*af_prime*btstar;
+  Real aspb = norm*as_prime*btstar;
+
+  /* normalize by (gamma - 1)/(2*c02) */
+  norm *= (gamma - One);
+  alpha_f *= norm;
+  alpha_s *= norm;
+  Real qst_y = betast_y/betast_sq;
+  Real qst_z = betast_z/betast_sq;
+  Real vqstr = (vy*qst_y + vz*qst_z);
+  norm *= Two;
+
+  lem[0][0] = alpha_f*(Two*ke - hp) + cff*(cf + vx) - qs*vqstr - aspb;
+  lem[0][1] = -alpha_f*vx - cff;
+  lem[0][2] = -alpha_f*vy + qs*qst_y;
+  lem[0][3] = -alpha_f*vz + qs*qst_z;
+  lem[0][4] = alpha_f;
+  lem[0][5] = as*qst_y - alpha_f*by;
+  lem[0][6] = as*qst_z - alpha_f*bz;
+
+  lem[1][0] = half*(vy*beta_z - vz*beta_y);
+  lem[1][1] = Zero;
+  lem[1][2] = -0.5*beta_z;
+  lem[1][3] = half*beta_y;
+  lem[1][4] = Zero;
+  lem[1][5] = -half*sqrtd*beta_z*sgn_bn;
+  lem[1][6] = half*sqrtd*beta_y*sgn_bn;
+
+  lem[2][0] = alpha_s*(Two*ke - hp) + css*(cs + vx) + qf*vqstr + afpb;
+  lem[2][1] = -alpha_s*vx - css;
+  lem[2][2] = -alpha_s*vy - qf*qst_y;
+  lem[2][3] = -alpha_s*vz - qf*qst_z;
+  lem[2][4] = alpha_s;
+  lem[2][5] = -af*qst_y - alpha_s*by;
+  lem[2][6] = -af*qst_z - alpha_s*bz;
+
+  lem[3][0] = 1.0 - norm*(ke - (gamma - Two)*xfac/(gamma - One)); 
+  lem[3][1] = norm*vx;
+  lem[3][2] = norm*vy;
+  lem[3][3] = norm*vz;
+  lem[3][4] = -norm;
+  lem[3][5] = norm*by;
+  lem[3][6] = norm*bz;
+
+  lem[4][0] = alpha_s*(Two*ke - hp) + css*(cs - vx) - qf*vqstr + afpb;
+  lem[4][1] = -alpha_s*vx + css;
+  lem[4][2] = -alpha_s*vy + qf*qst_y;
+  lem[4][3] = -alpha_s*vz + qf*qst_z;
+  lem[4][4] = alpha_s;
+  lem[4][5] = lem[2][5];
+  lem[4][6] = lem[2][6];
+
+  lem[5][0] = -lem[1][0];
+  lem[5][1] = Zero;
+  lem[5][2] = -lem[1][2];
+  lem[5][3] = -lem[1][3];
+  lem[5][4] = Zero;
+  lem[5][5] = lem[1][5];
+  lem[5][6] = lem[1][6];
+
+  lem[6][0] = alpha_f*(Two*ke - hp) + cff*(cf - vx) + qs*vqstr - aspb;
+  lem[6][1] = -alpha_f*vx + cff;
+  lem[6][2] = -alpha_f*vy - qs*qst_y;
+  lem[6][3] = -alpha_f*vz - qs*qst_z;
+  lem[6][4] = alpha_f;
+  lem[6][5] = lem[0][5];
+  lem[6][6] = lem[0][6];
 }
 

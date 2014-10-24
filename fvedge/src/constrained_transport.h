@@ -113,6 +113,9 @@ struct residual_ct : public thr::binary_function<Tuple,InterpState,State>
     /* if (pressure_j > Real(2.0)){ */
       /* debug_par = Index(1); */
     /* } */
+    
+    debug_par = Index(1);
+
     if(debug_par  > Index(0)){
     printf("\n");
     printf("[%d][%d] di = %f dj = %f vxi = %e vxj = %e\n",point_i,point_j,density_i,density_j,

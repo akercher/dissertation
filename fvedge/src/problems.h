@@ -86,8 +86,8 @@ struct blast_wave_init : public thr::unary_function<Index,State>
     Real d0 = Real(1.0);
     Real pg0 = Real(0.1);
     Real b0 = Real(1.0);
-    Real radius = Real(0.3);
-    Real angle = (Zero);//Real(M_PI)/Real(4.0);
+    Real radius = Real(0.1);
+    Real angle = Real(M_PI)/Real(4.0);
 
     Index i = index % this->_nx;
     Index j = (index - i)/this->_nx;
@@ -669,9 +669,10 @@ struct linear_wave_init : public thr::unary_function<Index,State>
 	      + (pg0 + half*(bx0*bx0 + by0*by0 + bz0*bz0)))*d_inv;
 
     Real ev[7];
+    Real lem[7][7];    
     Real rem[7][7];    
 
-    get_eigen_system_mhd (this->_gamma, d0, vx0, vy0, vz0, h, bx0, by0, bz0, xfac, yfac, ev, rem);
+    get_eigen_system_mhd (this->_gamma, d0, vx0, vy0, vz0, h, bx0, by0, bz0, xfac, yfac, ev, lem, rem);
 
     /* printf("Ux - Cf = %e, %e\n",ev[0],rem[0][this->_ieigen]); */
     /* printf("Ux - Ca = %e, %e\n",ev[1],rem[1][this->_ieigen]); */
@@ -886,9 +887,10 @@ struct linear_wave_init_interface : public thr::unary_function<Edge,Real>
 	      + (pg + half*(bx*bx + by*by + bz*bz)))*d_inv;
 
     Real ev[7];
+    Real lem[7][7];    
     Real rem[7][7];    
 
-    get_eigen_system_mhd (this->_gamma, d, vx, vy, vz, h, bx, by, bz, xfac, yfac, ev, rem);
+    get_eigen_system_mhd (this->_gamma, d, vx, vy, vz, h, bx, by, bz, xfac, yfac, ev, lem, rem);
 
     Real amp = Real(1.0e-3);
     Real dby = amp*rem[5][this->_ieigen];

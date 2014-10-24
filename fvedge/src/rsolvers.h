@@ -5,12 +5,10 @@
 /*******************************************************************/
 
 /* Prototypes */
+__host__ __device__ void roe_ct (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j,
+				 Real bn, Real& normal_wave_speed,State& flux,Index debug_par);
 __host__ __device__ void hlld_ct (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j,
-				  Real bn, Real& normal_wave_speed,State& flux);
-__host__ __device__ void hlld_ct_rotated (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j,
-					  Real bn, Real& normal_wave_speed,State& flux,Index debug_par);
-__host__ __device__ void hlld_n (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j,
-				 Real& normal_wave_speed,State& flux);
+				  Real bn, Real& normal_wave_speed,State& flux,Index debug_par);
 __host__ __device__ void rhll (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j,
 			       Real& normal_wave_speed,State& flux);
 __host__ __device__ void hllc_n (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j,
@@ -35,8 +33,8 @@ __host__ __device__ void hlle_n (Real gamma, Real Minf, Coordinate sn, State sta
 /*  Output :                                         */
 /*****************************************************/
 __host__ __device__
-void hlld_ct (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j,
-	     Real bn, Real& normal_wave_speed, State& flux)
+void roe_ct (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j,
+	     Real bn, Real& normal_wave_speed, State& flux, Index debug_par)
 	     
 {
     
@@ -51,6 +49,15 @@ void hlld_ct (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j
   /* Real tx = ny; */
   /* Real ty = -nx; */
 
+  // rotate state so normal is aligned with axis
+  Real theta_n = atan2(ny,nx);
+  Real dtheta_x = fabs(theta_n);
+  Real dtheta_y = fabs(theta_n - half*Real(M_PI));
+
+  // rotate closest axis counter-clockwise to align with normal
+  Real theta_r = theta_n;
+  if (dtheta_y < dtheta_x) theta_r = -atan2(nx,ny);
+
   /* point_i */
   Real di = density_i;
   Real vxi = get_x(velocity_i);
@@ -60,22 +67,6 @@ void hlld_ct (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j
   Real bxi = get_x(bfield_i);
   Real byi = get_y(bfield_i);
   Real bzi = get_z(bfield_i);
-
-  Real di_inv = Real(1.0)/di;
-  Real vni = nx*vxi + ny*vyi;//*sn_mag_inv;
-  Real vti = tx*vxi + ty*vyi;//*sn_mag_inv;
-  /* Real bni = nx*bxi + ny*byi;//\*sn_mag_inv; */
-  Real bti = tx*bxi + ty*byi;//*sn_mag_inv;
-
-  Real csi = std::sqrt(gamma*pgi/di);
-  Real kei = half*(vxi*vxi + vyi*vyi + vzi*vzi);
-  Real bnisq = bn*bn;
-  Real btisq = bti*bti;
-  Real bperpisq = btisq + bzi*bzi;
-  Real pbi = half*(bn*bn + bti*bti + bzi*bzi);
-  Real pti = pgi + pbi;
-  Real eni = pgi/(gamma - Real(1.0)) + di*kei + pbi;
-  Real hi = (eni + pti)*di_inv;
 
   /* point_j */
   Real dj = density_j;
@@ -87,42 +78,58 @@ void hlld_ct (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j
   Real byj = get_y(bfield_j);
   Real bzj = get_z(bfield_j);
 
+  // rotate velocities and magnetic field
+  Real vni = vxi*nx + vyi*ny;
+  Real vti = vxi*tx + vyi*ty;
+  Real bti = bxi*tx + byi*ty;
+
+  Real vnj = vxj*nx + vyj*ny;
+  Real vtj = vxj*tx + vyj*ty;
+  Real btj = bxj*tx + byj*ty;
+
+  Real di_inv = Real(1.0)/di;
+
+  Real csi = std::sqrt(gamma*pgi/di);
+  Real kei = half*(vni*vni + vti*vti + vzi*vzi);
+  Real bnisq = bn*bn;
+  Real btisq = bti*bti;
+  Real bperpisq = btisq + bzi*bzi;
+  Real pbi = half*(bn*bn + bti*bti + bzi*bzi);
+  Real pti = pgi + pbi;
+  Real eni = pgi/(gamma - Real(1.0)) + di*kei + pbi;
+  Real hi = (eni + pti)*di_inv;
+
+
   Real dj_inv = Real(1.0)/dj;
-  Real vnj = nx*vxj + ny*vyj;//*sn_mag_inv;
-  Real vtj = tx*vxj + ty*vyj;//*sn_mag_inv;
-  /* Real bnj = nx*bxj + ny*byj;//\*sn_mag_inv; */
-  Real btj = tx*bxj + ty*byj;//*sn_mag_inv;
   Real bnjsq = bn*bn;
   Real btjsq = btj*btj;
   Real bperpjsq = btjsq + bzj*bzj;
   Real csj = std::sqrt(gamma*pgj/dj);
-  Real kej = half*(vxj*vxj + vyj*vyj + vzj*vzj);
+  Real kej = half*(vnj*vnj + vtj*vtj + vzj*vzj);
   Real pbj = half*(bn*bn + btj*btj + bzj*bzj);
   Real ptj = pgj + pbj;
   Real enj = pgj/(gamma - Real(1.0)) + dj*kej + pbj;
   Real hj = (enj + ptj)*dj_inv;
 
   // Roe averages
-  Real RT = sqrtf(dj/di);
+  Real RT = std::sqrt(dj/di);
   Real RTp1_inv = Real(1.0)/(Real(1.0) + RT);;
   Real droe = RT*di;
-  Real vxroe = (vxi + RT*vxj)*RTp1_inv;
-  Real vyroe = (vyi + RT*vyj)*RTp1_inv;
+  Real vnroe = (vni + RT*vnj)*RTp1_inv;
+  Real vtroe = (vti + RT*vtj)*RTp1_inv;
   Real vzroe = (vzi + RT*vzj)*RTp1_inv;
-  Real keroe = half*(vxroe*vxroe + vyroe*vyroe + vzroe*vzroe);
+  Real keroe = half*(vnroe*vnroe + vtroe*vtroe + vzroe*vzroe);
   Real hroe  = (hi + RT*hj)*RTp1_inv;
-  Real bxroe = (bxi + RT*bxj)/(Real(1.0) + RT);;
-  Real byroe = (byi + RT*byj)/(Real(1.0) + RT);;
+  Real btroe = (bti + RT*btj)/(Real(1.0) + RT);;
   Real bzroe = (bzi + RT*bzj)/(Real(1.0) + RT);;
+  Real xfac = half*(pow((bti - btj),Two) + pow((bzi - bzj),Two))/(pow((std::sqrt(di) + std::sqrt(dj)),Two));
+  Real yfac = half*(di + dj)/droe;
+
   Real c0roe = std::sqrt((gamma - Real(1.0))*(hroe - keroe));
-  Real vnroe = vxroe*nx + vyroe*ny;
-  Real vtroe = vxroe*tx + vyroe*ty;
-  Real bnroe = bn;
-  Real btroe = bxroe*tx + byroe*ty;
 
   Real d_inv = Real(1.0)/droe;
   Real c0sq = c0roe*c0roe;
-  Real casq = bnroe*bnroe*di_inv;	
+  Real casq = bn*bn*di_inv;	
   Real ctsq = (btroe*btroe + bzroe*bzroe)*di_inv;	
     
   Real ws_sum = c0sq + casq + ctsq;
@@ -130,345 +137,97 @@ void hlld_ct (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j
 			 + std::sqrt(ws_sum*ws_sum - Real(4.0)*c0sq*casq));
   
   Real cfroe = std::sqrt(cfsq);
-  
-  
-  /* compute wave speeds */
-  /* Real ws_sum; */
-  
-  Real c0isq = gamma*pgi*di_inv;
-  Real caisq = bn*bn*di_inv;	
-  Real cperpisq = bperpisq*di_inv;	
     
-  ws_sum = c0isq + caisq + cperpisq;
-  Real cfisq = Real(0.5)*(ws_sum  
-			  + std::sqrt(ws_sum*ws_sum - Real(4.0)*c0isq*caisq));
-  Real csisq = Real(0.5)*(ws_sum 
-			  - std::sqrt(ws_sum*ws_sum - Real(4.0)*c0isq*caisq));
-    
-  Real c0jsq = gamma*pgj*dj_inv;
-  Real cajsq = bn*bn*dj_inv;	
-  Real cperpjsq = bperpjsq*dj_inv;	
+  Real ev[7];
+  Real lem[7][7];
+  Real rem[7][7];
+  get_eigen_system_mhd (gamma, droe, vnroe, vtroe, vzroe, hroe, bn, btroe, bzroe, xfac, yfac, ev, lem, rem);
+
+  // allocate flux
+  Real fi[7],fj[7],froe[7],fdiss[7];
+  Real du[7],Ldu[7];
+
+  du[0] = dj - di;
+  du[1] = dj*vnj - di*vni;
+  du[2] = dj*vtj - di*vti;
+  du[3] = dj*vzj - di*vzi;
+  du[4] = enj - eni;
+  du[5] = btj - bti;
+  du[6] = bzj - bzi;
   
-  ws_sum = c0jsq + cajsq + cperpjsq;
-  Real cfjsq = Real(0.5)*(ws_sum  
-			  + std::sqrt(ws_sum*ws_sum - Real(4.0)*c0jsq*cajsq));
-  Real csjsq = Real(0.5)*(ws_sum 
-			  - std::sqrt(ws_sum*ws_sum - Real(4.0)*c0jsq*cajsq));
+  // project differnce in conservatives variables onto left eigenvectors
+  for (Index i=0;i<7;i++){
+    Ldu[i] = Zero;
+    for (Index j=0;j<7;j++){
+      Ldu[i] += lem[i][j]*du[j];
+    }      
+  }
   
-  Real cfmax = thr::max(std::sqrt(cfisq),std::sqrt(cfjsq));
-    
-  Real sfi,sfj;
-  /* fastest wave speeds */
-  if(vni <= vnj)
-    {
-      sfi = vni - cfmax;
-      sfj = vnj + cfmax;
+  // compute disspation
+  for(Index i=0;i<7;i++){
+    fdiss[i] = Zero;
+    for(Index j=0;j<7;j++){
+      fdiss[i] += half*fmax(fabs(ev[j]),Zero)*Ldu[j]*rem[i][j]; 
     }
-  else
-    {
-      sfi = vnj - cfmax;
-      sfj = vni + cfmax;	    
-    }
-    
-    /* middle wave speed */
-    Real sdi =  sfi - vni;
-    Real sdj =  sfj - vnj;
-    Real sm = (sdj*dj*vnj - sdi*di*vni - ptj + pti)/(sdj*dj - sdi*di);
-    
-    Real sdmi = sfi - sm;
-    Real sdmj = sfj - sm;
-    
-    /* total pressure throughout intermediate states, Eq. (41) of [1] */
-    /* Real pts = pti + di*sdi*(sdi-sdmi); */
-    Real pts = (sdj*dj*pti - sdi*di*ptj + di*dj*sdj*sdi*(vnj - vni))/(sdj*dj - sdi*di);
+  }
+  
+  // flux at node i
+  fi[0] = di*vni;
+  fi[1] = di*vni*vni + pti - bn*bn;
+  fi[2] = di*vti*vni - bti*bn;
+  fi[3] = di*vzi*vni - bzi*bn;
+  fi[4] = vni*(eni + pti) - bn*(vni*bn + vti*bti + vzi*bzi);
+  fi[5] = vni*bti - vti*bn;
+  fi[6] = vni*bzi - vzi*bn;
+  
+  fj[0] = dj*vnj;
+  fj[1] = dj*vnj*vnj + ptj - bn*bn;
+  fj[2] = dj*vtj*vnj - btj*bn;
+  fj[3] = dj*vzj*vnj - bzj*bn;
+  fj[4] = vnj*(enj + ptj) - bn*(vnj*bn + vtj*btj + vzj*bzj);
+  fj[5] = vnj*btj - vtj*bn;
+  fj[6] = vnj*bzj - vzj*bn;
 
-    /* Alfven wave speed */
-    Real dis = di*sdi/sdmi;
-    Real sqrtdis = std::sqrt(dis);
-    
-    Real djs = dj*sdj/sdmj;
-    Real sqrtdjs = std::sqrt(djs);
-    
-    Real sai = sm - std::fabs(bn)/sqrtdis;
-    Real saj = sm + std::fabs(bn)/sqrtdjs;	
+  for(Index i=0;i<7;i++){
+    froe[i] = half*(fj[i] + fi[i]);
+    froe[i] -= fdiss[i];
+  }
+  
+  flux = State(Real(froe[0]),
+	       Vector(Real(froe[1]),Real(froe[2]),Real(froe[3])),
+	       Real(froe[4]),
+	       Vector(Zero,Real(froe[5]),Real(froe[6])));
 
-    Real vns = sm;
-    Real vxis;
-    Real vyis;
-    /* Real vnis; */
-    /* Real vtis; */
-    Real vzis;
-    Real bxis;
-    Real byis;
-    Real bzis;
-    Real tmp;
+  /* Real normal_wave_speed; */
+  /* normal_wave_speed = sn_mag*half*(fabs(vnroe) + fabs(vtroe) + cfroe); */
+  normal_wave_speed = sn_mag*half*(fabs(vnroe) + cfroe);
 
-    /* left intermediate state */
-    if(std::fabs(dis*sdi*sdmi - bn*bn) < MINIMUM_NUM*pts)
-      {
-	vxis = vxi;
-	vyis = vyi;
-	vzis = vzi;
-	bxis = bxi;
-	byis = byi;
-	bzis = bzi;
-      }
-    else
-      {
+  // rotate magnetic and velocity fields back to original coordinate system
+  Real f_vn = get_x(thr::get<1>(flux));
+  Real f_vt = get_y(thr::get<1>(flux));
+  Real f_bn = get_x(thr::get<3>(flux));
+  Real f_bt = get_y(thr::get<3>(flux));
 
-	/* eqs. (44) and (46) of [1] revisted for general geometry */
-	/* if (nx,ny) = (1,0), then vx^* = sm and vy^* = vy^* */
-	tmp = bn*(sdi-sdmi)/(di*sdi*sdmi - bn*bn);
-	vxis = vxi - bxi*tmp + sdmi*(pts - pti)*nx/(di*sdi*sdmi - bn*bn);
-	vyis = vyi - byi*tmp + sdmi*(pts - pti)*ny/(di*sdi*sdmi - bn*bn);
-	vzis = vzi - bzi*tmp;	
-	
-	tmp = (di*sdi*sdi - bn*bn)/(di*sdi*sdmi - bn*bn);
-	bxis = bxi*tmp - bn*(pts - pti)*nx/(di*sdi*sdmi - bn*bn);
-	byis = byi*tmp - bn*(pts - pti)*ny/(di*sdi*sdmi - bn*bn);
-	bzis = bzi*tmp;
-      }
-
-    Real vbi = vxi*bxi + vyi*byi + vzi*bzi;
-    Real vbis = vxis*bxis + vyis*byis + vzis*bzis;    
-    Real enis = (sdi*eni - pti*vni + pts*sm + bn*(vbi - vbis))/sdmi;
-
-    /* right intermediate state */
-    Real vxjs;
-    Real vyjs;
-    Real vzjs;
-    Real bxjs;
-    Real byjs;
-    Real bzjs;
-    if(std::fabs(djs*sdj*sdmj - bn*bn) < MINIMUM_NUM*pts)
-      {
-	vxjs = vxj;
-	vyjs = vyj;
-	vzjs = vzj;
-	bxjs = bxj;
-	byjs = byj;
-	bzjs = bzj;
-      }
-    else
-      {
-	tmp = bn*(sdj-sdmj)/(dj*sdj*sdmj - bn*bn);
-	vxjs = vxj - bxj*tmp + sdmj*(pts - ptj)*nx/(dj*sdj*sdmj - bn*bn);
-	vyjs = vyj - byj*tmp + sdmj*(pts - ptj)*ny/(dj*sdj*sdmj - bn*bn);
-	vzjs = vzj - bzj*tmp;	
-    
-	tmp = (dj*sdj*sdj - bn*bn)/(dj*sdj*sdmj - bn*bn);
-	bxjs = bxj*tmp - bn*(pts - ptj)*nx/(dj*sdj*sdmj - bn*bn);
-	byjs = byj*tmp - bn*(pts - ptj)*ny/(dj*sdj*sdmj - bn*bn);
-	bzjs = bzj*tmp;
-      }
-    
-    Real vbj = vxj*bxj + vyj*byj + vzj*bzj;
-    Real vbjs = vxjs*bxjs + vyjs*byjs + vzjs*bzjs;    
-    Real enjs = (sdj*enj - ptj*vnj + pts*sm + bn*(vbj - vbjs))/sdmj;
-    
-    Real diss;
-    Real vxiss, vyiss, vziss;
-    Real eniss;
-    Real bxiss, byiss, bziss;
-
-    Real djss;
-    Real vxjss, vyjss, vzjss;
-    Real enjss;
-    Real bxjss, byjss, bzjss;
-    /* middle states */
-    if(half*bn*bn < MINIMUM_NUM*pts)
-      {
-	diss = dis;
-	vxiss = vxis;
-	vyiss = vyis;
-	vziss = vzis;
-	eniss = enis;
-	bxiss = bxis;
-	byiss = byis;
-	bziss = bzis;
-
-	djss = djs;
-	vxjss = vxjs;
-	vyjss = vyjs;
-	vzjss = vzjs;
-	enjss = enjs;
-	bxjss = bxjs;
-	byjss = byjs;
-	bzjss = bzjs;
-
-      }
-    else
-      {
-	Real sgnbn = bn/(std::fabs(bn));
-	Real invd = 1/(sqrtdis + sqrtdjs);
-    
-	diss = dis;
-	djss = djs;
-
-	/* Real vxiss = vxis; */
-	vxiss = invd*(sqrtdis*vxis + sqrtdjs*vxjs + sgnbn*(bxjs - bxis));//vxjs;
-	vxjss = vxiss;
-	
-	vyiss = invd*(sqrtdis*vyis + sqrtdjs*vyjs + sgnbn*(byjs - byis));
-	vyjss = vyiss;
-    
-	vziss = invd*(sqrtdis*vzis + sqrtdjs*vzjs + sgnbn*(bzjs - bzis));
-	vzjss = vziss;
-
-	bxiss = invd*(sqrtdis*bxjs + sqrtdjs*bxis 
-			   + sgnbn*sqrtdis*sqrtdjs*(vxjs - vxis));
-	bxjss = bxiss;
-	
-	byiss = invd*(sqrtdis*byjs + sqrtdjs*byis 
-			   + sgnbn*sqrtdis*sqrtdjs*(vyjs - vyis));
-	byjss = byiss;
-    
-	bziss = invd*(sqrtdis*bzjs + sqrtdjs*bzis 
-			   + sgnbn*sqrtdis*sqrtdjs*(vzjs - vzis));
-	bzjss = bziss;
-
-	Real vbss = vxiss*bxiss + vyiss*byiss + vziss*bziss;
-	eniss = enis - sqrtdis*sgnbn*(vbis - vbss);
-	enjss = enjs + sqrtdjs*sgnbn*(vbjs - vbss);
-      }
-
-    /* printf("vxi = %f vxj = %f vxis = %f vxjs = %f vxiss = %f vxjss = %f\n",vxi,vxj,vxis,vxjs,vxiss,vxjss); */
-
-    if (sfi >= Real(0.0))
-      {
-	flux = State(di*vni, 
-		     Vector(di*vxi*vni + pti*nx - bxi*bn, 
-			    di*vyi*vni + pti*ny - byi*bn, 
-			    di*vzi*vni - bzi*bn),  
-		     vni*(eni + pti) - bn*(vxi*bxi + vyi*byi + vzi*bzi),
-		     Vector(vni*bxi - vxi*bn, 
-			    vni*byi - vyi*bn,
-			    vni*bzi - vzi*bn)); 
-      }
-    
-    else if (sfj <= Real(0.0))
-      {
-	
-	flux = State(dj*vnj, 
-		     Vector(dj*vxj*vnj + ptj*nx - bxj*bn, 
-			    dj*vyj*vnj + ptj*ny - byj*bn, 
-			    dj*vzj*vnj - bzj*bn),  
-		     vnj*(enj + ptj) - bn*(vxj*bxj + vyj*byj + vzj*bzj), 
-		     Vector(vnj*bxj - vxj*bn, 
-			    vnj*byj - vyj*bn,
-			    vnj*bzj - vzj*bn));
-      }
-    else if (sai >= Real(0.0))
-      {
-	flux = State(di*vni + sfi*(dis - di), 
-		     Vector(di*vxi*vni + pti*nx - bxi*bn
-			    + sfi*(dis*vxis - di*vxi), 
-			    di*vyi*vni + pti*ny - byi*bn
-			    + sfi*(dis*vyis - di*vyi), 
-			    di*vzi*vni - bzi*bn
-			    + sfi*(dis*vzis - di*vzi)),  
-		     vni*(eni + pti) - bn*(vxi*bxi + vyi*byi + vzi*bzi)
-		     + sfi*(enis - eni), 
-		     Vector((vni*bxi - vxi*bn + sfi*(bxis - bxi)),
-			    (vni*byi - vyi*bn + sfi*(byis - byi)),
-			    vni*bzi - vzi*bn + sfi*(bzis - bzi)));
-      }
-    else if (sm >= Real(0.0))
-      {
-	tmp = sai - sfi;
-	flux = State(di*vni - sfi*di - tmp*dis + sai*diss, 
-		     Vector(di*vxi*vni + pti*nx - bxi*bn
-			    - sfi*di*vxi - tmp*dis*vxis + sai*diss*vxiss, 
-			    di*vyi*vni + pti*ny - byi*bn
-			    - sfi*di*vyi - tmp*dis*vyis + sai*diss*vyiss, 
-			    di*vzi*vni - bzi*bn
-			    - sfi*di*vzi - tmp*dis*vzis + sai*diss*vziss), 
-		     vni*(eni + pti) - bn*(vxi*bxi + vyi*byi + vzi*bzi)
-		     - sfi*eni - tmp*enis + sai*eniss, 
-		     Vector((vni*bxi - vxi*bn - sfi*bxi - tmp*bxis + sai*bxiss),
-			    (vni*byi - vyi*bn - sfi*byi - tmp*byis + sai*byiss),
-			    vni*bzi - vzi*bn - sfi*bzi - tmp*bzis + sai*bziss));
-
-      }
-    else if (saj >= Real(0.0))
-      {
-	tmp = saj - sfj;
-	flux = State(dj*vnj - sfj*dj - tmp*djs + saj*djss, 
-		     Vector(dj*vxj*vnj + ptj*nx - bxj*bn
-			    - sfj*dj*vxj - tmp*djs*vxjs + saj*djss*vxjss, 
-			    dj*vyj*vnj + ptj*ny - byj*bn
-			    - sfj*dj*vyj - tmp*djs*vyjs + saj*djss*vyjss, 
-			    dj*vzj*vnj - bzj*bn
-			    - sfj*dj*vzj - tmp*djs*vzjs + saj*djss*vzjss), 
-		     vnj*(enj + ptj) - bn*(vxj*bxj + vyj*byj + vzj*bzj)
-		     - sfj*enj - tmp*enjs + saj*enjss, 
-		     Vector((vnj*bxj - vxj*bn - sfj*bxj - tmp*bxjs + saj*bxjss),
-			    (vnj*byj - vyj*bn - sfj*byj - tmp*byjs + saj*byjss), 
-			    vnj*bzj - vzj*bn - sfj*bzj - tmp*bzjs + saj*bzjss));
-
-	/* printf("djs =%f vyjs = %f byis = %f byjs = %f\n",djs, vyjs, byi, byjs); */
-      }
-    else 
-      {
-	
-	flux = State(dj*vnj + sfj*(djs - dj), 
-		     Vector(dj*vxj*vnj + ptj*nx - bxj*bn
-			    + sfj*(djs*vxjs - dj*vxj), 
-			    dj*vyj*vnj + ptj*ny - byj*bn
-			    + sfj*(djs*vyjs - dj*vyj), 
-			    dj*vzj*vnj - bzj*bn
-			    + sfj*(djs*vzjs - dj*vzj)),  
-		     vnj*(enj + ptj) - bn*(vxj*bxj + vyj*byj + vzj*bzj)
-		     + sfj*(enjs - enj), 
-		     Vector((vnj*bxj - vxj*bn + sfj*(bxjs - bxj)), 
-			    (vnj*byj - vyj*bn + sfj*(byjs - byj)), 
-			    vnj*bzj - vzj*bn + sfj*(bzjs - bzj)));
-      }
-
-	/* printf("di =%f vni = %f vxi = %f pti =%f bxi = %f bn = %f\n",di,vni,vxi,pti,bxi,bn); */
-	/* printf("dis =%f vxis = %f diss = %f vxiss = %f\n",dis, vxis, diss, vxiss); */
-	/* printf("djs =%f vxjs = %f bxis = %f bxjs = %f\n",djs, vxjs, bxis, bxjs); */
+  get_x(thr::get<1>(flux)) = f_vn*nx - f_vt*ny;
+  get_y(thr::get<1>(flux)) = -f_vn*tx + f_vt*ty;
+  
+  get_x(thr::get<3>(flux)) = f_bn*nx - f_bt*ny;
+  get_y(thr::get<3>(flux)) = -f_bn*tx + f_bt*ty;
 
 
-    /* Real normal_wave_speed; */
-    normal_wave_speed = sn_mag*half*(fabs(vnroe) + fabs(vtroe) + cfroe);
-
-#ifdef DEBUG_FLUX
-    printf("sfi =%f sai = %f sm = %f saj = %f sfj = %f\n",sfi,sai,sm,saj,sfj);
-    printf("vxis =%f vxjs = %f bxis =%f bxjs = %f\n",vxis,vxjs,bxis,bxjs);
-    if (sm >= Real(0.0))
-      {
-    	printf("di = %f dis = %f diss = %f  f.d = %f\n",di,dis,diss,thr::get<0>(flux));
-    	printf("vxi = %f vxis = %f vxiss = %f  f.mx = %f\n",vxi,vxis,vxiss,get_x(thr::get<1>(flux)));
-    	printf("vyi = %f vyis = %f vyiss = %f  f.my = %f\n",vyi,vyis,vyiss,get_y(thr::get<1>(flux)));
-    	printf("vzi = %f vzis = %f vziss = %f  f.mz = %f\n",vzi,vzis,vziss,get_z(thr::get<1>(flux)));
-    	printf("eni = %f enis = %f eniss = %f  f.en = %f\n",eni,enis,eniss,thr::get<2>(flux));
-    	printf("bxi = %f bxis = %f bxiss = %f  f.bx = %f\n",bxi,bxis,bxiss,get_x(thr::get<3>(flux)));
-    	printf("byi = %f byis = %f byiss = %f  f.by = %f\n",byi,byis,byiss,get_y(thr::get<3>(flux)));
-    	printf("bzi = %f bzis = %f bziss = %f  f.bz = %f\n",bzi,bzis,bziss,get_z(thr::get<3>(flux)));
-      }
-    else
-      {
-    	printf("dj = %f djs = %f djss = %f  f.d = %f\n",dj,djs,djss,thr::get<0>(flux));
-    	printf("vxj = %f vxjs = %f vxss = %f  f.mx = %f\n",vxj,vxjs,vxjss,get_x(thr::get<1>(flux)));
-    	printf("vyj = %f vyjs = %f vyjss = %f  f.my = %f\n",vyj,vyjs,vyjss,get_y(thr::get<1>(flux)));
-    	printf("vzj = %f vzjs = %f vzjss = %f  f.mz = %f\n",vzj,vzjs,vzjss,get_z(thr::get<1>(flux)));
-    	printf("enj = %f enjs = %f enjss = %f  f.en = %f\n",enj,enjs,enjss,thr::get<2>(flux));
-    	printf("bxj = %f bxjs = %f bxjss = %f  f.bx = %f\n",bxj,bxjs,bxjss,get_x(thr::get<3>(flux)));
-    	printf("byj = %f byjs = %f byjss = %f  f.by = %f\n",byj,byjs,byjss,get_y(thr::get<3>(flux)));
-    	printf("bzj = %f bzjs = %f bzjss = %f  f.bz = %f\n",bzj,bzjs,bzjss,get_z(thr::get<3>(flux)));
-      }
-#endif
-
-    /* scale flux by magnitude of face normal */
-    thr::get<0>(flux)        *= sn_mag;
-    get_x(thr::get<1>(flux)) *= sn_mag;
-    get_y(thr::get<1>(flux)) *= sn_mag;
-    get_z(thr::get<1>(flux)) *= sn_mag;
-    thr::get<2>(flux)        *= sn_mag;
-    get_x(thr::get<3>(flux)) *= sn_mag*tx;
-    get_y(thr::get<3>(flux)) *= sn_mag*ty;
-    get_z(thr::get<3>(flux)) *= sn_mag;
+  /* scale flux by magnitude of face normal */
+  thr::get<0>(flux)        *= sn_mag;
+  get_x(thr::get<1>(flux)) *= sn_mag;
+  get_y(thr::get<1>(flux)) *= sn_mag;
+  get_z(thr::get<1>(flux)) *= sn_mag;
+  thr::get<2>(flux)        *= sn_mag;
+  get_x(thr::get<3>(flux)) *= sn_mag;
+  get_y(thr::get<3>(flux)) *= sn_mag;
+  get_z(thr::get<3>(flux)) *= sn_mag;
+  
+  if(fabs(thr::get<0>(flux)) <= Machine_Zero){
+    thr::get<0>(flux) = Real(0.0);
+  }
 
 };
 
@@ -489,8 +248,8 @@ void hlld_ct (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j
 /*  Output :                                         */
 /*****************************************************/
 __host__ __device__
-void hlld_ct_rotated (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j,
-		      Real bn, Real& normal_wave_speed, State& flux, Index debug_par)
+void hlld_ct (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j,
+	      Real bn, Real& normal_wave_speed, State& flux, Index debug_par)
 	     
 {
     
@@ -584,7 +343,7 @@ void hlld_ct_rotated (Real gamma, Real Minf, Coordinate sn, State state_i, State
   Real hj = (enj + ptj)*dj_inv;
 
   // Roe averages
-  Real RT = sqrtf(dj/di);
+  Real RT = std::sqrt(dj/di);
   Real RTp1_inv = Real(1.0)/(Real(1.0) + RT);;
   Real droe = RT*di;
   Real vnroe = (vni + RT*vnj)*RTp1_inv;
@@ -595,6 +354,9 @@ void hlld_ct_rotated (Real gamma, Real Minf, Coordinate sn, State state_i, State
   /* Real bxroe = (bxi + RT*bxj)/(Real(1.0) + RT);; */
   Real btroe = (bti + RT*btj)/(Real(1.0) + RT);;
   Real bzroe = (bzi + RT*bzj)/(Real(1.0) + RT);;
+  Real xfac = half*(pow((bti - btj),Two) + pow((bzi - bzj),Two))/(pow((std::sqrt(di) + std::sqrt(dj)),Two));
+  Real yfac = half*(di + dj)/droe;
+    
   Real c0roe = std::sqrt((gamma - Real(1.0))*(hroe - keroe));
   /* Real vnroe = vxroe*nx + vyroe*ny; */
   /* Real vtroe = vxroe*tx + vyroe*ty; */
@@ -611,8 +373,19 @@ void hlld_ct_rotated (Real gamma, Real Minf, Coordinate sn, State state_i, State
 			 + std::sqrt(ws_sum*ws_sum - Real(4.0)*c0sq*casq));
   
   Real cfroe = std::sqrt(cfsq);
-  
-  
+
+  Real ev[7];
+  Real lem[7][7];
+  Real rem[7][7];
+  get_eigen_system_mhd (gamma, droe, vnroe, vtroe, vzroe, hroe, bn, btroe, bzroe, xfac, yfac, ev, lem, rem);
+
+  /* for(Index i=0;i<7;i++){ */
+  /*   printf("lem[%d][*] = %f %f %f %f %f %f %f\n",i,lem[i][0],lem[i][1],lem[i][2],lem[i][3],lem[i][4],lem[i][5],lem[i][6]); */
+  /* } */
+  /* for(Index i=0;i<7;i++){ */
+  /*   printf("rem[%d][*] = %f %f %f %f %f %f %f\n",i,rem[i][0],lem[i][1],lem[i][2],lem[i][3],lem[i][4],lem[i][5],lem[i][6]); */
+  /* } */
+
   /* compute wave speeds */
   /* Real ws_sum; */
   
@@ -636,78 +409,75 @@ void hlld_ct_rotated (Real gamma, Real Minf, Coordinate sn, State state_i, State
   Real csjsq = Real(0.5)*(ws_sum 
 			  - std::sqrt(ws_sum*ws_sum - Real(4.0)*c0jsq*cajsq));
   
-  Real cfmax = thr::max(std::sqrt(cfisq),std::sqrt(cfjsq));
+  Real cfmax = fmax(std::sqrt(cfisq),std::sqrt(cfjsq));
 
   Real sfi,sfj;
   /* fastest wave speeds */
-  if(vni <= vnj)
+  sfi = vni - cfmax;
+  sfj = vnj + cfmax;
+
+  if(vnj < vni){
+    sfi = vnj - cfmax;
+    sfj = vni + cfmax;	    
+  }
+    
+  /* middle wave speed */
+  Real sdi =  sfi - vni;
+  Real sdj =  sfj - vnj;
+  Real sm = (sdj*dj*vnj - sdi*di*vni - ptj + pti)/(sdj*dj - sdi*di);
+  
+  Real sdmi = sfi - sm;
+  Real sdmj = sfj - sm;
+  
+  /* total pressure throughout intermediate states, Eq. (41) of [1] */
+  /* Real pts = pti + di*sdi*(sdi-sdmi); */
+  Real pts = (sdj*dj*pti - sdi*di*ptj + di*dj*sdj*sdi*(vnj - vni))/(sdj*dj - sdi*di);
+  
+  /* Alfven wave speed */
+  Real dis = di*sdi/sdmi;
+  Real sqrtdis = std::sqrt(dis);
+  
+  Real djs = dj*sdj/sdmj;
+  Real sqrtdjs = std::sqrt(djs);
+  
+  Real sai = sm - std::fabs(bn)/sqrtdis;
+  Real saj = sm + std::fabs(bn)/sqrtdjs;	
+  
+  /* Real vns = sm; */
+  /* Real vnis; */
+  Real vtis;
+  Real vzis;
+  /* Real bxis; */
+  Real btis;
+  Real bzis;
+  Real tmp;
+
+  /* left intermediate state */
+  if(std::fabs(dis*sdi*sdmi - bn*bn) < MINIMUM_NUM*pts)
     {
-      sfi = vni - cfmax;
-      sfj = vnj + cfmax;
+      /* vnis = vni; */
+      vtis = vti;
+      vzis = vzi;
+      /* bxis = bxi; */
+      btis = bti;
+      bzis = bzi;
     }
   else
     {
-      sfi = vnj - cfmax;
-      sfj = vni + cfmax;	    
+
+      /* eqs. (44) and (46) of [1] revisted for general geometry */
+      /* if (nx,ny) = (1,0), then vx^* = sm and vy^* = vy^* */
+      tmp = bn*(sdi-sdmi)/(di*sdi*sdmi - bn*bn);
+      /* printf("tmp = %f\n",tmp); */
+      /* vnis = vni - bn*tmp;// + sdmi*(pts - pti)*nx/(di*sdi*sdmi - bn*bn); */
+      vtis = vti - bti*tmp; //+ sdmi*(pts - pti)*ny/(di*sdi*sdmi - bn*bn);
+      vzis = vzi - bzi*tmp;	
+      
+      tmp = (di*sdi*sdi - bn*bn)/(di*sdi*sdmi - bn*bn);
+      /* bxis = bxi*tmp - bn*(pts - pti)*nx/(di*sdi*sdmi - bn*bn); */
+      btis = bti*tmp; //- bn*(pts - pti)*ny/(di*sdi*sdmi - bn*bn);
+      bzis = bzi*tmp;
     }
-    
-    /* middle wave speed */
-    Real sdi =  sfi - vni;
-    Real sdj =  sfj - vnj;
-    Real sm = (sdj*dj*vnj - sdi*di*vni - ptj + pti)/(sdj*dj - sdi*di);
-    
-    Real sdmi = sfi - sm;
-    Real sdmj = sfj - sm;
-    
-    /* total pressure throughout intermediate states, Eq. (41) of [1] */
-    /* Real pts = pti + di*sdi*(sdi-sdmi); */
-    Real pts = (sdj*dj*pti - sdi*di*ptj + di*dj*sdj*sdi*(vnj - vni))/(sdj*dj - sdi*di);
-
-    /* Alfven wave speed */
-    Real dis = di*sdi/sdmi;
-    Real sqrtdis = std::sqrt(dis);
-    
-    Real djs = dj*sdj/sdmj;
-    Real sqrtdjs = std::sqrt(djs);
-    
-    Real sai = sm - std::fabs(bn)/sqrtdis;
-    Real saj = sm + std::fabs(bn)/sqrtdjs;	
-
-    /* Real vns = sm; */
-    /* Real vnis; */
-    Real vtis;
-    Real vzis;
-    /* Real bxis; */
-    Real btis;
-    Real bzis;
-    Real tmp;
-
-    /* left intermediate state */
-    if(std::fabs(dis*sdi*sdmi - bn*bn) < MINIMUM_NUM*pts)
-      {
-	/* vnis = vni; */
-	vtis = vti;
-	vzis = vzi;
-	/* bxis = bxi; */
-	btis = bti;
-	bzis = bzi;
-      }
-    else
-      {
-
-	/* eqs. (44) and (46) of [1] revisted for general geometry */
-	/* if (nx,ny) = (1,0), then vx^* = sm and vy^* = vy^* */
-	tmp = bn*(sdi-sdmi)/(di*sdi*sdmi - bn*bn);
-	/* printf("tmp = %f\n",tmp); */
-	/* vnis = vni - bn*tmp;// + sdmi*(pts - pti)*nx/(di*sdi*sdmi - bn*bn); */
-	vtis = vti - bti*tmp; //+ sdmi*(pts - pti)*ny/(di*sdi*sdmi - bn*bn);
-	vzis = vzi - bzi*tmp;	
-	
-	tmp = (di*sdi*sdi - bn*bn)/(di*sdi*sdmi - bn*bn);
-	/* bxis = bxi*tmp - bn*(pts - pti)*nx/(di*sdi*sdmi - bn*bn); */
-	btis = bti*tmp; //- bn*(pts - pti)*ny/(di*sdi*sdmi - bn*bn);
-	bzis = bzi*tmp;
-      }
 
     Real vbi = vni*bn + vti*bti + vzi*bzi;
     Real vbis = sm*bn + vtis*btis + vzis*bzis;    
@@ -814,103 +584,119 @@ void hlld_ct_rotated (Real gamma, Real Minf, Coordinate sn, State state_i, State
 
     /* printf("vxi = %f vxj = %f vxis = %f vxjs = %f vxiss = %f vxjss = %f\n",vxi,vxj,vxis,vxjs,vxiss,vxjss); */
 
+
+    // allocate flux
+    Real fi[7],fj[7],fhlld[7],fdiss[7];
+    Real du[7],Ldu[7];
+
+    du[0] = dj - di;
+    du[1] = dj*vnj - di*vni;
+    du[2] = dj*vtj - di*vti;
+    du[3] = dj*vzj - di*vzi;
+    du[4] = enj - eni;
+    du[5] = btj - bti;
+    du[6] = bzj - bzi;
+
+    // project differnce in conservatives variables onto left eigenvectors
+    for (Index i=0;i<7;i++){
+      Ldu[i] = Zero;
+      for (Index j=0;j<7;j++){
+	Ldu[i] += lem[i][j]*du[j];
+      }      
+    }
+
+    // compute disspation
+    for(Index i=0;i<7;i++){
+      fdiss[i] = Zero;
+      for(Index j=0;j<7;j++){
+	fdiss[i] += half*fmax(fabs(ev[j]),Zero)*Ldu[j]*rem[i][j]; 
+      }
+    }
+
+    // flux at node i
+    fi[0] = di*vni;
+    fi[1] = di*vni*vni + pti - bn*bn;
+    fi[2] = di*vti*vni - bti*bn;
+    fi[3] = di*vzi*vni - bzi*bn;
+    fi[4] = vni*(eni + pti) - bn*(vni*bn + vti*bti + vzi*bzi);
+    fi[5] = vni*bti - vti*bn;
+    fi[6] = vni*bzi - vzi*bn;
+
+    fj[0] = dj*vnj;
+    fj[1] = dj*vnj*vnj + ptj - bn*bn;
+    fj[2] = dj*vtj*vnj - btj*bn;
+    fj[3] = dj*vzj*vnj - bzj*bn;
+    fj[4] = vnj*(enj + ptj) - bn*(vnj*bn + vtj*btj + vzj*bzj);
+    fj[5] = vnj*btj - vtj*bn;
+    fj[6] = vnj*bzj - vzj*bn;
+
+    // compute flux
     if (sfi >= Real(0.0)){
-	flux = State(di*vni, 
-		     Vector(di*vni*vni + pti - bn*bn, 
-			    di*vti*vni - bti*bn, 
-			    di*vzi*vni - bzi*bn),  
-		     vni*(eni + pti) - bn*(vni*bn + vti*bti + vzi*bzi),
-		     Vector(Zero,//vni*bn - vni*bn, 
-			    vni*bti - vti*bn,
-			    vni*bzi - vzi*bn)); 
+      for(Index i=0;i<7;i++){
+	fhlld[i] = fi[i];
+      }
     }
     else if (sfj <= Real(0.0)){
-	flux = State(dj*vnj, 
-		     Vector(dj*vnj*vnj + ptj - bn*bn, 
-			    dj*vtj*vnj - btj*bn, 
-			    dj*vzj*vnj - bzj*bn),  
-		     vnj*(enj + ptj) - bn*(vnj*bn + vtj*btj + vzj*bzj), 
-		     Vector(Zero,//vnj*bn - vnj*bn, 
-			    vnj*btj - vtj*bn,
-			    vnj*bzj - vzj*bn));
+      for(Index i=0;i<7;i++){
+	fhlld[i] = fj[i];
+      }
     }
     else if (sai >= Real(0.0)){
-	flux = State(di*vni + sfi*(dis - di), 
-		     Vector(di*vni*vni + pti - bn*bn
-			    + sfi*(dis*sm - di*vni), 
-			    di*vti*vni - bti*bn
-			    + sfi*(dis*vtis - di*vti), 
-			    di*vzi*vni - bzi*bn
-			    + sfi*(dis*vzis - di*vzi)),  
-		     vni*(eni + pti) - bn*(vni*bn + vti*bti + vzi*bzi)
-		     + sfi*(enis - eni), 
-		     Vector(Zero,//(vni*bn - vni*bn + sfi*(bn - bn)),
-			    (vni*bti - vti*bn + sfi*(btis - bti)),
-			    vni*bzi - vzi*bn + sfi*(bzis - bzi)));
+      fhlld[0] = fi[0] + sfi*(dis - di);
+      fhlld[1] = fi[1] + sfi*(dis*sm - di*vni); 
+      fhlld[2] = fi[2] + sfi*(dis*vtis - di*vti);
+      fhlld[3] = fi[3] + sfi*(dis*vzis - di*vzi); 
+      fhlld[4] = fi[4] + sfi*(enis - eni);  
+      fhlld[5] = fi[5] + sfi*(btis - bti);  
+      fhlld[6] = fi[6] + sfi*(bzis - bzi);  
     }
     else if (sm >= Real(0.0)){
-	tmp = sai - sfi;
-	flux = State(di*vni - sfi*di - tmp*dis + sai*diss, 
-		     Vector(di*vni*vni + pti - bn*bn
-			    - sfi*di*vni - tmp*dis*sm + sai*diss*sm, 
-			    di*vti*vni - bti*bn
-			    - sfi*di*vti - tmp*dis*vtis + sai*diss*vtiss, 
-			    di*vzi*vni - bzi*bn
-			    - sfi*di*vzi - tmp*dis*vzis + sai*diss*vziss), 
-		     vni*(eni + pti) - bn*(vni*bn + vti*bti + vzi*bzi)
-		     - sfi*eni - tmp*enis + sai*eniss, 
-		     Vector(Zero,//(vni*bn - vni*bn - sfi*bn - tmp*bn + sai*bn),
-			    (vni*bti - vti*bn - sfi*bti - tmp*btis + sai*btiss),
-			    vni*bzi - vzi*bn - sfi*bzi - tmp*bzis + sai*bziss));
-
-	/* printf("di*vni =%e sfi*di = %e tmp*dis= %e sai*diss = %e\n",di*vni,sfi*di,tmp*dis,sai*diss); */
-	/* printf("di*vni + sfi*di + tmp*dis + sai*diss = %e\n",di*vni+sfi*di + tmp*dis+sai*diss); */
+      tmp = sai - sfi;
+      fhlld[0] = fi[0] - sfi*di - tmp*dis + sai*diss;
+      fhlld[1] = fi[1] - sfi*di*vni - tmp*dis*sm + sai*diss*sm;
+      fhlld[2] = fi[2] - sfi*di*vti - tmp*dis*vtis + sai*diss*vtiss;
+      fhlld[3] = fi[3] - sfi*di*vzi - tmp*dis*vzis + sai*diss*vziss;
+      fhlld[4] = fi[4] - sfi*eni - tmp*enis + sai*eniss;
+      fhlld[5] = fi[5] - sfi*bti - tmp*btis + sai*btiss;
+      fhlld[6] = fi[6] - sfi*bzi - tmp*bzis + sai*bziss;
     }
     else if (saj >= Real(0.0)){
-	tmp = saj - sfj;
-	flux = State(dj*vnj - sfj*dj - tmp*djs + saj*djss, 
-		     Vector(dj*vnj*vnj + ptj - bn*bn
-			    - sfj*dj*vnj - tmp*djs*sm + saj*djss*sm, 
-			    dj*vtj*vnj - btj*bn
-			    - sfj*dj*vtj - tmp*djs*vtjs + saj*djss*vtjss, 
-			    dj*vzj*vnj - bzj*bn
-			    - sfj*dj*vzj - tmp*djs*vzjs + saj*djss*vzjss), 
-		     vnj*(enj + ptj) - bn*(vnj*bn + vtj*btj + vzj*bzj)
-		     - sfj*enj - tmp*enjs + saj*enjss, 
-		     Vector(Zero,//(vnj*bn - vnj*bn - sfj*bn - tmp*bn + saj*bn),
-			    (vnj*btj - vtj*bn - sfj*btj - tmp*btjs + saj*btjss), 
-			    vnj*bzj - vzj*bn - sfj*bzj - tmp*bzjs + saj*bzjss));
-
-	/* State(Zero, */
-	/*       Vector(Zero,Zero,Zero), */
-	/*       Zero, */
-	/*       Vector(Zero,Zero,Zero)); */
-
-	/* printf("djs =%f vyjs = %f byis = %f byjs = %f\n",djs, vyjs, byi, byjs); */
+      tmp = saj - sfj;
+      fhlld[0] = fj[0] - sfj*dj - tmp*djs + saj*djss;
+      fhlld[1] = fj[1] - sfj*dj*vnj - tmp*djs*sm + saj*djss*sm;
+      fhlld[2] = fj[2] - sfj*dj*vtj - tmp*djs*vtjs + saj*djss*vtjss;
+      fhlld[3] = fj[3] - sfj*dj*vzj - tmp*djs*vzjs + saj*djss*vzjss;
+      fhlld[4] = fj[4] - sfj*enj - tmp*enjs + saj*enjss;
+      fhlld[5] = fj[5] - sfj*btj - tmp*btjs + saj*btjss;
+      fhlld[6] = fj[6] - sfj*bzj - tmp*bzjs + saj*bzjss;
     }
     else{ 
-	flux = State(dj*vnj + sfj*(djs - dj), 
-		     Vector(dj*vnj*vnj + ptj - bn*bn
-			    + sfj*(djs*sm - dj*vnj), 
-			    dj*vtj*vnj - btj*bn
-			    + sfj*(djs*vtjs - dj*vtj), 
-			    dj*vzj*vnj - bzj*bn
-			    + sfj*(djs*vzjs - dj*vzj)),  
-		     vnj*(enj + ptj) - bn*(vnj*bn + vyj*byj + vzj*bzj)
-		     + sfj*(enjs - enj), 
-		     Vector(Zero,//(vnj*bn - vnj*bn + sfj*(bn - bn)), 
-			    (vnj*btj - vtj*bn + sfj*(btjs - btj)), 
-			    vnj*bzj - vzj*bn + sfj*(bzjs - bzj)));
+      fhlld[0] = fj[0] + sfj*(djs - dj);
+      fhlld[1] = fj[1] + sfj*(djs*sm - dj*vnj); 
+      fhlld[2] = fj[2] + sfj*(djs*vtjs - dj*vtj);
+      fhlld[3] = fj[3] + sfj*(djs*vzjs - dj*vzj); 
+      fhlld[4] = fj[4] + sfj*(enjs - enj);  
+      fhlld[5] = fj[5] + sfj*(btjs - btj);  
+      fhlld[6] = fj[6] + sfj*(bzjs - bzj);  
+    }
 
-      }
+    flux = State(Real(fhlld[0]),
+    		 Vector(Real(fhlld[1]),Real(fhlld[2]),Real(fhlld[3])),
+    		 Real(fhlld[4]),
+    		 Vector(Zero,Real(fhlld[5]),Real(fhlld[6])));
 
-	/* printf("di =%f vni = %f vxi = %f pti =%f bxi = %f bn = %f\n",di,vni,vxi,pti,bxi,bn); */
-	/* printf("dis =%f vxis = %f diss = %f vxiss = %f\n",dis, vxis, diss, vxiss); */
-	/* printf("djs =%f vxjs = %f bxis = %f bxjs = %f\n",djs, vxjs, bxis, bxjs); */
-
+    /* printf("flux.d - fhlld[0] = %f\n",thr::get<0>(flux) - fhlld[0]); */
+    /* printf("flux.mx - fhlld[1] = %f\n",get_x(thr::get<1>(flux)) - fhlld[1]); */
+    /* printf("flux.my - fhlld[2] = %f\n",get_y(thr::get<1>(flux)) - fhlld[2]); */
+    /* printf("flux.mz - fhlld[3] = %f\n",get_z(thr::get<1>(flux)) - fhlld[3]); */
+    /* printf("flux.en - fhlld[4] = %f\n",thr::get<2>(flux) - fhlld[4]); */
+    /* printf("flux.bx - Zero = %f\n",get_x(thr::get<3>(flux)) - Zero); */
+    /* printf("flux.by - fhlld[5] = %f\n",get_y(thr::get<3>(flux)) - fhlld[5]); */
+    /* printf("flux.bz - fhlld[6] = %f\n",get_z(thr::get<3>(flux)) - fhlld[6]); */
 
     /* Real normal_wave_speed; */
-    normal_wave_speed = sn_mag*half*(fabs(vnroe) + fabs(vtroe) + cfroe);
+    /* normal_wave_speed = sn_mag*half*(fabs(vnroe) + fabs(vtroe) + cfroe); */
+    normal_wave_speed = sn_mag*half*(fabs(vnroe) + cfroe);
 
 #ifdef DEBUG_FLUX
     if (debug_par > Index(0)){
