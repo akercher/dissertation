@@ -859,8 +859,11 @@ struct outflow_bcs : public thr::unary_function<BoundaryFace,void>
 };
 
 /*****************************************************/
-/* Calculate time step                               */
+/* Calculate time step at each node                  */
 /*---------------------------------------------------*/
+/* Input : tuple(dual volume, wave speed)            */
+/* Output: time step =                               */
+/*                 vol/sum(0.5*max_wave_speed*area)  */
 /*****************************************************/
 template<typename Tuple>
 struct time_step : public thr::unary_function<Tuple,Real>
@@ -869,9 +872,9 @@ struct time_step : public thr::unary_function<Tuple,Real>
   __host__ __device__
     Real operator()(const Tuple& t) const
   {
-
+    /* return vol/sum(0.5*max_wave_speed*area); */
     return thr::get<0>(Tuple(t))/thr::get<1>(Tuple(t));
-    /* return vol/wave_speed; */
+
   }
 };
 

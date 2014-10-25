@@ -737,7 +737,7 @@ int main(int argc, char* argv[]){
 
   output_count = Index(0);
   Index ksteps = Index(0);
-  Real time = Real(0.0);
+  Real time = Zero;
 
   /* timing variables */
   Timer program_timer, face_timer, cell_timer;
@@ -1384,18 +1384,8 @@ int main(int argc, char* argv[]){
       if (1 == 1){/////////////////////////////////////////////////////////////////////////
 
       /*-----------------------------------------------------------------*/
-      /* Apply BCs                                                       */
+      /* Apply BCs if not periodic                                       */
       /*-----------------------------------------------------------------*/
-      // if (mesh.btype_x == Index(1)){
-      // 	// periodic left/right
-      // 	thr::for_each_n(make_device_counting_iterator(),
-      // 			mesh.ny,
-      // 			periodic_bcs(mesh.nx,
-      // 				     mesh.ny,
-      // 				     mesh.nx,
-      // 				     wave_speed_iter,
-      // 				     residual_iter));
-      // }
       if (mesh.btype_x == Index(0)){
 	// outflow left/right
 	for(Index i = interior_ncolors; i < (offset.ncolors - Index(2)); i++){
@@ -1436,18 +1426,6 @@ int main(int argc, char* argv[]){
       }
 
       // apply boundary conditions
-      // if (mesh.btype_y == Index(1)){
-      // 	// periodic top/bottom
-      // 	thr::for_each_n(make_device_counting_iterator(),
-      // 			mesh.nx,
-      // 			periodic_bcs(mesh.nx,
-      // 				     mesh.ny,
-      // 				     Index(1),
-      // 				     wave_speed_iter,
-      // 				     residual_iter));
-	
-      // }
-
       if (mesh.btype_y == Index(0)){
 	bface_iter += Index(2);
 	// outflow top/bottom
@@ -1564,9 +1542,11 @@ int main(int argc, char* argv[]){
 											 wave_speed.end())),
 						  time_step<thr::tuple<Real,Real> >()),
 			  init,array_min());
-	
+
+	// scale dt by Cour. No.
+	dt *= field.Cour;
+
 	if((time + dt) > tf) dt = tf - time;
-	time += dt;
 	
 	if((ksteps-Index(1)) % 100 == 0){
 #ifdef MHD
@@ -1624,7 +1604,8 @@ int main(int argc, char* argv[]){
 		       state.size(),
 		       dual_vol.begin(),
 		       state.begin(),
-		       integrate_time<thr::tuple<State,State> >(field.Cour*rk_coeff*dt));
+		       integrate_time<thr::tuple<State,State> >(rk_coeff*dt));
+		       // integrate_time<thr::tuple<State,State> >(field.Cour*rk_coeff*dt));
       
 #ifdef CT
 #ifdef DEBUG_BN
@@ -1639,7 +1620,8 @@ int main(int argc, char* argv[]){
       			   integrate_ct(mesh.nx,
       					mesh.ny,
       					Index(1),
-      					field.Cour*rk_coeff*dt,
+      					rk_coeff*dt,
+      					// field.Cour*rk_coeff*dt,
       					emf_z_iter,
       					state_iter));
       	  edge_iter += offset.faces_per_color[i];
@@ -1678,27 +1660,30 @@ int main(int argc, char* argv[]){
     faces_per_wall_sec = mesh.nface()/face_timer.elapsed_wall_time();
     cells_per_wall_sec = mesh.ncell()/cell_timer.elapsed_wall_time();
 
-  if(mesh.ncell_x < Index(10)){
-    printf("\n");
-    printf("step %d\n",ksteps);
-    for(Index i = 0; i < mesh.npoin(); i++){
-      if(i % mesh.nx == Index(0)) printf("\n");
-      print_states_host(i,State(state_iter[i]));
-    }
-  }
+    // update time
+    time += dt;
 
-  // write solution to file
-  if((ksteps % nsteps_out) == 0){
-    sprintf(file_name,"%s_%05d.vtk",base_name,output_count);
-    output.open(file_name);
+    if(mesh.ncell_x < Index(10)){
+      printf("\n");
+      printf("step %d\n",ksteps);
+      for(Index i = 0; i < mesh.npoin(); i++){
+	if(i % mesh.nx == Index(0)) printf("\n");
+	print_states_host(i,State(state_iter[i]));
+      }
+    }
+
+    // write solution to file
+    if((ksteps % nsteps_out) == 0){
+      sprintf(file_name,"%s_%05d.vtk",base_name,output_count);
+      output.open(file_name);
 #ifdef MHD
-    current_density_calc(interior_ncolors, mesh, offset, edge, bn_edge,current);
-    output_vtk_legacy(output, mesh, gamma, state, current);
+      current_density_calc(interior_ncolors, mesh, offset, edge, bn_edge,current);
+      output_vtk_legacy(output, mesh, gamma, state, current);
 #else
-    output_vtk_legacy(output, mesh, gamma, state);
+      output_vtk_legacy(output, mesh, gamma, state);
 #endif  
-    output_count += Index(1);
-  }
+      output_count += Index(1);
+    }
     
   }  // end time integration
   
