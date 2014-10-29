@@ -23,7 +23,7 @@ TST = test.run
 #-------------------------------------
 # Definitions
 #-------------------------------------
-REAL = double
+REAL = float
 GAS = MHD
 THR = THRUST_DEVICE_BACKEND_OMP
 
@@ -55,6 +55,9 @@ test : $(TST)
 #---------------------------------------------
 # Dependencies
 #---------------------------------------------
+$(SRC1): $(SRC2)
+	cp $(SRC2) $(SRC1)
+
 $(EXE1): $(SRC1)
 	$(CMP1) $? -o $@ -O3 -DReal=$(REAL) -I$(LOC)
 

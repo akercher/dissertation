@@ -16,4 +16,5 @@
 #define PI Real(3.14159265358979)
 
 // GLOBAL
-static Real Machine_Zero;
+__device__ static Real Machine_Zero;
+/* __device__ static Real Machine_Zero_d; */
