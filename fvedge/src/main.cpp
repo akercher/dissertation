@@ -182,17 +182,14 @@ int main(int argc, char* argv[]){
   /* initialize least squares gradiant*/
   lsq_grad.resize(mesh.npoin());
 
-  // /* initialize difference of primitive state variables */
-  // state_diff.resize(mesh.ncell());
-
   /* initialize difference of primitive state variables */
   interp_states.resize(mesh.nface());
 
   // initialize boundary nodess
   bnode.resize(mesh.nbnode());
-  thr::fill_n(bnode.begin(),mesh.nbnode(),BoundaryNode(Coordinate(Real(0.0),Real(0.0)),
-						       Index(-100),
-						       Index(-100)));
+  thr::fill_n(bnode.begin(),bnode.size(),BoundaryNode(Coordinate(Real(0.0),Real(0.0)),
+  						       Index(-100),
+  						       Index(-100)));
 
   // initialize boundary faces
   bface.resize(mesh.nboun_x() + mesh.nboun_y());
@@ -211,7 +208,7 @@ int main(int argc, char* argv[]){
   Vector4Iterator lsq_inv_iter(lsq_inv.begin());
   StateGradiantIterator lsq_grad_iter(lsq_grad.begin());
   RealIterator wave_speed_iter(wave_speed.begin());
-
+  
 #ifdef MHD
 
   RealArray emf_z; // electromotive force for CT 
@@ -242,7 +239,7 @@ int main(int argc, char* argv[]){
 
   cell_flow_direction.resize(mesh.ncell());
   thr::fill_n(cell_flow_direction.begin(),cell_flow_direction.size(),
-	      Vector4(Real(0.0),Real(0.0),Real(0.0),Real(0.0)));
+  	      Vector4(Real(0.0),Real(0.0),Real(0.0),Real(0.0)));
 
   RealIterator emf_z_iter(emf_z.begin());
   RealIterator emf_z_poin_iter(emf_z_poin.begin());
@@ -272,7 +269,7 @@ int main(int argc, char* argv[]){
   				     mesh.ncell_y,
   				     mesh.btype_x,
   				     mesh.btype_y,
-				     offset.iface_d,
+  				     offset.iface_d,
   				     mesh.dx,
   				     mesh.dy));
       
