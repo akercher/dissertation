@@ -23,7 +23,8 @@ TST = test.run
 #-------------------------------------
 # Definitions
 #-------------------------------------
-REAL = float
+REAL = double
+REAL_EPS = DBL_EPSILON
 GAS = MHD
 THR = THRUST_DEVICE_BACKEND_OMP
 
@@ -59,19 +60,19 @@ $(SRC1): $(SRC2)
 	cp $(SRC2) $(SRC1)
 
 $(EXE1): $(SRC1)
-	$(CMP1) $? -o $@ -O3 -DReal=$(REAL) -I$(LOC)
+	$(CMP1) $? -o $@ -O3 -DReal=$(REAL) -DREAL_EPSILON=$(REAL_EPS) -I$(LOC)
 
 $(EXE2): $(SRC2)
-	$(CMP2) $? -o $@ -O3 -fopenmp -DReal=$(REAL) -DTHRUST_DEVICE_SYSTEM=$(THR) -I$(LOC)
+	$(CMP2) $? -o $@ -O3 -fopenmp -DReal=$(REAL) -DREAL_EPSILON=$(REAL_EPS) -DTHRUST_DEVICE_SYSTEM=$(THR) -I$(LOC)
 
 $(EXE3): $(SRC1)
-	$(CMP1) $? -o $@ -O3 -D$(GAS) -DReal=$(REAL) -I$(LOC)
+	$(CMP1) $? -o $@ -O3 -D$(GAS) -DReal=$(REAL) -DREAL_EPSILON=$(REAL_EPS) -I$(LOC)
 
 $(EXE4): $(SRC2)
-	$(CMP2) $? -o $@ -O3 -fopenmp -D$(GAS) -DReal=$(REAL) -DTHRUST_DEVICE_SYSTEM=$(THR) -I$(LOC)
+	$(CMP2) $? -o $@ -O3 -fopenmp -D$(GAS) -DReal=$(REAL) -DREAL_EPSILON=$(REAL_EPS) -DTHRUST_DEVICE_SYSTEM=$(THR) -I$(LOC)
 
 $(TST): src/test.cpp
-	$(CMP2) $? -o $@ -O3 -fopenmp -DReal=$(REAL) -DTHRUST_DEVICE_SYSTEM=$(THR) -l$(LIB) -I$(LOC)
+	$(CMP2) $? -o $@ -O3 -fopenmp -DReal=$(REAL) -DREAL_EPSILON=$(REAL_EPS) -DTHRUST_DEVICE_SYSTEM=$(THR) -l$(LIB) -I$(LOC)
 
 #-------------------------------
 # CLEAN EXECUTABLES AND OBJECTS

@@ -1,5 +1,5 @@
 /*************************************************************************/
-/* File   : main.c                                                       */
+/* File   : main.cxx                                                     */
 /* Author : A. Kercher                                                   */
 /*-----------------------------------------------------------------------*/
 /* References:                                                           */
@@ -13,7 +13,7 @@
 /*-----------------------------------------------------------------------*/
 /* Copyright:                                                            */
 /*                                                                       */
-/*   This file is part of fvsmp.                                         */
+/*   This file is part of fvedge.                                        */
 /*                                                                       */
 /*     fvedge is free software: you can redistribute it and/or modify    */
 /*     it under the terms of the GNU General Public License version 3    */
@@ -25,7 +25,7 @@
 /*     GNU General Public License for more details.                      */
 /*                                                                       */
 /*     You should have received a copy of the GNU General Public License */
-/*     along with fvsmp.  If not, see <http://www.gnu.org/licenses/>.    */
+/*     along with fvedge.  If not, see <http://www.gnu.org/licenses/>.   */
 /*                                                                       */
 /*************************************************************************/
 #ifdef MHD
@@ -43,7 +43,6 @@
 #define LINEAR
 
 #define flux_hydro rhll
-
 
 #include "thrust_wrapper.h"
 #include "defs.h"
@@ -102,7 +101,8 @@ int main(int argc, char* argv[]){
   BoundaryNodeArray bnode;
   BoundaryFaceArray bface;
   InterfaceArray face;
-  StateArray antidiffusion; //antidiffusion
+  // StateArray antidiffusion; //antidiffusion
+  StateArray flux_edge; //flux along edge
 
   Index nsteps_out = 100;
   Index output_count;
@@ -122,7 +122,7 @@ int main(int argc, char* argv[]){
 
   Machine_Zero = Real(pow(Two,Real(-i)));
 
-  printf("Machine Zero = %e\n",Machine_Zero);
+  printf("Machine Zero = %e REAL_EPSILON = %e\n",Machine_Zero,REAL_EPSILON);
 
   input.open(argv[1]); // <-- opens input file
   
@@ -151,7 +151,7 @@ int main(int argc, char* argv[]){
   /* initialize mesh */
   mesh.init();
 
-  // mesh.iface_d = iface_; //1:tri, 0:quad
+  // mesh.iedge_d = iedge_d; //1:tri, 0:quad
   if (mesh.ndim < 2) ct = Index(0);
 
   mesh.generate();
@@ -168,13 +168,16 @@ int main(int argc, char* argv[]){
   dual_vol.resize(mesh.npoin());
 
   // initialize edges
-  edge.resize(mesh.nface());
+  edge.resize(mesh.nedge());
 
   /* initialize residuals */
   residual.resize(mesh.npoin());
 
-  /* initialize antidiffusive flux */
-  antidiffusion.resize(mesh.nface());
+  // /* initialize antidiffusive flux */
+  // antidiffusion.resize(mesh.nedge());
+
+  /* initialize flux along edge */
+  flux_edge.resize(mesh.nedge());
 
   /* initialize least squares inverse*/
   lsq_inv.resize(mesh.npoin());
@@ -183,7 +186,7 @@ int main(int argc, char* argv[]){
   lsq_grad.resize(mesh.npoin());
 
   /* initialize difference of primitive state variables */
-  interp_states.resize(mesh.nface());
+  interp_states.resize(mesh.nedge());
 
   // initialize boundary nodess
   bnode.resize(mesh.nbnode());
@@ -199,7 +202,8 @@ int main(int argc, char* argv[]){
 
   // define iterators
   StateIterator state_iter(state.begin());
-  StateIterator antidiffusion_iter(antidiffusion.begin());
+  // StateIterator antidiffusion_iter(antidiffusion.begin());
+  StateIterator flux_iter(flux_edge.begin());
   EdgeIterator edge_iter(edge.begin());
   BoundaryNodeIterator bnode_iter(bnode.begin());
   BoundaryFaceIterator bface_iter(bface.begin());
@@ -228,10 +232,10 @@ int main(int argc, char* argv[]){
   emf_z_n.resize(mesh.ncell());
   thr::fill_n(emf_z_n.begin(),emf_z_n.size(),Real(0.0));
   
-  bn_edge.resize(mesh.nface());
+  bn_edge.resize(mesh.nedge());
   thr::fill_n(bn_edge.begin(),bn_edge.size(),Real(0.0));
   
-  bn_edge_n.resize(mesh.nface());
+  bn_edge_n.resize(mesh.nedge());
   thr::fill_n(bn_edge_n.begin(),bn_edge_n.size(),Real(0.0));
 
   current.resize(mesh.npoin());
@@ -249,7 +253,7 @@ int main(int argc, char* argv[]){
 
   // create offset for coloring algorithm
   Offset offset;  
-  offset.iface_d = mesh.iface_d; //1:tri, 0:quad
+  offset.iedge_d = mesh.iedge_d; //1:tri, 0:quad
   offset.ncolors_per_dim = Index(2)*mesh.ndim;
   offset.init(mesh.ndim, mesh.ncell_x, mesh.ncell_y, mesh.nboun_x(), mesh.nboun_y(),
   	      mesh.btype_x, mesh.btype_y);
@@ -261,7 +265,7 @@ int main(int argc, char* argv[]){
   for(Index color_index = 0; color_index < interior_ncolors; color_index++)
     {
       thr::transform_n(make_device_counting_iterator(),
-  		       offset.faces_per_color[color_index],
+  		       offset.edges_per_color[color_index],
   		       edge_iter,
   		       edges_init_2d(color_index,
   				     offset.ncolors_per_dim,
@@ -269,41 +273,41 @@ int main(int argc, char* argv[]){
   				     mesh.ncell_y,
   				     mesh.btype_x,
   				     mesh.btype_y,
-  				     offset.iface_d,
+  				     offset.iedge_d,
   				     mesh.dx,
   				     mesh.dy));
       
-      edge_iter += offset.faces_per_color[color_index];
-      edge_bound_index += offset.faces_per_color[color_index];
+      edge_iter += offset.edges_per_color[color_index];
+      edge_bound_index += offset.edges_per_color[color_index];
     }
 
   for(Index color_index = interior_ncolors; color_index < offset.ncolors; color_index++)
     {
       thr::transform_n(make_device_counting_iterator(),
-		       offset.faces_per_color[color_index],
+		       offset.edges_per_color[color_index],
 		       thr::make_zip_iterator(thr::make_tuple(edge_iter,
 							      bface_iter)),
 		       edge_bounds_init_2d<thr::tuple<Edge,BoundaryFace> >(color_index,
 									   offset.ncolors_per_dim,
-									   (offset.iface_d*mesh.ndim),
+									   (offset.iedge_d*mesh.ndim),
 									   mesh.ncell_x,
 									   mesh.ncell_y,
 									   mesh.btype_x,
 									   mesh.btype_y,
-									   offset.iface_d,
+									   // offset.iface_d,
 									   mesh.dx,
 									   mesh.dy,
 									   bnode_iter));
       
-      edge_iter += offset.faces_per_color[color_index];
-      bface_iter += offset.faces_per_color[color_index];
+      edge_iter += offset.edges_per_color[color_index];
+      bface_iter += offset.edges_per_color[color_index];
     }
   // reset iterator
   edge_iter = edge.begin();
   bface_iter = bface.begin();
 
 #ifdef DEBUG_EDGES
-  for (Index i=0; i<mesh.nface();i++){
+  for (Index i=0; i<mesh.nedge();i++){
     print_edges_host(i,edge[i]);
   }
 #endif
@@ -319,20 +323,14 @@ int main(int argc, char* argv[]){
   for(Index color_index = 0; color_index < interior_ncolors; color_index++)
     {
       thr::for_each_n(edge_iter,
-  		       offset.faces_per_color[color_index],
+  		       offset.edges_per_color[color_index],
   		       directed_area_sum(area_sum_iter));
       
-      edge_iter += offset.faces_per_color[color_index];
+      edge_iter += offset.edges_per_color[color_index];
     }
   // reset iterator
   edge_iter = edge.begin();
   
-  // for (Index i=0;i<mesh.npoin();i++){
-  //   if (Real(area_sum[i]) > Zero){
-  //     printf("[%d] %f\n",i,Real(area_sum[i]));
-  //   }
-  // }
-
   
   /*-----------------------------------------------------------------*/
   /* Initialize node centered consevative state variables            */
@@ -382,7 +380,7 @@ int main(int argc, char* argv[]){
 #ifdef MHD
     for(Index i=0; i < offset.ncolors; i++){
       thr::transform_n(edge_iter,
-		       offset.faces_per_color[i],	    
+		       offset.edges_per_color[i],	    
 		       bn_edge_iter,
 		       linear_wave_init_interface(mesh.nx,
 						  mesh.dx,
@@ -394,8 +392,8 @@ int main(int argc, char* argv[]){
 						  ieigen,
 						  gamma));
 
-      edge_iter += offset.faces_per_color[i];
-      bn_edge_iter += offset.faces_per_color[i];
+      edge_iter += offset.edges_per_color[i];
+      bn_edge_iter += offset.edges_per_color[i];
     }
     // reset iterator
     edge_iter = edge.begin();
@@ -422,7 +420,7 @@ int main(int argc, char* argv[]){
 #ifdef MHD
     for(Index i=0; i < offset.ncolors; i++){
       thr::transform_n(edge_iter,
-		       offset.faces_per_color[i],	    
+		       offset.edges_per_color[i],	    
 		       bn_edge_iter,
 		       cpaw_init_interface(mesh.nx,
 					   mesh.dx,
@@ -432,8 +430,8 @@ int main(int argc, char* argv[]){
 					   Real(0.078186)*Real(0.0),
 					   gamma));
 
-      edge_iter += offset.faces_per_color[i];
-      bn_edge_iter += offset.faces_per_color[i];
+      edge_iter += offset.edges_per_color[i];
+      bn_edge_iter += offset.edges_per_color[i];
     }
     // reset iterator
     edge_iter = edge.begin();
@@ -463,7 +461,7 @@ int main(int argc, char* argv[]){
 #ifdef MHD
     for(Index i=0; i < offset.ncolors; i++){
       thr::transform_n(edge_iter,
-		       offset.faces_per_color[i],	    
+		       offset.edges_per_color[i],	    
 		       bn_edge_iter,
 		       field_loop_init_interface(mesh.nx,
 						 mesh.dx,
@@ -471,8 +469,8 @@ int main(int argc, char* argv[]){
 						 mesh.Lx,
 						 mesh.Ly));
 
-      edge_iter += offset.faces_per_color[i];
-      bn_edge_iter += offset.faces_per_color[i];
+      edge_iter += offset.edges_per_color[i];
+      bn_edge_iter += offset.edges_per_color[i];
     }
     // reset iterator
     edge_iter = edge.begin();
@@ -499,7 +497,7 @@ int main(int argc, char* argv[]){
 #ifdef MHD
     for(Index i=0; i < offset.ncolors; i++){
       thr::transform_n(edge_iter,
-		       offset.faces_per_color[i],	    
+		       offset.edges_per_color[i],	    
 		       bn_edge_iter,
 		       orszag_tang_init_interface(mesh.nx,
 						  mesh.dx,
@@ -508,8 +506,8 @@ int main(int argc, char* argv[]){
 						  mesh.Ly,
 						  gamma));
 
-      edge_iter += offset.faces_per_color[i];
-      bn_edge_iter += offset.faces_per_color[i];
+      edge_iter += offset.edges_per_color[i];
+      bn_edge_iter += offset.edges_per_color[i];
     }
     // reset iterator
     edge_iter = edge.begin();
@@ -593,13 +591,13 @@ int main(int argc, char* argv[]){
   if (prob.compare("constant_mhd") == Index(0)){
     for(Index i=0; i < offset.ncolors; i++){
       thr::transform_n(edge_iter,
-		      offset.faces_per_color[i],
+		      offset.edges_per_color[i],
 		      bn_edge_iter,
 		      init_interface_bfield(state_iter));
 								    
 
-      edge_iter += offset.faces_per_color[i];
-      bn_edge_iter += offset.faces_per_color[i];
+      edge_iter += offset.edges_per_color[i];
+      bn_edge_iter += offset.edges_per_color[i];
     }
     // reset iterator
     edge_iter = edge.begin();
@@ -609,13 +607,13 @@ int main(int argc, char* argv[]){
   else if (prob.compare("blast_wave") == Index(0)){
     for(Index i=0; i < offset.ncolors; i++){
       thr::transform_n(edge_iter,
-		      offset.faces_per_color[i],
+		      offset.edges_per_color[i],
 		      bn_edge_iter,
 		      init_interface_bfield(state_iter));
 								    
 
-      edge_iter += offset.faces_per_color[i];
-      bn_edge_iter += offset.faces_per_color[i];
+      edge_iter += offset.edges_per_color[i];
+      bn_edge_iter += offset.edges_per_color[i];
     }
     // reset iterator
     edge_iter = edge.begin();
@@ -624,13 +622,13 @@ int main(int argc, char* argv[]){
   else if (prob.compare("kh_instability") == Index(0)){
     for(Index i=0; i < offset.ncolors; i++){
       thr::transform_n(edge_iter,
-		      offset.faces_per_color[i],
+		      offset.edges_per_color[i],
 		      bn_edge_iter,
 		      init_interface_bfield(state_iter));
 								    
 
-      edge_iter += offset.faces_per_color[i];
-      bn_edge_iter += offset.faces_per_color[i];
+      edge_iter += offset.edges_per_color[i];
+      bn_edge_iter += offset.edges_per_color[i];
     }
     // reset iterator
     edge_iter = edge.begin();
@@ -639,13 +637,13 @@ int main(int argc, char* argv[]){
   else if (prob.compare("field_loop") == Index(0)){
     for(Index i=0; i < offset.ncolors; i++){
       thr::transform_n(edge_iter,
-		      offset.faces_per_color[i],
+		      offset.edges_per_color[i],
 		      bn_edge_iter,
 		      init_interface_bfield(state_iter));
 								    
 
-      edge_iter += offset.faces_per_color[i];
-      bn_edge_iter += offset.faces_per_color[i];
+      edge_iter += offset.edges_per_color[i];
+      bn_edge_iter += offset.edges_per_color[i];
     }
     // reset iterator
     edge_iter = edge.begin();
@@ -656,15 +654,15 @@ int main(int argc, char* argv[]){
     for(Index i=0; i < offset.ncolors; i++){
       thr::for_each_n(thr::make_zip_iterator(thr::make_tuple(edge_iter,
 				      bn_edge_iter)),
-		      offset.faces_per_color[i],	    
+		      offset.edges_per_color[i],	    
 		      init_bfield_points<thr::tuple<Edge,Real> >(mesh.nx,
 								 mesh.ny,
 								 mesh.dx,
 								 mesh.dy,
 								 state_iter));
 
-      edge_iter += offset.faces_per_color[i];
-      bn_edge_iter += offset.faces_per_color[i];
+      edge_iter += offset.edges_per_color[i];
+      bn_edge_iter += offset.edges_per_color[i];
     }
     // reset iterator
     edge_iter = edge.begin();
@@ -706,7 +704,7 @@ int main(int argc, char* argv[]){
   thr::transform_n(make_device_counting_iterator(),
 		   dual_vol.size(),
 		   dual_vol.begin(),
-		   calc_dual_vol(offset.iface_d,
+		   calc_dual_vol(offset.iedge_d,
 				 mesh.nx,
 				 mesh.ny,
 				 mesh.btype_x,
@@ -720,12 +718,12 @@ int main(int argc, char* argv[]){
   // loop over edges
   for(Index i=0; i < offset.ncolors; i++){
     thr::for_each_n(edge_iter,
-  		    offset.faces_per_color[i],	    
+  		    offset.edges_per_color[i],	    
   		    least_sq_inv_matrix(mesh.dx,
   					mesh.dy,
   					lsq_inv_iter));
     
-    edge_iter += offset.faces_per_color[i];
+    edge_iter += offset.edges_per_color[i];
   }
   // reset iterator
   edge_iter = edge.begin();
@@ -738,13 +736,13 @@ int main(int argc, char* argv[]){
 
   /* timing variables */
   Timer program_timer, face_timer, cell_timer;
-  Real faces_per_cpu_sec, cells_per_cpu_sec;
-  Real faces_per_wall_sec, cells_per_wall_sec;
+  Real edges_per_cpu_sec, cells_per_cpu_sec;
+  Real edges_per_wall_sec, cells_per_wall_sec;
   Real face_cycles_per_cpu_sec, cell_cycles_per_cpu_sec;
   Real face_cycles_per_wall_sec, cell_cycles_per_wall_sec;
 
   cells_per_wall_sec = Real(0.0);
-  faces_per_wall_sec = Real(0.0);
+  edges_per_wall_sec = Real(0.0);
   cell_cycles_per_cpu_sec = Real(0.0);
   face_cycles_per_cpu_sec = Real(0.0);
   cell_cycles_per_wall_sec = Real(0.0);
@@ -760,7 +758,7 @@ int main(int argc, char* argv[]){
       print_states_host(i,State(state_iter[i]));
     }
 #ifdef MHD
-    for(Index i = 0; i < mesh.nface(); i++){
+    for(Index i = 0; i < mesh.nedge(); i++){
       if(i % mesh.nx == Index(0)) printf("\n");
       printf("[%d][%d] bn = %f\n",get_x(thr::get<2>(Edge(edge[i]))),
 	     get_y(thr::get<2>(Edge(edge[i]))),Real(bn_edge[i]));
@@ -847,13 +845,13 @@ int main(int argc, char* argv[]){
       // compute gradiants
       for(Index i=0; i < offset.ncolors; i++){
 	thr::for_each_n(edge_iter,
-			offset.faces_per_color[i],	    
+			offset.edges_per_color[i],	    
 			least_sq_gradiants(mesh.dx,
 					   mesh.dy,
 					   gamma,
 					   state_iter,
 					   lsq_grad_iter));
-	edge_iter += offset.faces_per_color[i];
+	edge_iter += offset.edges_per_color[i];
       }
       // reset iterator
       edge_iter = edge.begin();
@@ -866,14 +864,14 @@ int main(int argc, char* argv[]){
       interp_states_iter = interp_states.begin();
       for(Index i=0; i < offset.ncolors; i++){
 	thr::transform_n(edge_iter,
-			 offset.faces_per_color[i],
+			 offset.edges_per_color[i],
 			 interp_states_iter,
 			 gradiant_reconstruction(gamma,
 						 state_iter,
 						 lsq_grad_iter));
 	offset.update(i);
-	edge_iter += offset.faces_per_color[i];
-	interp_states_iter += offset.faces_per_color[i];
+	edge_iter += offset.edges_per_color[i];
+	interp_states_iter += offset.edges_per_color[i];
       }
       // reset iterators
       edge_iter = edge.begin();
@@ -886,30 +884,30 @@ int main(int argc, char* argv[]){
 #ifdef MHD
 	thr::transform_n(thr::make_zip_iterator(thr::make_tuple(edge_iter,
 								bn_edge_iter)),
-			 offset.faces_per_color[i],
+			 offset.edges_per_color[i],
 			 interp_states_iter,
-			 antidiffusion_iter,
+			 flux_iter,
 			 residual_ct<thr::tuple<Edge,Real> >(gamma,
 							     wave_speed_iter,
 							     emf_z_iter,
 							     cell_flow_direction_iter,
 							     residual_iter));
-	edge_iter += offset.faces_per_color[i];
-	interp_states_iter += offset.faces_per_color[i];
-	antidiffusion_iter += offset.faces_per_color[i];
-	bn_edge_iter += offset.faces_per_color[i];
+	edge_iter += offset.edges_per_color[i];
+	interp_states_iter += offset.edges_per_color[i];
+	flux_iter += offset.edges_per_color[i];
+	bn_edge_iter += offset.edges_per_color[i];
 #else
 	thr::transform_n(edge_iter,
-			 offset.faces_per_color[i],
+			 offset.edges_per_color[i],
 			 interp_states_iter,
-			 antidiffusion_iter,
+			 flux_iter,
 			 residual_op(gamma,
 				     wave_speed_iter,
 				     residual_iter));
 
-	edge_iter += offset.faces_per_color[i];
-	interp_states_iter += offset.faces_per_color[i];
-	antidiffusion_iter += offset.faces_per_color[i];
+	edge_iter += offset.edges_per_color[i];
+	interp_states_iter += offset.edges_per_color[i];
+	flux_iter += offset.edges_per_color[i];
 #endif	
       }
 
@@ -956,30 +954,30 @@ int main(int argc, char* argv[]){
 #ifdef MHD
 	thr::transform_n(thr::make_zip_iterator(thr::make_tuple(edge_iter,
 								bn_edge_iter)),
-			 offset.faces_per_color[i],
+			 offset.edges_per_color[i],
 			 interp_states_iter,
-			 antidiffusion_iter,
+			 flux_iter,
 			 residual_ct<thr::tuple<Edge,Real> >(gamma,
 							     wave_speed_iter,
 							     emf_z_iter,
 							     cell_flow_direction_iter,
 							     residual_iter));
-	edge_iter += offset.faces_per_color[i];
-	interp_states_iter += offset.faces_per_color[i];
-	antidiffusion_iter += offset.faces_per_color[i];
-	bn_edge_iter += offset.faces_per_color[i];
+	edge_iter += offset.edges_per_color[i];
+	interp_states_iter += offset.edges_per_color[i];
+	flux_iter += offset.edges_per_color[i];
+	bn_edge_iter += offset.edges_per_color[i];
 #else
 	thr::transform_n(edge_iter,
-			 offset.faces_per_color[i],
+			 offset.edges_per_color[i],
 			 interp_states_iter,
-			 antidiffusion_iter,
+			 flux_iter,
 			 residual_op(gamma,
 				     wave_speed_iter,
 				     residual_iter));
 
-	edge_iter += offset.faces_per_color[i];
-	interp_states_iter += offset.faces_per_color[i];
-	antidiffusion_iter += offset.faces_per_color[i];
+	edge_iter += offset.edges_per_color[i];
+	interp_states_iter += offset.edges_per_color[i];
+	flux_iter += offset.edges_per_color[i];
 #endif	
       }
 
@@ -1076,37 +1074,37 @@ int main(int argc, char* argv[]){
 #ifdef MHD
 	thr::transform_n(thr::make_zip_iterator(thr::make_tuple(edge_iter,
 								bn_edge_iter)),
-			 offset.faces_per_color[i],
+			 offset.edges_per_color[i],
 			 interp_states_iter,
-			 antidiffusion_iter,
+			 flux_iter,
 			 residual_ct<thr::tuple<Edge,Real> >(gamma,
 							     wave_speed_iter,
 							     emf_z_iter,
 							     cell_flow_direction_iter,
 							     residual_iter));
-	edge_iter += offset.faces_per_color[i];
-	interp_states_iter += offset.faces_per_color[i];
-	antidiffusion_iter += offset.faces_per_color[i];
-	bn_edge_iter += offset.faces_per_color[i];
+	edge_iter += offset.edges_per_color[i];
+	interp_states_iter += offset.edges_per_color[i];
+	flux_iter += offset.edges_per_color[i];
+	bn_edge_iter += offset.edges_per_color[i];
 #else
 	thr::transform_n(edge_iter,
-			 offset.faces_per_color[i],
+			 offset.edges_per_color[i],
 			 interp_states_iter,
 			 antidiffusion_iter,
 			 residual_op(gamma,
 				     wave_speed_iter,
 				     residual_iter));
 
-	edge_iter += offset.faces_per_color[i];
-	interp_states_iter += offset.faces_per_color[i];
-	antidiffusion_iter += offset.faces_per_color[i];
+	edge_iter += offset.edges_per_color[i];
+	interp_states_iter += offset.edges_per_color[i];
+	flux_iter += offset.edges_per_color[i];
 #endif	
       }
 
       // reset iterators
       edge_iter = edge.begin();
       interp_states_iter = interp_states.begin();
-      antidiffusion_iter = antidiffusion.begin();      
+      flux_iter = flux_edge.begin();      
 #ifdef MHD
       bn_edge_iter = bn_edge.begin();
 #endif	
@@ -1389,8 +1387,8 @@ int main(int argc, char* argv[]){
 #ifdef MHD
 	  thr::for_each_n(thr::make_zip_iterator(thr::make_tuple(bface_iter,
 								 bn_edge_iter)),
-	  		  offset.faces_per_color[i],
-	  		  outflow_bcs_ct<thr::tuple<BoundaryFace,Real> >(mesh.iface_d,
+	  		  offset.edges_per_color[i],
+	  		  outflow_bcs_ct<thr::tuple<BoundaryFace,Real> >(mesh.iedge_d,
 									 mesh.nx,
 									 gamma,
 									 wave_speed_iter,
@@ -1398,12 +1396,12 @@ int main(int argc, char* argv[]){
 									 state_iter,
 									 residual_iter));
 
-	  bn_edge_iter += offset.faces_per_color[i];
+	  bn_edge_iter += offset.edges_per_color[i];
 	  
 #else
 	  thr::for_each_n(bface_iter,
-			  offset.faces_per_color[i],
-			  outflow_bcs(mesh.iface_d,
+			  offset.edges_per_color[i],
+			  outflow_bcs(mesh.iedge_d,
 				      gamma,
 				      wave_speed_iter,
 				      bnode_iter,
@@ -1411,7 +1409,7 @@ int main(int argc, char* argv[]){
 	  			      residual_iter));
 	  
 #endif
-	  bface_iter += offset.faces_per_color[i];
+	  bface_iter += offset.edges_per_color[i];
 	}
 
 	// reset iterators
@@ -1430,27 +1428,27 @@ int main(int argc, char* argv[]){
 #ifdef MHD
 	  thr::for_each_n(thr::make_zip_iterator(thr::make_tuple(bface_iter,
 								 bn_edge_iter)),
-	  		  offset.faces_per_color[i],
-	  		  outflow_bcs_ct<thr::tuple<BoundaryFace,Real> >(mesh.iface_d,
+	  		  offset.edges_per_color[i],
+	  		  outflow_bcs_ct<thr::tuple<BoundaryFace,Real> >(mesh.iedge_d,
 									 mesh.nx,
 									 gamma,
 									 wave_speed_iter,
 									 bnode_iter,
 									 state_iter,
 									 residual_iter));
-	  bn_edge_iter += offset.faces_per_color[i];
+	  bn_edge_iter += offset.edges_per_color[i];
 
 #else
 	  thr::for_each_n(bface_iter,
-	  		  offset.faces_per_color[i],
-	  		  outflow_bcs(mesh.iface_d,
+	  		  offset.edges_per_color[i],
+	  		  outflow_bcs(mesh.iedge_d,
 	  			      gamma,
 	  			      wave_speed_iter,
 	  			      bnode_iter,
 	  			      state_iter,
 	  			      residual_iter));	  
 #endif
-	  bface_iter += offset.faces_per_color[i];
+	  bface_iter += offset.edges_per_color[i];
 	}
 	// reset iterators
 	bface_iter = bface.begin();
@@ -1478,35 +1476,35 @@ int main(int argc, char* argv[]){
 #endif
        for(Index i=0; i < interior_ncolors; i++){
       	thr::for_each_n(thr::make_zip_iterator(thr::make_tuple(edge_iter,
-      							       antidiffusion_iter)),
-      			offset.faces_per_color[i],
+      							       flux_iter)),
+      			offset.edges_per_color[i],
       			emf_upwind_calc<thr::tuple<Edge,State> >(mesh.nx,
       								 mesh.ny,
       								 emf_z_iter,
 								 cell_flow_direction_iter,
       								 state_iter));
 	
-      	edge_iter += offset.faces_per_color[i];
-      	antidiffusion_iter += offset.faces_per_color[i];
+      	edge_iter += offset.edges_per_color[i];
+      	flux_iter += offset.edges_per_color[i];
       }
 
       // apply boundary conditions left/right      
       for(Index i = interior_ncolors; i < (offset.ncolors); i++){
 	thr::for_each_n(thr::make_zip_iterator(thr::make_tuple(edge_iter,
-							       antidiffusion_iter)),
-			offset.faces_per_color[i],
+							       flux_iter)),
+			offset.edges_per_color[i],
 			emf_upwind_bcs<thr::tuple<Edge,State> >(mesh.nx,
 								mesh.ny,
 								emf_z_iter,
 								cell_flow_direction_iter,
 								state_iter));
 	
-	edge_iter += offset.faces_per_color[i];
-	antidiffusion_iter += offset.faces_per_color[i];
+	edge_iter += offset.edges_per_color[i];
+	flux_iter += offset.edges_per_color[i];
       }
       // reset iterators
       edge_iter = edge.begin();
-      antidiffusion_iter = antidiffusion.begin();      
+      flux_iter = flux_edge.begin();      
 
 #ifdef DEBUG_EMF
       printf("\n EMF: \n");
@@ -1560,7 +1558,7 @@ int main(int argc, char* argv[]){
 		    << "div(B) = " << max_divb << " , " 
 #endif
 		    << "cells_per_sec = " << cells_per_wall_sec << " , "  
-		    << "face_per_sec = " << faces_per_wall_sec // << " , "  
+		    << "face_per_sec = " << edges_per_wall_sec // << " , "  
 		    << std::endl;
 	}
 
@@ -1611,7 +1609,7 @@ int main(int argc, char* argv[]){
       for(Index i=0; i < offset.ncolors; i++)
       	{
       	  thr::transform_n(edge_iter,
-      			   offset.faces_per_color[i],	    
+      			   offset.edges_per_color[i],	    
       			   bn_edge_iter,
       			   bn_edge_iter,
       			   integrate_ct(mesh.nx,
@@ -1621,8 +1619,8 @@ int main(int argc, char* argv[]){
       					// field.Cour*rk_coeff*dt,
       					emf_z_iter,
       					state_iter));
-      	  edge_iter += offset.faces_per_color[i];
-      	  bn_edge_iter += offset.faces_per_color[i];
+      	  edge_iter += offset.edges_per_color[i];
+      	  bn_edge_iter += offset.edges_per_color[i];
       	}
       // reset iterators
       edge_iter = edge.begin();
@@ -1654,7 +1652,7 @@ int main(int argc, char* argv[]){
     face_timer.stop();
     cell_timer.stop();
     
-    faces_per_wall_sec = mesh.nface()/face_timer.elapsed_wall_time();
+    edges_per_wall_sec = mesh.nedge()/face_timer.elapsed_wall_time();
     cells_per_wall_sec = mesh.ncell()/cell_timer.elapsed_wall_time();
 
     // update time
@@ -1689,8 +1687,8 @@ int main(int argc, char* argv[]){
   cell_cycles_per_cpu_sec = Real(ksteps)*Real(mesh.ncell())/program_timer.elapsed_cpu_time();
   cell_cycles_per_wall_sec = Real(ksteps)*Real(mesh.ncell())/program_timer.elapsed_wall_time();
 
-  face_cycles_per_cpu_sec = Real(ksteps)*Real(mesh.nface())/program_timer.elapsed_cpu_time();
-  face_cycles_per_wall_sec = Real(ksteps)*Real(mesh.nface())/program_timer.elapsed_wall_time();
+  face_cycles_per_cpu_sec = Real(ksteps)*Real(mesh.nedge())/program_timer.elapsed_cpu_time();
+  face_cycles_per_wall_sec = Real(ksteps)*Real(mesh.nedge())/program_timer.elapsed_wall_time();
 
   // -----------------------------------------------------------------
   std::cout << " " << std::endl;
@@ -1718,7 +1716,7 @@ int main(int argc, char* argv[]){
 	    << "cell-cycles/wall-sec : " << cell_cycles_per_wall_sec << "\n"
 	    << "face-cycles/wall-sec : " << face_cycles_per_wall_sec //<< " , "
 	    // << "Avg. cells per sec.: " << avg_cells_per_sec/Real(ksteps) << " , "
-	    // << "Avg. faces per sec.: " << avg_faces_per_sec/Real(ksteps) //<< " , "
+	    // << "Avg. edges per sec.: " << avg_edges_per_sec/Real(ksteps) //<< " , "
 	    << std::endl;
   std::cout << " " << std::endl;
 

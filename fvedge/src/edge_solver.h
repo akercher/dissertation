@@ -31,7 +31,7 @@ class Mesh
   Index ndim;
   Index nx,ny;
   Index ncell_x,ncell_y;
-  Index iface_d;
+  Index iedge_d;
   Real Lx,Ly;
   Real dx,dy;
   Real vol;
@@ -45,13 +45,13 @@ class Mesh
   void init();
   Index ncell();
   Index npoin();
-  Index nface_x();
-  Index nface_y();
-  Index nface_d();
+  Index nedge_x();
+  Index nedge_y();
+  Index nedge_d();
   Index nboun_x();
   Index nboun_y();
   Index nbnode();
-  Index nface();
+  Index nedge();
   void generate();
 
 };
@@ -112,18 +112,18 @@ Index Mesh::npoin()
   return nx*ny;
 };
 
-Index Mesh::nface_x()
+Index Mesh::nedge_x()
 {
   return (ncell_x - Index(1))*ncell_y;
 };
-Index Mesh::nface_y()
+Index Mesh::nedge_y()
 {
   return (ncell_y - Index(1))*ncell_x;
 };
 
-Index Mesh::nface_d()
+Index Mesh::nedge_d()
 {
-  return iface_d*(ncell_y)*(ncell_x);
+  return iedge_d*(ncell_y)*(ncell_x);
 };
 
 Index Mesh::nboun_x()
@@ -142,10 +142,10 @@ Index Mesh::nbnode()
   return Index(2)*nx + Index(2)*ncell_y;
 };
 
-Index Mesh::nface()
+Index Mesh::nedge()
 {
-  /* return nface_x() + nface_y(); */
-  return nface_x() + nface_y() + nboun_x() + nboun_y() + nface_d();
+  /* return nedge_x() + nedge_y(); */
+  return nedge_x() + nedge_y() + nboun_x() + nboun_y() + nedge_d();
 };
 
 /*****************************************************/
@@ -1323,7 +1323,7 @@ void read_configuration(std::ifstream& input, Index& fct, Index& ct,std::string&
     else if(line.compare("ct") == 0) ct = Index(value);
     /* else if(line.compare("prob") == 0) prob = Index(value); */
     /* else if(line.compare("prob") == 0) prob.assign(value); */
-    else if(line.compare("iface_d") == 0) mesh.iface_d = Index(value);
+    else if(line.compare("iedge_d") == 0) mesh.iedge_d = Index(value);
     else if(line.compare("Cour") == 0) Cour = Real(value);
     else if(line.compare("cdiss") == 0) cdiss = Real(value);
     else if(line.compare("cwm") == 0) cwm = Real(value);

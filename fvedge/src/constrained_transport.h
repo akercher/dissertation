@@ -1293,11 +1293,11 @@ Real divergence_calc(Index interior_ncolors, Mesh mesh, Offset offset,
   for(Index i=0; i < interior_ncolors; i++){
     thr::for_each_n(thr::make_zip_iterator(thr::make_tuple(edge_iter,
 							   bn_edge_iter)),
-		    Index(offset.faces_per_color[i]),	    
+		    Index(offset.edges_per_color[i]),	    
 		    bfield_divergence<thr::tuple<Edge,Real> >(div_b_iter));
     
-    edge_iter += offset.faces_per_color[i];
-    bn_edge_iter += offset.faces_per_color[i];
+    edge_iter += offset.edges_per_color[i];
+    bn_edge_iter += offset.edges_per_color[i];
   }
   
   /*-----------------------------------------------------------------*/
@@ -1327,11 +1327,11 @@ Real divergence_calc(Index interior_ncolors, Mesh mesh, Offset offset,
   for(Index i=interior_ncolors; i < offset.ncolors - offset.nboun_colors; i++){
     thr::for_each_n(thr::make_zip_iterator(thr::make_tuple(edge_iter,
 							   bn_edge_iter)),
-		    Index(offset.faces_per_color[i]),	    
+		    Index(offset.edges_per_color[i]),	    
 		    bfield_divergence<thr::tuple<Edge,Real> >(div_b_iter));
     
-    edge_iter += offset.faces_per_color[i];
-    bn_edge_iter += offset.faces_per_color[i];
+    edge_iter += offset.edges_per_color[i];
+    bn_edge_iter += offset.edges_per_color[i];
   }
 
   // fix corners
@@ -1350,11 +1350,11 @@ Real divergence_calc(Index interior_ncolors, Mesh mesh, Offset offset,
   for(Index i=offset.ncolors - offset.nboun_colors; i < offset.ncolors; i++){
     thr::for_each_n(thr::make_zip_iterator(thr::make_tuple(edge_iter,
 							   bn_edge_iter)),
-		    Index(offset.faces_per_color[i]),	    
+		    Index(offset.edges_per_color[i]),	    
 		    bfield_divergence<thr::tuple<Edge,Real> >(div_b_iter));
     
-    edge_iter += offset.faces_per_color[i];
-    bn_edge_iter += offset.faces_per_color[i];
+    edge_iter += offset.edges_per_color[i];
+    bn_edge_iter += offset.edges_per_color[i];
   }
   // reset iterator
   edge_iter = edge.begin();
@@ -1509,11 +1509,11 @@ void current_density_calc(Index interior_ncolors, Mesh mesh, Offset offset,
   for(Index i=0; i < interior_ncolors; i++){
     thr::for_each_n(thr::make_zip_iterator(thr::make_tuple(edge_iter,
 							   bn_edge_iter)),
-		    Index(offset.faces_per_color[i]),	    
+		    Index(offset.edges_per_color[i]),	    
 		    current_density<thr::tuple<Edge,Real> >(current_iter));
     
-    edge_iter += offset.faces_per_color[i];
-    bn_edge_iter += offset.faces_per_color[i];
+    edge_iter += offset.edges_per_color[i];
+    bn_edge_iter += offset.edges_per_color[i];
   }
   
   /*-----------------------------------------------------------------*/
@@ -1543,11 +1543,11 @@ void current_density_calc(Index interior_ncolors, Mesh mesh, Offset offset,
   for(Index i=interior_ncolors; i < offset.ncolors - offset.nboun_colors; i++){
     thr::for_each_n(thr::make_zip_iterator(thr::make_tuple(edge_iter,
 							   bn_edge_iter)),
-		    Index(offset.faces_per_color[i]),	    
+		    Index(offset.edges_per_color[i]),	    
 		    current_density<thr::tuple<Edge,Real> >(current_iter));
     
-    edge_iter += offset.faces_per_color[i];
-    bn_edge_iter += offset.faces_per_color[i];
+    edge_iter += offset.edges_per_color[i];
+    bn_edge_iter += offset.edges_per_color[i];
   }
 
   // fix corners
@@ -1566,11 +1566,11 @@ void current_density_calc(Index interior_ncolors, Mesh mesh, Offset offset,
   for(Index i=offset.ncolors - offset.nboun_colors; i < offset.ncolors; i++){
     thr::for_each_n(thr::make_zip_iterator(thr::make_tuple(edge_iter,
 							   bn_edge_iter)),
-		    Index(offset.faces_per_color[i]),	    
+		    Index(offset.edges_per_color[i]),	    
 		    current_density<thr::tuple<Edge,Real> >(current_iter));
     
-    edge_iter += offset.faces_per_color[i];
-    bn_edge_iter += offset.faces_per_color[i];
+    edge_iter += offset.edges_per_color[i];
+    bn_edge_iter += offset.edges_per_color[i];
   }
   // reset iterator
   edge_iter = edge.begin();

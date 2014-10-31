@@ -225,7 +225,7 @@ void roe_ct (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j,
   get_y(thr::get<3>(flux)) *= sn_mag;
   get_z(thr::get<3>(flux)) *= sn_mag;
   
-  if(fabs(thr::get<0>(flux)) <= Machine_Zero){
+  if(fabs(thr::get<0>(flux)) < REAL_EPSILON){
     thr::get<0>(flux) = Real(0.0);
   }
 
@@ -764,7 +764,7 @@ void hlld_ct (Real gamma, Real Minf, Coordinate sn, State state_i, State state_j
     get_y(thr::get<3>(flux)) *= sn_mag;
     get_z(thr::get<3>(flux)) *= sn_mag;
 
-    if(fabs(thr::get<0>(flux)) <= Machine_Zero){
+    if(fabs(thr::get<0>(flux)) < REAL_EPSILON){
       thr::get<0>(flux) = Real(0.0);
     }
 

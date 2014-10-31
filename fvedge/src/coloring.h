@@ -14,8 +14,8 @@ class Offset
   Index ncolors;
   Index nboun_colors;
   Index ncolors_per_dim;
-  Index iface_d;
-  IndexArray faces_per_color;
+  Index iedge_d;
+  IndexArray edges_per_color;
   IndexArray bounds_per_color;
   InterfaceIterator face_start;
   RealIterator bn_start;
@@ -42,16 +42,16 @@ void Offset::init(Index ndim, Index ncell_x, Index ncell_y, Index nboun_x, Index
 		  Index btype_x, Index btype_y)
 {
 
-  Index nface_x = (ncell_x - Index(1))*ncell_y;
-  Index nface_y = (ncell_y - Index(1))*ncell_x;
-  Index nface_d;// = ncell_x*ncell_y;
-  /* Index iface_d; */
+  Index nedge_x = (ncell_x - Index(1))*ncell_y;
+  Index nedge_y = (ncell_y - Index(1))*ncell_x;
+  Index nedge_d;// = ncell_x*ncell_y;
+  /* Index iedge_d; */
 
-  /* iface_d = 0; */
-  /* if (nface_d > Index(0)) iface_d = 1; */
+  /* iedge_d = 0; */
+  /* if (nedge_d > Index(0)) iedge_d = 1; */
 
-  nface_d = 0;
-  if (iface_d > Index(0)) nface_d = ncell_x*ncell_y;
+  nedge_d = 0;
+  if (iedge_d > Index(0)) nedge_d = ncell_x*ncell_y;
 
   /* ncolors_per_dim = Index(4); */
   ncolors = ncolors_per_dim*ndim;
@@ -62,20 +62,20 @@ void Offset::init(Index ndim, Index ncell_x, Index ncell_y, Index nboun_x, Index
       ncolors_per_dim = Index(2);
       ncolors = ncolors_per_dim*ndim;
 
-      faces_per_color.resize(ncolors);
+      edges_per_color.resize(ncolors);
       bounds_per_color.resize(nboun_colors);
 
-      Index nface = nface_x + nface_y + nboun_x + nboun_y;
+      Index nedge = nedge_x + nedge_y + nboun_x + nboun_y;
 
-      if((nface  % Index(2)) == 0) 
+      if((nedge  % Index(2)) == 0) 
 	{
-	  faces_per_color[Index(0)] = nface / ncolors;
-	  faces_per_color[Index(1)] = nface / ncolors;
+	  edges_per_color[Index(0)] = nedge / ncolors;
+	  edges_per_color[Index(1)] = nedge / ncolors;
 	}
       else
 	{ 
-	  faces_per_color[Index(0)] = (nface - Index(1)) / ncolors + Index(1);
-	  faces_per_color[Index(1)] = (nface - Index(1)) / ncolors;
+	  edges_per_color[Index(0)] = (nedge - Index(1)) / ncolors + Index(1);
+	  edges_per_color[Index(1)] = (nedge - Index(1)) / ncolors;
 	}
       bounds_per_color[Index(0)] = Index(2)*ncell_y;
       bounds_per_color[Index(1)] = Index(0);
@@ -83,62 +83,62 @@ void Offset::init(Index ndim, Index ncell_x, Index ncell_y, Index nboun_x, Index
   else ////////////////////////// 2D
     {
 
-      ncolors += (ncolors_per_dim + iface_d*ndim);
-      faces_per_color.resize(ncolors);
+      ncolors += (ncolors_per_dim + iedge_d*ndim);
+      edges_per_color.resize(ncolors);
       bounds_per_color.resize(nboun_colors);
 
-      Index nface = nface_x + nface_y;
+      Index nedge = nedge_x + nedge_y;
 
       if((ncell_x % Index(2)) == 0) // ncell_x is even 
 	{
- 	  faces_per_color[Index(0)] = half*ncell_x*ncell_y;
-	  faces_per_color[Index(1)] = (half*ncell_x - Index(1))*ncell_y;
+ 	  edges_per_color[Index(0)] = half*ncell_x*ncell_y;
+	  edges_per_color[Index(1)] = (half*ncell_x - Index(1))*ncell_y;
 
 	  if (ncolors_per_dim > Index(2))
 	    {
-	      faces_per_color[Index(2)] = faces_per_color[Index(1)];
-	      faces_per_color[Index(3)] = faces_per_color[Index(2)];
-	      faces_per_color[Index(1)] = faces_per_color[Index(0)];
+	      edges_per_color[Index(2)] = edges_per_color[Index(1)];
+	      edges_per_color[Index(3)] = edges_per_color[Index(2)];
+	      edges_per_color[Index(1)] = edges_per_color[Index(0)];
 	      if((ncell_y % Index(2)) == 0) 
 		{
-		  faces_per_color[Index(0)] = half*Index(faces_per_color[Index(0)]);
-		  faces_per_color[Index(1)] = half*Index(faces_per_color[Index(1)]);
-		  faces_per_color[Index(2)] = half*Index(faces_per_color[Index(2)]);
-		  faces_per_color[Index(3)] = half*Index(faces_per_color[Index(3)]);
+		  edges_per_color[Index(0)] = half*Index(edges_per_color[Index(0)]);
+		  edges_per_color[Index(1)] = half*Index(edges_per_color[Index(1)]);
+		  edges_per_color[Index(2)] = half*Index(edges_per_color[Index(2)]);
+		  edges_per_color[Index(3)] = half*Index(edges_per_color[Index(3)]);
 
 		}
 	      else
 		{
-		  faces_per_color[Index(0)] = half*half*(ncell_y + Index(1))*ncell_x;
-		  faces_per_color[Index(1)] = half*half*(ncell_y - Index(1))*ncell_x;
-		  faces_per_color[Index(2)] = half*half*(ncell_y + Index(1))*(ncell_x - Index(2.0));
-		  faces_per_color[Index(3)] = half*half*(ncell_y - Index(1))*(ncell_x - Index(2.0));
+		  edges_per_color[Index(0)] = half*half*(ncell_y + Index(1))*ncell_x;
+		  edges_per_color[Index(1)] = half*half*(ncell_y - Index(1))*ncell_x;
+		  edges_per_color[Index(2)] = half*half*(ncell_y + Index(1))*(ncell_x - Index(2.0));
+		  edges_per_color[Index(3)] = half*half*(ncell_y - Index(1))*(ncell_x - Index(2.0));
 		}
 	    }
 	}
       else // ncell_x is odd
       	{
- 	  faces_per_color[Index(0)] = half*(ncell_x - Index(1))*ncell_y;
-	  faces_per_color[Index(1)] = faces_per_color[0];
+ 	  edges_per_color[Index(0)] = half*(ncell_x - Index(1))*ncell_y;
+	  edges_per_color[Index(1)] = edges_per_color[0];
 
 	  if (ncolors_per_dim > Index(2))
 	    {
-	      faces_per_color[Index(2)] = faces_per_color[Index(1)];
-	      faces_per_color[Index(3)] = faces_per_color[Index(2)];
-	      faces_per_color[Index(1)] = faces_per_color[Index(0)];
+	      edges_per_color[Index(2)] = edges_per_color[Index(1)];
+	      edges_per_color[Index(3)] = edges_per_color[Index(2)];
+	      edges_per_color[Index(1)] = edges_per_color[Index(0)];
 	      if((ncell_y % Index(2)) == 0) 
 		{
-		  faces_per_color[Index(0)] = half*Index(faces_per_color[Index(0)]);
-		  faces_per_color[Index(1)] = half*Index(faces_per_color[Index(1)]);
-		  faces_per_color[Index(2)] = half*Index(faces_per_color[Index(2)]);
-		  faces_per_color[Index(3)] = half*Index(faces_per_color[Index(3)]);;
+		  edges_per_color[Index(0)] = half*Index(edges_per_color[Index(0)]);
+		  edges_per_color[Index(1)] = half*Index(edges_per_color[Index(1)]);
+		  edges_per_color[Index(2)] = half*Index(edges_per_color[Index(2)]);
+		  edges_per_color[Index(3)] = half*Index(edges_per_color[Index(3)]);;
 		}
 	      else
 		{
-		  faces_per_color[Index(0)] = half*half*(ncell_y + Index(1))*(ncell_x - Index(1));
-		  faces_per_color[Index(1)] = half*half*(ncell_y - Index(1))*(ncell_x - Index(1));
-		  faces_per_color[Index(2)] = half*half*(ncell_y + Index(1))*(ncell_x - Index(1));
-		  faces_per_color[Index(3)] = half*half*(ncell_y - Index(1))*(ncell_x - Index(1));
+		  edges_per_color[Index(0)] = half*half*(ncell_y + Index(1))*(ncell_x - Index(1));
+		  edges_per_color[Index(1)] = half*half*(ncell_y - Index(1))*(ncell_x - Index(1));
+		  edges_per_color[Index(2)] = half*half*(ncell_y + Index(1))*(ncell_x - Index(1));
+		  edges_per_color[Index(3)] = half*half*(ncell_y - Index(1))*(ncell_x - Index(1));
 		}
 	    }
 
@@ -146,27 +146,27 @@ void Offset::init(Index ndim, Index ncell_x, Index ncell_y, Index nboun_x, Index
 
       if((ncell_y % Index(2)) == 0) // ncell_y is even 
 	{
- 	  faces_per_color[ncolors_per_dim] = half*ncell_y*ncell_x;
-	  faces_per_color[ncolors_per_dim + Index(1)] = (half*ncell_y - Index(1))*ncell_x;
+ 	  edges_per_color[ncolors_per_dim] = half*ncell_y*ncell_x;
+	  edges_per_color[ncolors_per_dim + Index(1)] = (half*ncell_y - Index(1))*ncell_x;
 
 	  if (ncolors_per_dim > Index(2))
 	    {
-	      faces_per_color[Index(6)] = faces_per_color[Index(5)];
-	      faces_per_color[Index(7)] = faces_per_color[Index(6)];
-	      faces_per_color[Index(5)] = faces_per_color[Index(4)];
+	      edges_per_color[Index(6)] = edges_per_color[Index(5)];
+	      edges_per_color[Index(7)] = edges_per_color[Index(6)];
+	      edges_per_color[Index(5)] = edges_per_color[Index(4)];
 	      if((ncell_x % Index(2)) == 0)
 	      	{
-		  faces_per_color[Index(4)] = half*Index(faces_per_color[Index(4)]);
-		  faces_per_color[Index(5)] = half*Index(faces_per_color[Index(5)]);
-		  faces_per_color[Index(6)] = half*Index(faces_per_color[Index(6)]);
-		  faces_per_color[Index(7)] = half*Index(faces_per_color[Index(7)]);
+		  edges_per_color[Index(4)] = half*Index(edges_per_color[Index(4)]);
+		  edges_per_color[Index(5)] = half*Index(edges_per_color[Index(5)]);
+		  edges_per_color[Index(6)] = half*Index(edges_per_color[Index(6)]);
+		  edges_per_color[Index(7)] = half*Index(edges_per_color[Index(7)]);
 	      	}
 	      else
 	      	{
-	      	  faces_per_color[Index(4)] = half*half*(ncell_x + Index(1))*ncell_y;
-	      	  faces_per_color[Index(5)] = half*half*(ncell_x - Index(1))*ncell_y;
-	      	  faces_per_color[Index(6)] = half*half*(ncell_x + Index(1))*(ncell_y - Index(2));
-		  faces_per_color[Index(7)] = half*half*(ncell_x - Index(1))*(ncell_y - Index(2));
+	      	  edges_per_color[Index(4)] = half*half*(ncell_x + Index(1))*ncell_y;
+	      	  edges_per_color[Index(5)] = half*half*(ncell_x - Index(1))*ncell_y;
+	      	  edges_per_color[Index(6)] = half*half*(ncell_x + Index(1))*(ncell_y - Index(2));
+		  edges_per_color[Index(7)] = half*half*(ncell_x - Index(1))*(ncell_y - Index(2));
 	      	}
 	    }
 
@@ -174,103 +174,103 @@ void Offset::init(Index ndim, Index ncell_x, Index ncell_y, Index nboun_x, Index
 	}
       else // ncell_y is odd
       	{
- 	  faces_per_color[ncolors_per_dim] = half*(ncell_y - Index(1))*ncell_x;
-	  faces_per_color[ncolors_per_dim + Index(1)] = faces_per_color[ncolors_per_dim];
+ 	  edges_per_color[ncolors_per_dim] = half*(ncell_y - Index(1))*ncell_x;
+	  edges_per_color[ncolors_per_dim + Index(1)] = edges_per_color[ncolors_per_dim];
 
 	  if (ncolors_per_dim > Index(2))
 	    {
-	      faces_per_color[Index(6)] = faces_per_color[Index(5)];
-	      faces_per_color[Index(7)] = faces_per_color[Index(6)];
-	      faces_per_color[Index(5)] = faces_per_color[Index(4)];
+	      edges_per_color[Index(6)] = edges_per_color[Index(5)];
+	      edges_per_color[Index(7)] = edges_per_color[Index(6)];
+	      edges_per_color[Index(5)] = edges_per_color[Index(4)];
 	      if((ncell_x % Index(2)) == 0) 
 		{
-		  faces_per_color[Index(4)] = half*Index(faces_per_color[Index(4)]);
-		  faces_per_color[Index(5)] = half*Index(faces_per_color[Index(5)]);
-		  faces_per_color[Index(6)] = half*Index(faces_per_color[Index(6)]);
-		  faces_per_color[Index(7)] = half*Index(faces_per_color[Index(7)]);
+		  edges_per_color[Index(4)] = half*Index(edges_per_color[Index(4)]);
+		  edges_per_color[Index(5)] = half*Index(edges_per_color[Index(5)]);
+		  edges_per_color[Index(6)] = half*Index(edges_per_color[Index(6)]);
+		  edges_per_color[Index(7)] = half*Index(edges_per_color[Index(7)]);
 		}
 	      else
 		{
-		  faces_per_color[Index(4)] = half*half*(ncell_x + Index(1))*(ncell_y - Index(1));
-		  faces_per_color[Index(5)] = half*half*(ncell_x - Index(1))*(ncell_y - Index(1));
-		  faces_per_color[Index(6)] = half*half*(ncell_x + Index(1))*(ncell_y - Index(1));
-		  faces_per_color[Index(7)] = half*half*(ncell_x - Index(1))*(ncell_y - Index(1));
+		  edges_per_color[Index(4)] = half*half*(ncell_x + Index(1))*(ncell_y - Index(1));
+		  edges_per_color[Index(5)] = half*half*(ncell_x - Index(1))*(ncell_y - Index(1));
+		  edges_per_color[Index(6)] = half*half*(ncell_x + Index(1))*(ncell_y - Index(1));
+		  edges_per_color[Index(7)] = half*half*(ncell_x - Index(1))*(ncell_y - Index(1));
 		}
 	    }
 
       	}
       
 
-      // diagonal faces
-      if (nface_d > Index(0)){
+      // diagonal edges
+      if (nedge_d > Index(0)){
 	if((ncell_x % Index(2)) == 0){ // ncell_x is even
-	  faces_per_color[Index(8)] = half*ncell_x*ncell_y;
-	  faces_per_color[Index(9)] = half*ncell_x*ncell_y;
+	  edges_per_color[Index(8)] = half*ncell_x*ncell_y;
+	  edges_per_color[Index(9)] = half*ncell_x*ncell_y;
 	}
 	else{ // ncell_x is odd
-	  faces_per_color[Index(8)] = half*(ncell_x + Index(1))*ncell_y;	  
-	  faces_per_color[Index(9)] = half*(ncell_x - Index(1))*ncell_y;	  
+	  edges_per_color[Index(8)] = half*(ncell_x + Index(1))*ncell_y;	  
+	  edges_per_color[Index(9)] = half*(ncell_x - Index(1))*ncell_y;	  
 	}
       }
 
       if (ncolors_per_dim < Index(3)){
-	faces_per_color[Index(2)*ncolors_per_dim] = Index(2)*ncell_y;
-	faces_per_color[Index(2)*ncolors_per_dim + Index(1)] = Index(2)*ncell_x;
-	if(btype_x == 1) faces_per_color[Index(2)*ncolors_per_dim] = Index(1)*ncell_y;
-	if(btype_y == 1) faces_per_color[Index(2)*ncolors_per_dim + Index(1)] = Index(1)*ncell_x;
+	edges_per_color[Index(2)*ncolors_per_dim] = Index(2)*ncell_y;
+	edges_per_color[Index(2)*ncolors_per_dim + Index(1)] = Index(2)*ncell_x;
+	if(btype_x == 1) edges_per_color[Index(2)*ncolors_per_dim] = Index(1)*ncell_y;
+	if(btype_y == 1) edges_per_color[Index(2)*ncolors_per_dim + Index(1)] = Index(1)*ncell_x;
       }
       else if (ncolors_per_dim > Index(2))
 	{
 	  if((ncell_y % Index(2)) == 0)
 	    {
-	      faces_per_color[ncolors - Index(4)] = ncell_y;
-	      faces_per_color[ncolors - Index(3)] = ncell_y;	      
+	      edges_per_color[ncolors - Index(4)] = ncell_y;
+	      edges_per_color[ncolors - Index(3)] = ncell_y;	      
 	      /* if(btype_x == 1) */
 	      /* 	{ */
-	      /* 	  faces_per_color[Index(2)*ncolors_per_dim] = half */
-	      /* 	    *faces_per_color[Index(2)*ncolors_per_dim]; */
-	      /* 	  faces_per_color[Index(2)*ncolors_per_dim + Index(1)] = half */
-	      /* 	    *faces_per_color[Index(2)*ncolors_per_dim + Index(1)]; */
+	      /* 	  edges_per_color[Index(2)*ncolors_per_dim] = half */
+	      /* 	    *edges_per_color[Index(2)*ncolors_per_dim]; */
+	      /* 	  edges_per_color[Index(2)*ncolors_per_dim + Index(1)] = half */
+	      /* 	    *edges_per_color[Index(2)*ncolors_per_dim + Index(1)]; */
 	      /* 	} */
 	    }
 	  else
 	    {
-	      faces_per_color[ncolors - Index(4)] = ncell_y; //+ Index(1);
-	      faces_per_color[ncolors - Index(3)] = ncell_y; //- Index(1);
+	      edges_per_color[ncolors - Index(4)] = ncell_y; //+ Index(1);
+	      edges_per_color[ncolors - Index(3)] = ncell_y; //- Index(1);
 	      /* if(btype_x == 1) */
 	      /* 	{ */
-	      /* 	  faces_per_color[Index(2)*ncolors_per_dim] = ncell_y + Index(1); */
-	      /* 	  faces_per_color[Index(2)*ncolors_per_dim + Index(1)] = ncell_y - Index(1); */
+	      /* 	  edges_per_color[Index(2)*ncolors_per_dim] = ncell_y + Index(1); */
+	      /* 	  edges_per_color[Index(2)*ncolors_per_dim + Index(1)] = ncell_y - Index(1); */
 
-	      /* 	  faces_per_color[Index(2)*ncolors_per_dim] = half */
-	      /* 	    *faces_per_color[Index(2)*ncolors_per_dim]; */
-	      /* 	  faces_per_color[Index(2)*ncolors_per_dim + Index(1)] = half */
-	      /* 	    *faces_per_color[Index(2)*ncolors_per_dim + Index(1)]; */
+	      /* 	  edges_per_color[Index(2)*ncolors_per_dim] = half */
+	      /* 	    *edges_per_color[Index(2)*ncolors_per_dim]; */
+	      /* 	  edges_per_color[Index(2)*ncolors_per_dim + Index(1)] = half */
+	      /* 	    *edges_per_color[Index(2)*ncolors_per_dim + Index(1)]; */
 	      /* 	} */
 	    }
 
 	  if((ncell_x % Index(2)) == 0)
 	    {
-	      faces_per_color[ncolors - Index(2)] = ncell_x;
-	      faces_per_color[ncolors - Index(1)] = ncell_x;	      
+	      edges_per_color[ncolors - Index(2)] = ncell_x;
+	      edges_per_color[ncolors - Index(1)] = ncell_x;	      
 	      /* if(btype_y == 1) */
 	      /* 	{ */
-	      /* 	  faces_per_color[ncolors - Index(2)] = half*Index(faces_per_color[ncolors - Index(2)]); */
-	      /* 	  faces_per_color[ncolors - Index(1)] = half*Index(faces_per_color[ncolors - Index(1)]); */
+	      /* 	  edges_per_color[ncolors - Index(2)] = half*Index(edges_per_color[ncolors - Index(2)]); */
+	      /* 	  edges_per_color[ncolors - Index(1)] = half*Index(edges_per_color[ncolors - Index(1)]); */
 	      /* 	} */
 	    }
 	  else
 	    {
-	      faces_per_color[ncolors - Index(2)] = ncell_x; // + Index(1);	      
-	      faces_per_color[ncolors - Index(1)] = ncell_x; // - Index(1);	      
+	      edges_per_color[ncolors - Index(2)] = ncell_x; // + Index(1);	      
+	      edges_per_color[ncolors - Index(1)] = ncell_x; // - Index(1);	      
 
 	      /* if(btype_y == 1) */
 	      /* 	{ */
-	      /* 	  faces_per_color[ncolors - Index(2)] = ncell_x + Index(1);	       */
-	      /* 	  faces_per_color[ncolors - Index(1)] = ncell_x - Index(1);	       */
+	      /* 	  edges_per_color[ncolors - Index(2)] = ncell_x + Index(1);	       */
+	      /* 	  edges_per_color[ncolors - Index(1)] = ncell_x - Index(1);	       */
 
-	      /* 	  faces_per_color[ncolors - Index(2)] = half*Index(faces_per_color[ncolors - Index(2)]); */
-	      /* 	  faces_per_color[ncolors - Index(1)] = half*Index(faces_per_color[ncolors - Index(1)]); */
+	      /* 	  edges_per_color[ncolors - Index(2)] = half*Index(edges_per_color[ncolors - Index(2)]); */
+	      /* 	  edges_per_color[ncolors - Index(1)] = half*Index(edges_per_color[ncolors - Index(1)]); */
 	      /* 	} */
 	      
 	    }
@@ -294,11 +294,11 @@ void Offset::reset(InterfaceIterator interface_iter)
 
 void Offset::update(Index i)
 {
-  face_start += faces_per_color[i];
-  /* state_start += faces_per_color[i]; */
-  /* flux_start += faces_per_color[i]; */
-  /* bn_start += faces_per_color[i]; */
-  /* coor_start += faces_per_color[i]; */
+  face_start += edges_per_color[i];
+  /* state_start += edges_per_color[i]; */
+  /* flux_start += edges_per_color[i]; */
+  /* bn_start += edges_per_color[i]; */
+  /* coor_start += edges_per_color[i]; */
 };
 
 /*****************************************************/
@@ -379,7 +379,7 @@ struct edges_init_2d : public thr::unary_function<Index,Edge>
 
     Edge edge;
 
-    Index nface_x, nface_y, nface, nfaces;
+    Index nedge_x, nedge_y, nedge, nedges;
     Index nx = this->_ncell_x + Index(1);
     Index ny = this->_ncell_y + Index(1);
     Index edges_per_color;
@@ -414,7 +414,7 @@ struct edges_init_2d : public thr::unary_function<Index,Edge>
 
       dim_index = this->_color_index/colors_per_dim; // 0,1
       color_dim_index = this->_color_index % colors_per_dim; // 0,1,0,1
-      if(this->_color_index < 2){ //x-faces
+      if(this->_color_index < 2){ //x-edges
 	  
 	Index nedge = this->_ncell_x - Index(1);
 	remainder = nedge % colors_per_dim;
@@ -447,7 +447,7 @@ struct edges_init_2d : public thr::unary_function<Index,Edge>
 
 
       }
-      else{ //y-faces
+      else{ //y-edges
 	Index nedge = this->_ncell_x;
 	
 	index_x = index % nedge;
@@ -480,7 +480,7 @@ struct edges_init_2d : public thr::unary_function<Index,Edge>
     dim_index = this->_color_index/this->_ncolors_per_dim; // 0,1
     color_dim_index = this->_color_index % this->_ncolors_per_dim; // 0,1,2,3,0,1,2,3
     
-    if(this->_color_index < this->_ncolors_per_dim){ ////////// x-faces
+    if(this->_color_index < this->_ncolors_per_dim){ ////////// x-edges
       
       Index nedge = this->_ncell_x - Index(1);
       Index remainder = nedge % (this->_ncolors_per_dim/colors_per_pass);
@@ -504,7 +504,7 @@ struct edges_init_2d : public thr::unary_function<Index,Edge>
       index_i = this->_ncell_x*index_y + index_x;
       index_j = index_i + Index(1);
 	
-      /* printf("index = %d color_dim_index = %d nface_x = %d index_x = %d index_y = %d index_i = %d index_j = %d\n",index,color_dim_index,nedge,index_x,index_y,index_i,index_j); */
+      /* printf("index = %d color_dim_index = %d nedge_x = %d index_x = %d index_y = %d index_i = %d index_j = %d\n",index,color_dim_index,nedge,index_x,index_y,index_i,index_j); */
 
       i  = index_j % this->_ncell_x;
       j = (index_j - i)/this->_ncell_x;
@@ -525,7 +525,7 @@ struct edges_init_2d : public thr::unary_function<Index,Edge>
       
     }
 	
-    else if(this->_color_index < Index(2.0)*this->_ncolors_per_dim){ ////////// y-faces
+    else if(this->_color_index < Index(2.0)*this->_ncolors_per_dim){ ////////// y-edges
       
       Index nedge = this->_ncell_x;
       if (color_dim_index % colors_per_pass == Index(0)) nedge += nedge % colors_per_pass;
@@ -543,7 +543,7 @@ struct edges_init_2d : public thr::unary_function<Index,Edge>
       index_i = this->_ncell_x*index_y + index_x;
       index_j = index_i + this->_ncell_x;
       
-      /* printf("index = %d color_dim_index = %d nface_y = %d index_x = %d index_y = %d index_i = %d index_j = %d\n",index,color_dim_index,nedge,index_x,index_y,index_i,index_j); */
+      /* printf("index = %d color_dim_index = %d nedge_y = %d index_x = %d index_y = %d index_i = %d index_j = %d\n",index,color_dim_index,nedge,index_x,index_y,index_i,index_j); */
       
       i  = index_j % this->_ncell_x;
       j = (index_j - i)/this->_ncell_x;
@@ -570,7 +570,7 @@ struct edges_init_2d : public thr::unary_function<Index,Edge>
       
     }
 
-    else{ // diagonal faces
+    else{ // diagonal edges
 
       colors_per_pass = Index(1);
 
@@ -606,7 +606,7 @@ struct edges_init_2d : public thr::unary_function<Index,Edge>
       i  = index_j % this->_ncell_x;
       j = (index_j - i)/this->_ncell_x;
 
-      /* printf("index = %d color_dim_index = %d nface_x = %d index_x = %d index_y = %d index_i = %d index_j = %d i = %d j = %d\n",index,color_dim_index,nedge,index_x,index_y,index_i,index_j,i,j); */
+      /* printf("index = %d color_dim_index = %d nedge_x = %d index_x = %d index_y = %d index_i = %d index_j = %d i = %d j = %d\n",index,color_dim_index,nedge,index_x,index_y,index_i,index_j,i,j); */
 	
       if(index_j < this->_ncell_x){
       	point_i = i;
@@ -630,7 +630,7 @@ struct edges_init_2d : public thr::unary_function<Index,Edge>
       enx = -d*half*std::sqrt(Real(2.0));
       eny = -d*half*std::sqrt(Real(2.0));
       
-      /* if (point_i < nx) bface_i = Real(1.0); */
+      /* if (point_i < nx) bedge_i = Real(1.0); */
       /* if (point_j >= (ny - Index(1))*nx) bface_j = Real(1.0); */
       
     }
@@ -683,40 +683,40 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
   
   Index _color_index;
   Index _ncolors_per_dim;
-  Index _iface_d;
+  Index _iedge_d;
   Index _ncell_x,_ncell_y;
   Index _btype_x, _btype_y;
-  Index _iedge_d;
+  /* Index _iedge_d; */
   Real _dx,_dy;
   BoundaryNodeIterator _bnode_iter;
   
  edge_bounds_init_2d(Index color_index,
 		     Index ncolors_per_dim,
-		     Index iface_d,
+		     Index iedge_d,
 		     Index ncell_x, Index ncell_y,
 		     Index btype_x, Index btype_y, 
-		     Index iedge_d,
+		     /* Index iedge_d, */
 		     Real dx, Real dy,
 		     BoundaryNodeIterator bnode_iter)
    : _color_index(color_index)
     ,_ncolors_per_dim(ncolors_per_dim)
-    ,_iface_d(iface_d)
+    ,_iedge_d(iedge_d)
     ,_ncell_x(ncell_x), _ncell_y(ncell_y)
     ,_btype_x(btype_x), _btype_y(btype_y)
     ,_dx(dx), _dy(dy) 
-    ,_iedge_d(iedge_d)
+    /* ,_iedge_d(iedge_d) */
     ,_bnode_iter(bnode_iter){}
 
   __host__ __device__
     Tuple operator()(const Index& index) const
   {
-    Index cnt, nface_x, nface_y, nface;
+    Index cnt, nedge_x, nedge_y, nedge;
     Index colors_per_pass;
     Index dim_index;
     Index colors_dim_index;
     Index index_x, index_y;
     Index index_i, index_j;
-    Index faces_per_color;
+    Index edges_per_color;
     Index remainder;
     Index point_i;
     Index point_j;
@@ -752,7 +752,7 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
     bface_i = Real(0.0);
     bface_j = Real(0.0);
 
-    if(((this->_color_index - this->_iface_d) % Index(4)) < 1){
+    if(((this->_color_index - this->_iedge_d) % Index(4)) < 1){
 
       btype = this->_btype_x;
 
@@ -846,8 +846,8 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
       }	  	
     }
     
-    else if(((this->_color_index - this->_iface_d) % Index(4)) < 2 
-	    && (this->_color_index- this->_iface_d) > Index(5)){
+    else if(((this->_color_index - this->_iedge_d) % Index(4)) < 2 
+	    && (this->_color_index- this->_iedge_d) > Index(5)){
 
       btype = this->_btype_x;
 	
@@ -945,8 +945,8 @@ struct edge_bounds_init_2d : public thr::unary_function<Index,Tuple>
       }	  	
     }
 	
-    else if(((this->_color_index - this->_iface_d)% Index(4)) < 3 
-	    && (this->_color_index - this->_iface_d) > Index(5)){
+    else if(((this->_color_index - this->_iedge_d)% Index(4)) < 3 
+	    && (this->_color_index - this->_iedge_d) > Index(5)){
       
       btype = this->_btype_y;
 	
